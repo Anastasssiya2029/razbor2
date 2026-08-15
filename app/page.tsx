@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type FieldProps = {
   label: string;
@@ -53,6 +53,68 @@ const systemElements: SystemElement[] = [
   { id: 7, name: "Команда", labelLines: ["Команда"], current: 1, added: 1, tone: "coral" },
 ];
 
+type ArchetypeKind = "altruist" | "explorer" | "creator" | "hero" | "magician" | "seer" | "ruler";
+
+const archetypeJourney: { id: number; name: string; kind: ArchetypeKind; state?: "current" | "next" }[] = [
+  { id: 1, name: "Альтруист", kind: "altruist" },
+  { id: 2, name: "Искатель", kind: "explorer", state: "current" },
+  { id: 3, name: "Творец", kind: "creator", state: "next" },
+  { id: 4, name: "Герой", kind: "hero" },
+  { id: 5, name: "Волшебник", kind: "magician" },
+  { id: 6, name: "Провидец", kind: "seer" },
+  { id: 7, name: "Правитель", kind: "ruler" },
+];
+
+const analysisReasons = [
+  "Снижение цены не увеличило поток, следовательно, проблема не доказана как «клиентам дорого».",
+  "Когда Екатерина делала личные приглашения, продажи происходили.",
+  "Клиенты уже оставались в работе несколько месяцев, следовательно, длительная помощь востребована.",
+  "У неё есть свободная ёмкость, поэтому пока не нужны группа, команда и автоматизация.",
+];
+
+const growthLevers = [
+  {
+    role: "Ведущий элемент",
+    title: "Технология продаж",
+    notBuilt: "Нет повторяемого перехода от разговора о проблеме к предложению длительной работы.",
+    impact: "Человек либо покупает одну встречу, либо уходит, не увидев понятного пути.",
+    change: "Одна структура встречи и одно предложение стартового пакета.",
+    criterion: "Проведено не менее десяти однотипных разговоров; понятно, сколько людей покупает и какие возражения повторяются.",
+  },
+  {
+    role: "Поддерживающий элемент",
+    title: "Продукты и авторский метод",
+    notBuilt: "Нет первого законченного продукта между «одной сессией» и «терапией неизвестной длительности».",
+    impact: "Клиенту трудно покупать неопределённый процесс.",
+    change: "Пакет из четырёх встреч с понятной задачей, логикой и первым результатом.",
+    criterion: "Екатерина объясняет продукт за минуту, а клиент понимает, что произойдёт на четырёх встречах.",
+  },
+  {
+    role: "Поддерживающий элемент",
+    title: "Аутентичность",
+    notBuilt: "Екатерина не опирается на десятилетний путь обучения и реальные длительные результаты. Она всё ещё называет себя начинающей и снижает цену из внутреннего сомнения.",
+    impact: "Она не делает достаточного количества предложений и отступает в цене до проверки реакции клиента.",
+    change: "Двухдневная работа с Соулой: опыт, суперсилы, ценность, собственный способ помощи, право на цену, короткая самопрезентация.",
+    criterion: "Она спокойно называет стоимость 2 500 ₽, презентует пакет 10 000 ₽ и не снижает цену заранее.",
+  },
+];
+
+const notNowItems = [
+  ["Не строить автоворонку", "Пока не подтверждено само предложение."],
+  ["Не запускать платную рекламу", "Она масштабирует и продажи, и текущие потери."],
+  ["Не создавать большую группу", "Индивидуальная модель ещё не заполнена."],
+  ["Не делать блог главным проектом месяца", "Он может поддерживать доверие, но деньги сейчас ближе к тёплым контактам."],
+  ["Не создавать длинную линейку продуктов", "Нужен один подтверждённый основной формат."],
+];
+
+const repeatableSteps = [
+  "Подтвердить продажу стартового пакета.",
+  "Собрать причины покупок и отказов.",
+  "Уточнить на этом материале свою аудиторию и авторский метод.",
+  "Создать регулярный способ получать тёплые обращения: рекомендации, партнёры, блог или короткие продукты.",
+  "Только после стабильной ручной продажи автоматизировать отдельные шаги.",
+];
+
 function ArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="arrow-icon">
@@ -66,6 +128,65 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
     <svg viewBox="0 0 24 24" aria-hidden="true" className="chevron-icon">
       <path d={direction === "left" ? "m15 5-7 7 7 7" : "m9 5 7 7-7 7"} />
     </svg>
+  );
+}
+
+function ArchetypeGlyph({ kind }: { kind: ArchetypeKind }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.7,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="archetype-glyph">
+      {kind === "altruist" && (
+        <path {...common} d="M12 20.3S4.8 16 4.8 10.1A4.1 4.1 0 0 1 12 7.4a4.1 4.1 0 0 1 7.2 2.7c0 5.9-7.2 10.2-7.2 10.2Z" />
+      )}
+      {kind === "explorer" && (
+        <>
+          <circle {...common} cx="12" cy="12" r="8.5" />
+          <path {...common} d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1 5.1-2.1Z" />
+          <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+        </>
+      )}
+      {kind === "creator" && (
+        <>
+          <path {...common} d="m4.4 19.6 3.7-.9L19 7.8 16.2 5 5.3 15.9l-.9 3.7Z" />
+          <path {...common} d="m14.7 6.5 2.8 2.8M4.4 19.6l2.7-2.7" />
+        </>
+      )}
+      {kind === "hero" && <path {...common} d="M13.3 2.7 5.7 13h5.7l-.7 8.3L18.3 11h-5.7l.7-8.3Z" />}
+      {kind === "magician" && (
+        <>
+          <path {...common} d="M12 3.2 13.4 8l4.8 1.4-4.8 1.4L12 15.6l-1.4-4.8-4.8-1.4L10.6 8 12 3.2Z" />
+          <path {...common} d="m18.3 15.2.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" />
+        </>
+      )}
+      {kind === "seer" && (
+        <>
+          <path {...common} d="M3.2 12s3.2-5.1 8.8-5.1 8.8 5.1 8.8 5.1-3.2 5.1-8.8 5.1S3.2 12 3.2 12Z" />
+          <circle {...common} cx="12" cy="12" r="2.4" />
+        </>
+      )}
+      {kind === "ruler" && (
+        <>
+          <path {...common} d="m4.2 8.2 4 3.1L12 5l3.8 6.3 4-3.1-1.4 9.2H5.6L4.2 8.2Z" />
+          <path {...common} d="M6 20h12" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function ArchetypeMedallion({ className = "" }: { className?: string }) {
+  return (
+    <span className={`archetype-medallion ${className}`} aria-hidden="true">
+      <span className="medallion-orbit" />
+      <ArchetypeGlyph kind="explorer" />
+    </span>
   );
 }
 
@@ -186,10 +307,313 @@ function ModelLegend({ includeTarget = true }: { includeTarget?: boolean }) {
   );
 }
 
+function ArchetypeDialog({
+  open,
+  flipped,
+  onFlip,
+  onClose,
+}: {
+  open: boolean;
+  flipped: boolean;
+  onFlip: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="archetype-overlay"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="archetype-dialog" role="dialog" aria-modal="true" aria-labelledby="archetype-card-title">
+        <button type="button" className="archetype-close" aria-label="Закрыть карту архетипа" onClick={onClose} autoFocus>
+          <span aria-hidden="true">×</span>
+        </button>
+        <div className={`archetype-flip-scene ${flipped ? "is-flipped" : ""}`}>
+          <button
+            type="button"
+            className="archetype-flip-card"
+            onClick={onFlip}
+            aria-label={flipped ? "Показать лицевую сторону карты" : "Показать ключ перехода"}
+          >
+            <span className="archetype-card-face archetype-card-front" aria-hidden={flipped}>
+              <span className="archetype-card-eyebrow">Ваш бизнес-архетип</span>
+              <ArchetypeMedallion className="card-medallion" />
+              <strong id="archetype-card-title">Искатель</strong>
+              <span className="archetype-card-quote">
+                «Я больше не жду, что клиенты придут сами. Я ищу способ, который приведёт новых клиентов».
+              </span>
+              <span className="archetype-card-hint">Нажмите на карту, чтобы увидеть ключ перехода</span>
+            </span>
+
+            <span className="archetype-card-face archetype-card-back" aria-hidden={!flipped}>
+              <span className="archetype-card-eyebrow">Искатель → Творец</span>
+              <span className="archetype-back-icon"><ArchetypeGlyph kind="creator" /></span>
+              <span className="archetype-back-section">
+                <b>Ключ перехода</b>
+                <strong>Перестать искать, начать действовать и создавать.</strong>
+              </span>
+              <span className="archetype-back-section actions">
+                <b>Что важно сделать</b>
+                <span>Остановить бесконечное накопление инструментов и выбрать одно направление.</span>
+                <span>Перевести знания в собственный продукт, контент или способ продвижения.</span>
+                <span>Дать созданному время на проверку, прежде чем снова менять стратегию.</span>
+              </span>
+              <span className="archetype-card-hint">Нажмите, чтобы перевернуть обратно</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EvolutionMap() {
+  return (
+    <section className="evolution-card" aria-labelledby="evolution-title">
+      <div className="evolution-heading">
+        <span className="result-kicker">Карта роста</span>
+        <h3 id="evolution-title">Эволюция предпринимательского мышления</h3>
+        <p>Не тип личности, а способ, которым человек сейчас строит именно этот бизнес.</p>
+      </div>
+      <div className="evolution-legend" aria-label="Обозначения карты">
+        <span><i className="evolution-dot passed" />Пройденная опора</span>
+        <span><i className="evolution-dot current" />Текущий архетип</span>
+        <span><i className="evolution-dot next" />Следующий переход</span>
+      </div>
+      <div className="evolution-scroll">
+        <div className="evolution-flow">
+          {archetypeJourney.map((stage) => (
+            <article className={`evolution-stage ${stage.state ?? ""}`} key={stage.name}>
+              <span className="evolution-stage-number">{String(stage.id).padStart(2, "0")}</span>
+              <span className="evolution-orb">
+                <ArchetypeGlyph kind={stage.kind} />
+              </span>
+              <strong className="evolution-stage-label">{stage.name}</strong>
+              {stage.state === "current" && <small>Вы здесь</small>}
+              {stage.state === "next" && <small>Следующий уровень</small>}
+            </article>
+          ))}
+        </div>
+      </div>
+      <p className="evolution-caption">
+        Альтруист ждёт оценки. Искатель ищет способ. Творец создаёт. Герой связывает и ведёт результат. Волшебник знает формулу. Провидец передаёт её системе. Правитель масштабирует через сильных лидеров.
+      </p>
+    </section>
+  );
+}
+
+function BusinessAnalysis() {
+  return (
+    <div className="business-analysis">
+      <div className="result-heading">
+        <span className="result-kicker">Персональный вывод</span>
+        <h2>Результат бизнес-разбора</h2>
+        <p>Главная точка денег, логика решения и ближайший проверяемый шаг.</p>
+      </div>
+
+      <section className="money-insight" aria-labelledby="money-now-title">
+        <div className="money-insight-main">
+          <span className="insight-label">Где деньги сейчас</span>
+          <h3 id="money-now-title">
+            Деньги находятся в уже доступных тёплых контактах и в переводе человека из разовой дешёвой сессии в понятный стартовый формат длительной работы.
+          </h3>
+        </div>
+        <div className="month-focus">
+          <span>Фокус на 30 дней</span>
+          <strong>Тёплый контакт</strong>
+          <i aria-hidden="true">→</i>
+          <strong>Диагностический разговор</strong>
+          <i aria-hidden="true">→</i>
+          <strong>Пакет из четырёх встреч</strong>
+        </div>
+      </section>
+
+      <section className="result-section reasons-section" aria-labelledby="reasons-title">
+        <div className="result-section-heading">
+          <span className="section-index">01</span>
+          <div>
+            <h3 id="reasons-title">Почему именно здесь</h3>
+            <p>Четыре факта, на которых держится вывод.</p>
+          </div>
+        </div>
+        <div className="reason-grid">
+          {analysisReasons.map((reason, index) => (
+            <article className="reason-card" key={reason}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <p>{reason}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="result-section revenue-section" aria-labelledby="revenue-title">
+        <div className="result-section-heading">
+          <span className="section-index">02</span>
+          <div>
+            <h3 id="revenue-title">Как это может повлиять на деньги</h3>
+            <p>Проверяемая экономика без необходимости сразу строить большой блог.</p>
+          </div>
+        </div>
+        <div className="revenue-board">
+          <div className="package-formula">
+            <span>1 встреча</span>
+            <strong>2 500 ₽</strong>
+            <i aria-hidden="true">× 4</i>
+            <span>Стартовый пакет</span>
+            <strong className="package-total">10 000 ₽</strong>
+          </div>
+          <div className="revenue-scenarios">
+            {[["2 продажи", "20 000 ₽"], ["3 продажи", "30 000 ₽"], ["4 продажи", "40 000 ₽"]].map(([label, value]) => (
+              <div className="revenue-scenario" key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="capacity-card">
+            <span>Модель цели</span>
+            <strong>6 активных клиентов × 4 встречи × 2 500 ₽</strong>
+            <b>≈ 60 000 ₽ в месяц</b>
+          </div>
+        </div>
+        <p className="result-note">
+          Это не обещание, что шесть клиентов появятся за 30 дней. Это показывает, что для цели 60 000 ₽ Екатерине не нужен огромный блог. Ей нужно постепенно собрать примерно шесть стабильных клиентских мест.
+        </p>
+      </section>
+
+      <section className="change-card" aria-labelledby="change-title">
+        <span className="change-days">30 дней</span>
+        <div>
+          <span className="result-kicker">Что изменить</span>
+          <h3 id="change-title">Перестать предлагать только отдельную сессию за 1 000 ₽.</h3>
+          <p>Подтвердить продажу одного понятного стартового пакета длительной работы через тёплые диагностические разговоры.</p>
+        </div>
+      </section>
+
+      <section className="result-section levers-section" aria-labelledby="levers-title">
+        <div className="result-section-heading">
+          <span className="section-index">03</span>
+          <div>
+            <h3 id="levers-title">Что усиливает связку</h3>
+            <p>Один ведущий и два поддерживающих элемента системы.</p>
+          </div>
+        </div>
+        <div className="lever-grid">
+          {growthLevers.map((lever, index) => (
+            <article className={`lever-card ${index === 0 ? "leading" : ""}`} key={lever.title}>
+              <span className="lever-role">{lever.role}</span>
+              <h4>{lever.title}</h4>
+              <dl>
+                <div>
+                  <dt>Не выстроено</dt>
+                  <dd>{lever.notBuilt}</dd>
+                </div>
+                <div>
+                  <dt>Как мешает деньгам</dt>
+                  <dd>{lever.impact}</dd>
+                </div>
+                <div>
+                  <dt>Минимальное изменение</dt>
+                  <dd>{lever.change}</dd>
+                </div>
+                <div>
+                  <dt>Критерий</dt>
+                  <dd>{lever.criterion}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="result-section pause-section" aria-labelledby="pause-title">
+        <div className="result-section-heading">
+          <span className="section-index">04</span>
+          <div>
+            <h3 id="pause-title">Что пока не делать</h3>
+            <p>Не распылять ресурс до подтверждения основной связки.</p>
+          </div>
+        </div>
+        <div className="pause-grid">
+          {notNowItems.map(([title, explanation]) => (
+            <article className="pause-card" key={title}>
+              <span aria-hidden="true">×</span>
+              <div>
+                <h4>{title}</h4>
+                <p>{explanation}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="result-section repeat-section" aria-labelledby="repeat-title">
+        <div className="result-section-heading">
+          <span className="section-index">05</span>
+          <div>
+            <h3 id="repeat-title">Как сделать результат повторяемым</h3>
+            <p>Последовательность, которая превращает ручную продажу в систему.</p>
+          </div>
+        </div>
+        <ol className="repeat-steps">
+          {repeatableSteps.map((step, index) => (
+            <li key={step}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <p>{step}</p>
+            </li>
+          ))}
+        </ol>
+        <aside className="analysis-caveat">
+          <span>Важно для точности вывода</span>
+          <p>
+            Если новые поля покажут, что у Екатерины не восемь обращений, а одно-два, вывод изменится. Тогда «Где деньги сейчас» будет не в технологии продажи, а в увеличении количества подходящих разговоров. Именно поэтому новые вопросы нам нужны.
+          </p>
+        </aside>
+      </section>
+
+      <EvolutionMap />
+
+      <div className="analysis-export">
+        <button type="button" className="pdf-button" onClick={() => window.print()}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
+          </svg>
+          Сохранить разбор в PDF
+        </button>
+        <p>Откроется системное окно печати. Выберите «Сохранить как PDF».</p>
+      </div>
+    </div>
+  );
+}
+
 function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number; setActiveSlide: (slide: number) => void }) {
   const pointerStart = useRef<number | null>(null);
+  const [archetypeOpen, setArchetypeOpen] = useState(false);
+  const [archetypeFlipped, setArchetypeFlipped] = useState(false);
   const slideCount = 3;
   const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));
+  const closeArchetype = () => {
+    setArchetypeOpen(false);
+    setArchetypeFlipped(false);
+  };
 
   const finishSwipe = (clientX: number) => {
     if (pointerStart.current === null) return;
@@ -201,6 +625,22 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
 
   return (
     <section className="diagnostic-card analysis-card" aria-labelledby="analysis-title">
+      <button
+        type="button"
+        className="archetype-trigger"
+        aria-label="Открыть карту бизнес-архетипа Искатель"
+        onClick={() => {
+          setArchetypeFlipped(false);
+          setArchetypeOpen(true);
+        }}
+      >
+        <ArchetypeMedallion className="trigger-medallion" />
+        <span>
+          <small>Ваш архетип</small>
+          <strong>Искатель</strong>
+        </span>
+      </button>
+
       <div className="analysis-heading">
         <span className="analysis-kicker">Шаг 2 · Разбор</span>
         <h2 id="analysis-title">Ваша бизнес-система</h2>
@@ -287,6 +727,15 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
         ))}
       </div>
       <p className="analysis-counter" aria-live="polite">{activeSlide + 1} / {slideCount}</p>
+
+      <BusinessAnalysis />
+
+      <ArchetypeDialog
+        open={archetypeOpen}
+        flipped={archetypeFlipped}
+        onFlip={() => setArchetypeFlipped((current) => !current)}
+        onClose={closeArchetype}
+      />
     </section>
   );
 }
