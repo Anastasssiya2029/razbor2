@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 type FieldProps = {
   label: string;
@@ -20,11 +20,274 @@ const tabs = [
 
 const stages = ["Диагностика", "Разбор", "План перехода", "Рост и система"];
 
+type SystemElement = {
+  id: number;
+  name: string;
+  labelLines: string[];
+  current: number;
+  added: number;
+  tone: "gold" | "coral";
+};
+
+const systemElements: SystemElement[] = [
+  { id: 1, name: "Аутентичность", labelLines: ["Аутентичность"], current: 5, added: 1, tone: "gold" },
+  { id: 2, name: "Своя ЦА", labelLines: ["Своя ЦА"], current: 4, added: 2, tone: "gold" },
+  {
+    id: 3,
+    name: "Продукты и авторский метод",
+    labelLines: ["Продукты и", "авторский метод"],
+    current: 3,
+    added: 3,
+    tone: "coral",
+  },
+  { id: 4, name: "Технология продаж", labelLines: ["Технология", "продаж"], current: 2, added: 2, tone: "coral" },
+  {
+    id: 5,
+    name: "Воронка продаж и связки",
+    labelLines: ["Воронка продаж", "и связки"],
+    current: 1,
+    added: 0,
+    tone: "coral",
+  },
+  { id: 6, name: "Блог", labelLines: ["Блог"], current: 2, added: 0, tone: "coral" },
+  { id: 7, name: "Команда", labelLines: ["Команда"], current: 1, added: 1, tone: "coral" },
+];
+
 function ArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="arrow-icon">
       <path d="M5 12h14M14 6l6 6-6 6" />
     </svg>
+  );
+}
+
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="chevron-icon">
+      <path d={direction === "left" ? "m15 5-7 7 7 7" : "m9 5 7 7-7 7"} />
+    </svg>
+  );
+}
+
+function SystemModel({ target = false }: { target?: boolean }) {
+  return (
+    <div className="system-model" aria-label={target ? "Модель под вашу цель" : "Текущая бизнес-модель"}>
+      {systemElements.map((element) => {
+        const result = element.current + (target ? element.added : 0);
+        return (
+          <div className="model-column" key={element.id}>
+            <div className={`model-score ${target && element.added ? "target-score" : element.tone}`}>{result}</div>
+            <div className="brick-stack" aria-label={`${element.name}: ${result} из 10`}>
+              {Array.from({ length: 10 }, (_, index) => {
+                const level = 10 - index;
+                const state =
+                  level <= element.current
+                    ? `current ${element.tone}`
+                    : target && level <= element.current + element.added
+                      ? "added"
+                      : "empty";
+                return <span className={`system-brick ${state}`} key={level} />;
+              })}
+            </div>
+            <span className="model-number">{element.id}</span>
+            <span className="model-name">{element.name}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function polarPoint(cx: number, cy: number, radius: number, angle: number) {
+  const radians = (angle * Math.PI) / 180;
+  return { x: cx + radius * Math.cos(radians), y: cy + radius * Math.sin(radians) };
+}
+
+function ringSectorPath(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) {
+  const centerX = 350;
+  const centerY = 255;
+  const outerStart = polarPoint(centerX, centerY, outerRadius, startAngle);
+  const outerEnd = polarPoint(centerX, centerY, outerRadius, endAngle);
+  const innerEnd = polarPoint(centerX, centerY, innerRadius, endAngle);
+  const innerStart = polarPoint(centerX, centerY, innerRadius, startAngle);
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${outerRadius} ${outerRadius} 0 0 1 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerEnd.x} ${innerEnd.y}`,
+    `A ${innerRadius} ${innerRadius} 0 0 0 ${innerStart.x} ${innerStart.y}`,
+    "Z",
+  ].join(" ");
+}
+
+function SystemWheel() {
+  const sectorAngle = 360 / systemElements.length;
+  return (
+    <div className="wheel-wrap">
+      <svg className="wheel-svg" viewBox="0 0 700 510" role="img" aria-labelledby="wheel-title wheel-description">
+        <title id="wheel-title">Колесо бизнес-системы</title>
+        <desc id="wheel-description">
+          Семь элементов бизнес-системы. Текущий уровень показан жёлтым и коралловым, зоны достройки — фиолетовым.
+        </desc>
+        {systemElements.map((element, elementIndex) => {
+          const centerAngle = -90 + elementIndex * sectorAngle;
+          const startAngle = centerAngle - sectorAngle / 2 + 1.2;
+          const endAngle = centerAngle + sectorAngle / 2 - 1.2;
+          return (
+            <g key={element.id}>
+              <title>{`${element.name}: сейчас ${element.current}, под цель ${element.current + element.added}`}</title>
+              {Array.from({ length: 10 }, (_, levelIndex) => {
+                const level = levelIndex + 1;
+                const innerRadius = 48 + levelIndex * 15.2;
+                const outerRadius = innerRadius + 13.2;
+                const state =
+                  level <= element.current
+                    ? `current ${element.tone}`
+                    : level <= element.current + element.added
+                      ? "added"
+                      : "empty";
+                return (
+                  <path
+                    className={`wheel-segment ${state}`}
+                    d={ringSectorPath(innerRadius, outerRadius, startAngle, endAngle)}
+                    key={level}
+                  />
+                );
+              })}
+              {(() => {
+                const labelPoint = polarPoint(350, 255, 218, centerAngle);
+                return (
+                  <text className="wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle">
+                    {element.labelLines.map((line, lineIndex) => (
+                      <tspan x={labelPoint.x} dy={lineIndex === 0 ? 0 : 16} key={line}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                );
+              })()}
+            </g>
+          );
+        })}
+        <circle className="wheel-center" cx="350" cy="255" r="43" />
+        <text className="wheel-center-title" x="350" y="250" textAnchor="middle">7D</text>
+        <text className="wheel-center-caption" x="350" y="272" textAnchor="middle">система</text>
+      </svg>
+    </div>
+  );
+}
+
+function ModelLegend({ includeTarget = true }: { includeTarget?: boolean }) {
+  return (
+    <div className="model-legend" aria-label="Обозначения цветов">
+      <span><i className="legend-swatch current-swatch" />Текущий уровень</span>
+      {includeTarget && <span><i className="legend-swatch target-swatch" />Что нужно достроить</span>}
+      <span><i className="legend-swatch empty-swatch" />Потенциал роста</span>
+    </div>
+  );
+}
+
+function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number; setActiveSlide: (slide: number) => void }) {
+  const pointerStart = useRef<number | null>(null);
+  const slideCount = 3;
+  const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));
+
+  const finishSwipe = (clientX: number) => {
+    if (pointerStart.current === null) return;
+    const distance = pointerStart.current - clientX;
+    pointerStart.current = null;
+    if (Math.abs(distance) < 55) return;
+    showSlide(activeSlide + (distance > 0 ? 1 : -1));
+  };
+
+  return (
+    <section className="diagnostic-card analysis-card" aria-labelledby="analysis-title">
+      <div className="analysis-heading">
+        <span className="analysis-kicker">Шаг 2 · Разбор</span>
+        <h2 id="analysis-title">Ваша бизнес-система</h2>
+        <p>Сравните текущую конструкцию с моделью под вашу цель и посмотрите, какие элементы важно достроить.</p>
+      </div>
+
+      <div className="analysis-carousel">
+        <button
+          type="button"
+          className="analysis-arrow analysis-arrow-left"
+          aria-label="Предыдущий экран"
+          disabled={activeSlide === 0}
+          onClick={() => showSlide(activeSlide - 1)}
+        >
+          <ChevronIcon direction="left" />
+        </button>
+
+        <div
+          className="analysis-viewport"
+          tabIndex={0}
+          aria-roledescription="карусель"
+          aria-label="Визуализация бизнес-системы"
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") showSlide(activeSlide - 1);
+            if (event.key === "ArrowRight") showSlide(activeSlide + 1);
+          }}
+          onPointerDown={(event) => {
+            pointerStart.current = event.clientX;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerUp={(event) => finishSwipe(event.clientX)}
+          onPointerCancel={() => { pointerStart.current = null; }}
+        >
+          <div className="analysis-track" style={{ transform: `translate3d(-${activeSlide * 100}%, 0, 0)` }}>
+            <article className="analysis-slide" aria-hidden={activeSlide !== 0}>
+              <div className="analysis-slide-heading">
+                <span>01</span>
+                <h3>Текущая бизнес-модель</h3>
+              </div>
+              <SystemModel />
+            </article>
+
+            <article className="analysis-slide" aria-hidden={activeSlide !== 1}>
+              <div className="analysis-slide-heading">
+                <span>02</span>
+                <h3>Модель под вашу цель</h3>
+              </div>
+              <ModelLegend />
+              <SystemModel target />
+            </article>
+
+            <article className="analysis-slide wheel-slide" aria-hidden={activeSlide !== 2}>
+              <div className="analysis-slide-heading">
+                <span>03</span>
+                <h3>Колесо бизнес-системы</h3>
+              </div>
+              <ModelLegend />
+              <SystemWheel />
+            </article>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="analysis-arrow analysis-arrow-right"
+          aria-label="Следующий экран"
+          disabled={activeSlide === slideCount - 1}
+          onClick={() => showSlide(activeSlide + 1)}
+        >
+          <ChevronIcon direction="right" />
+        </button>
+      </div>
+
+      <div className="analysis-pagination" aria-label="Экраны разбора">
+        {["Текущая бизнес-модель", "Модель под вашу цель", "Колесо бизнес-системы"].map((label, index) => (
+          <button
+            type="button"
+            className={activeSlide === index ? "active" : ""}
+            aria-label={`Показать: ${label}`}
+            aria-current={activeSlide === index ? "true" : undefined}
+            onClick={() => showSlide(index)}
+            key={label}
+          />
+        ))}
+      </div>
+      <p className="analysis-counter" aria-live="polite">{activeSlide + 1} / {slideCount}</p>
+    </section>
   );
 }
 
@@ -98,10 +361,11 @@ function Brand() {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
+  const [currentStage, setCurrentStage] = useState(0);
+  const [analysisSlide, setAnalysisSlide] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
   const [deadline, setDeadline] = useState("6 месяцев");
   const [personality, setPersonality] = useState("Амбиверт");
-  const [confirmed, setConfirmed] = useState(false);
 
   const formula = useMemo(() => {
     const goal = values.goalIncome?.trim() || "_____";
@@ -113,8 +377,20 @@ export default function Home() {
   }, [values]);
 
   const goToTab = (tab: number) => {
+    setCurrentStage(0);
     setActiveTab(tab);
-    setConfirmed(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const openAnalysis = () => {
+    setCurrentStage(1);
+    setAnalysisSlide(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const showJourneyStage = (stage: number) => {
+    if (stage > 1) return;
+    setCurrentStage(stage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -134,6 +410,7 @@ export default function Home() {
         </p>
       </section>
 
+      {currentStage === 0 ? (
       <section className="diagnostic-card" aria-label="Диагностика бизнес-системы">
         <div className="identity-grid">
           <label className="identity-field">
@@ -291,17 +568,11 @@ export default function Home() {
                 </div>
               </section>
 
-              {confirmed && (
-                <div className="confirmation-message" role="status">
-                  Первый шаг завершён. Диагностика готова к разбору.
-                </div>
-              )}
-
               <div className="experience-actions">
                 <button type="button" className="secondary-button" onClick={() => goToTab(0)}>
                   Исправить
                 </button>
-                <button type="button" className="primary-button compact" onClick={() => setConfirmed(true)}>
+                <button type="button" className="primary-button compact" onClick={openAnalysis}>
                   Да, всё верно <ArrowIcon />
                 </button>
               </div>
@@ -309,13 +580,23 @@ export default function Home() {
           )}
         </div>
       </section>
+      ) : (
+        <AnalysisSection activeSlide={analysisSlide} setActiveSlide={setAnalysisSlide} />
+      )}
 
       <nav className="journey" aria-label="Этапы работы">
         {stages.map((stage, index) => (
-          <div className={`journey-stage ${index === 0 ? "active" : ""}`} key={stage}>
+          <button
+            type="button"
+            className={`journey-stage ${index === currentStage ? "active" : ""}`}
+            aria-current={index === currentStage ? "step" : undefined}
+            disabled={index > 1}
+            onClick={() => showJourneyStage(index)}
+            key={stage}
+          >
             <span className="journey-number">{index + 1}</span>
             <span>{stage}</span>
-          </div>
+          </button>
         ))}
       </nav>
     </main>
