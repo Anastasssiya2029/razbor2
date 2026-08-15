@@ -169,7 +169,7 @@ export default function Home() {
               onClick={() => goToTab(tab.id)}
             >
               <span className="tab-number">{tab.id + 1}</span>
-              <span>{tab.id + 1}. {tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
