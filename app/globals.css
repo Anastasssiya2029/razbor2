@@ -1492,13 +1492,19 @@ button {
   font-size: 12px;
 }
 
-.month-focus > span {
+.month-focus > .month-focus-label {
   margin-right: 6px;
   color: #e8cdec;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.month-focus-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
 }
 
 .month-focus strong {
@@ -1588,6 +1594,13 @@ button {
   color: #54495a;
   font-size: 13px;
   line-height: 1.52;
+}
+
+.reason-card h4 {
+  margin: 0 0 5px;
+  color: var(--plum-dark);
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 .revenue-board {
@@ -2038,9 +2051,9 @@ button {
 }
 
 .evolution-flow {
-  min-width: 910px;
+  min-width: 780px;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   position: relative;
 }
 
@@ -2107,6 +2120,14 @@ button {
   box-shadow:
     0 0 0 6px rgba(109, 47, 182, 0.1),
     0 13px 29px rgba(109, 47, 182, 0.26);
+}
+
+.evolution-stage.passed .evolution-orb {
+  color: #7b5a21;
+  background:
+    radial-gradient(circle at 33% 24%, rgba(255, 255, 255, 0.65), transparent 23%),
+    linear-gradient(145deg, #fff7d9, #edcf7a);
+  border-color: rgba(150, 104, 17, 0.22);
 }
 
 .evolution-stage.next .evolution-orb {
@@ -2720,8 +2741,13 @@ button {
     gap: 7px;
   }
 
-  .month-focus > span {
+  .month-focus > .month-focus-label {
     margin: 0 0 3px;
+  }
+
+  .month-focus-step {
+    flex-direction: column;
+    gap: 7px;
   }
 
   .month-focus i {

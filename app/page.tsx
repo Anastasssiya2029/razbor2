@@ -1,6 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  archetypeDefinitions,
+  archetypeOrder,
+  demoBusinessAnalysis,
+  resolveSystemElements,
+  systemElementDefinitions,
+  type ArchetypeId,
+  type BusinessAnalysisResult,
+  type ElementRecommendation,
+  type ResolvedSystemElement,
+} from "@/lib/business-analysis";
 
 type FieldProps = {
   label: string;
@@ -20,100 +31,7 @@ const tabs = [
 
 const stages = ["Диагностика", "Разбор", "План перехода", "Рост и система"];
 
-type SystemElement = {
-  id: number;
-  name: string;
-  labelLines: string[];
-  current: number;
-  added: number;
-  tone: "gold" | "coral";
-};
-
-const systemElements: SystemElement[] = [
-  { id: 1, name: "Аутентичность", labelLines: ["Аутентичность"], current: 5, added: 1, tone: "gold" },
-  { id: 2, name: "Своя ЦА", labelLines: ["Своя ЦА"], current: 4, added: 2, tone: "gold" },
-  {
-    id: 3,
-    name: "Продукты и авторский метод",
-    labelLines: ["Продукты и", "авторский метод"],
-    current: 3,
-    added: 3,
-    tone: "coral",
-  },
-  { id: 4, name: "Технология продаж", labelLines: ["Технология", "продаж"], current: 2, added: 2, tone: "coral" },
-  {
-    id: 5,
-    name: "Воронка продаж и связки",
-    labelLines: ["Воронка продаж", "и связки"],
-    current: 1,
-    added: 0,
-    tone: "coral",
-  },
-  { id: 6, name: "Блог", labelLines: ["Блог"], current: 2, added: 0, tone: "coral" },
-  { id: 7, name: "Команда", labelLines: ["Команда"], current: 1, added: 1, tone: "coral" },
-];
-
-type ArchetypeKind = "altruist" | "explorer" | "creator" | "hero" | "magician" | "seer" | "ruler";
-
-const archetypeJourney: { id: number; name: string; kind: ArchetypeKind; state?: "current" | "next" }[] = [
-  { id: 1, name: "Альтруист", kind: "altruist" },
-  { id: 2, name: "Искатель", kind: "explorer", state: "current" },
-  { id: 3, name: "Творец", kind: "creator", state: "next" },
-  { id: 4, name: "Герой", kind: "hero" },
-  { id: 5, name: "Волшебник", kind: "magician" },
-  { id: 6, name: "Провидец", kind: "seer" },
-  { id: 7, name: "Правитель", kind: "ruler" },
-];
-
-const analysisReasons = [
-  "Снижение цены не увеличило поток, следовательно, проблема не доказана как «клиентам дорого».",
-  "Когда Екатерина делала личные приглашения, продажи происходили.",
-  "Клиенты уже оставались в работе несколько месяцев, следовательно, длительная помощь востребована.",
-  "У неё есть свободная ёмкость, поэтому пока не нужны группа, команда и автоматизация.",
-];
-
-const growthLevers = [
-  {
-    role: "Ведущий элемент",
-    title: "Технология продаж",
-    notBuilt: "Нет повторяемого перехода от разговора о проблеме к предложению длительной работы.",
-    impact: "Человек либо покупает одну встречу, либо уходит, не увидев понятного пути.",
-    change: "Одна структура встречи и одно предложение стартового пакета.",
-    criterion: "Проведено не менее десяти однотипных разговоров; понятно, сколько людей покупает и какие возражения повторяются.",
-  },
-  {
-    role: "Поддерживающий элемент",
-    title: "Продукты и авторский метод",
-    notBuilt: "Нет первого законченного продукта между «одной сессией» и «терапией неизвестной длительности».",
-    impact: "Клиенту трудно покупать неопределённый процесс.",
-    change: "Пакет из четырёх встреч с понятной задачей, логикой и первым результатом.",
-    criterion: "Екатерина объясняет продукт за минуту, а клиент понимает, что произойдёт на четырёх встречах.",
-  },
-  {
-    role: "Поддерживающий элемент",
-    title: "Аутентичность",
-    notBuilt: "Екатерина не опирается на десятилетний путь обучения и реальные длительные результаты. Она всё ещё называет себя начинающей и снижает цену из внутреннего сомнения.",
-    impact: "Она не делает достаточного количества предложений и отступает в цене до проверки реакции клиента.",
-    change: "Двухдневная работа с Соулой: опыт, суперсилы, ценность, собственный способ помощи, право на цену, короткая самопрезентация.",
-    criterion: "Она спокойно называет стоимость 2 500 ₽, презентует пакет 10 000 ₽ и не снижает цену заранее.",
-  },
-];
-
-const notNowItems = [
-  ["Не строить автоворонку", "Пока не подтверждено само предложение."],
-  ["Не запускать платную рекламу", "Она масштабирует и продажи, и текущие потери."],
-  ["Не создавать большую группу", "Индивидуальная модель ещё не заполнена."],
-  ["Не делать блог главным проектом месяца", "Он может поддерживать доверие, но деньги сейчас ближе к тёплым контактам."],
-  ["Не создавать длинную линейку продуктов", "Нужен один подтверждённый основной формат."],
-];
-
-const repeatableSteps = [
-  "Подтвердить продажу стартового пакета.",
-  "Собрать причины покупок и отказов.",
-  "Уточнить на этом материале свою аудиторию и авторский метод.",
-  "Создать регулярный способ получать тёплые обращения: рекомендации, партнёры, блог или короткие продукты.",
-  "Только после стабильной ручной продажи автоматизировать отдельные шаги.",
-];
+type ArchetypeKind = ArchetypeId;
 
 function ArrowIcon() {
   return (
@@ -165,12 +83,6 @@ function ArchetypeGlyph({ kind }: { kind: ArchetypeKind }) {
           <path {...common} d="m18.3 15.2.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" />
         </>
       )}
-      {kind === "seer" && (
-        <>
-          <path {...common} d="M3.2 12s3.2-5.1 8.8-5.1 8.8 5.1 8.8 5.1-3.2 5.1-8.8 5.1S3.2 12 3.2 12Z" />
-          <circle {...common} cx="12" cy="12" r="2.4" />
-        </>
-      )}
       {kind === "ruler" && (
         <>
           <path {...common} d="m4.2 8.2 4 3.1L12 5l3.8 6.3 4-3.1-1.4 9.2H5.6L4.2 8.2Z" />
@@ -181,19 +93,19 @@ function ArchetypeGlyph({ kind }: { kind: ArchetypeKind }) {
   );
 }
 
-function ArchetypeMedallion({ className = "" }: { className?: string }) {
+function ArchetypeMedallion({ kind, className = "" }: { kind: ArchetypeKind; className?: string }) {
   return (
     <span className={`archetype-medallion ${className}`} aria-hidden="true">
       <span className="medallion-orbit" />
-      <ArchetypeGlyph kind="explorer" />
+      <ArchetypeGlyph kind={kind} />
     </span>
   );
 }
 
-function SystemModel({ target = false }: { target?: boolean }) {
+function SystemModel({ elements, target = false }: { elements: ResolvedSystemElement[]; target?: boolean }) {
   return (
     <div className="system-model" aria-label={target ? "Модель под вашу цель" : "Текущая бизнес-модель"}>
-      {systemElements.map((element) => {
+      {elements.map((element) => {
         const result = element.current + (target ? element.added : 0);
         return (
           <div className="model-column" key={element.id}>
@@ -240,8 +152,8 @@ function ringSectorPath(innerRadius: number, outerRadius: number, startAngle: nu
   ].join(" ");
 }
 
-function SystemWheel() {
-  const sectorAngle = 360 / systemElements.length;
+function SystemWheel({ elements }: { elements: ResolvedSystemElement[] }) {
+  const sectorAngle = 360 / elements.length;
   return (
     <div className="wheel-wrap">
       <svg className="wheel-svg" viewBox="0 0 700 510" role="img" aria-labelledby="wheel-title wheel-description">
@@ -249,7 +161,7 @@ function SystemWheel() {
         <desc id="wheel-description">
           Семь элементов бизнес-системы. Текущий уровень показан жёлтым и коралловым, зоны достройки — фиолетовым.
         </desc>
-        {systemElements.map((element, elementIndex) => {
+        {elements.map((element, elementIndex) => {
           const centerAngle = -90 + elementIndex * sectorAngle;
           const startAngle = centerAngle - sectorAngle / 2 + 1.2;
           const endAngle = centerAngle + sectorAngle / 2 - 1.2;
@@ -308,16 +220,21 @@ function ModelLegend({ includeTarget = true }: { includeTarget?: boolean }) {
 }
 
 function ArchetypeDialog({
+  archetypeId,
   open,
   flipped,
   onFlip,
   onClose,
 }: {
+  archetypeId: ArchetypeId;
   open: boolean;
   flipped: boolean;
   onFlip: () => void;
   onClose: () => void;
 }) {
+  const archetype = archetypeDefinitions[archetypeId];
+  const nextArchetype = archetype.nextId ? archetypeDefinitions[archetype.nextId] : null;
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
@@ -355,26 +272,24 @@ function ArchetypeDialog({
           >
             <span className="archetype-card-face archetype-card-front" aria-hidden={flipped}>
               <span className="archetype-card-eyebrow">Ваш бизнес-архетип</span>
-              <ArchetypeMedallion className="card-medallion" />
-              <strong id="archetype-card-title">Искатель</strong>
-              <span className="archetype-card-quote">
-                «Я больше не жду, что клиенты придут сами. Я ищу способ, который приведёт новых клиентов».
-              </span>
+              <ArchetypeMedallion kind={archetype.id} className="card-medallion" />
+              <strong id="archetype-card-title">{archetype.name}</strong>
+              <span className="archetype-card-quote">«{archetype.quote}»</span>
               <span className="archetype-card-hint">Нажмите на карту, чтобы увидеть ключ перехода</span>
             </span>
 
             <span className="archetype-card-face archetype-card-back" aria-hidden={!flipped}>
-              <span className="archetype-card-eyebrow">Искатель → Творец</span>
-              <span className="archetype-back-icon"><ArchetypeGlyph kind="creator" /></span>
+              <span className="archetype-card-eyebrow">
+                {nextArchetype ? `${archetype.name} → ${nextArchetype.name}` : `${archetype.name} · устойчивый уровень`}
+              </span>
+              <span className="archetype-back-icon"><ArchetypeGlyph kind={nextArchetype?.id ?? archetype.id} /></span>
               <span className="archetype-back-section">
                 <b>Ключ перехода</b>
-                <strong>Перестать искать, начать действовать и создавать.</strong>
+                <strong>{archetype.transitionKey}</strong>
               </span>
               <span className="archetype-back-section actions">
                 <b>Что важно сделать</b>
-                <span>Остановить бесконечное накопление инструментов и выбрать одно направление.</span>
-                <span>Перевести знания в собственный продукт, контент или способ продвижения.</span>
-                <span>Дать созданному время на проверку, прежде чем снова менять стратегию.</span>
+                {archetype.actions.map((action) => <span key={action}>{action}</span>)}
               </span>
               <span className="archetype-card-hint">Нажмите, чтобы перевернуть обратно</span>
             </span>
@@ -385,7 +300,14 @@ function ArchetypeDialog({
   );
 }
 
-function EvolutionMap() {
+function EvolutionMap({ currentArchetypeId }: { currentArchetypeId: ArchetypeId }) {
+  const currentIndex = archetypeOrder.indexOf(currentArchetypeId);
+  const archetypeJourney = archetypeOrder.map((id, index) => ({
+    number: index + 1,
+    ...archetypeDefinitions[id],
+    state: index < currentIndex ? "passed" : index === currentIndex ? "current" : index === currentIndex + 1 ? "next" : "",
+  }));
+
   return (
     <section className="evolution-card" aria-labelledby="evolution-title">
       <div className="evolution-heading">
@@ -402,9 +324,9 @@ function EvolutionMap() {
         <div className="evolution-flow">
           {archetypeJourney.map((stage) => (
             <article className={`evolution-stage ${stage.state ?? ""}`} key={stage.name}>
-              <span className="evolution-stage-number">{String(stage.id).padStart(2, "0")}</span>
+              <span className="evolution-stage-number">{String(stage.number).padStart(2, "0")}</span>
               <span className="evolution-orb">
-                <ArchetypeGlyph kind={stage.kind} />
+                <ArchetypeGlyph kind={stage.id} />
               </span>
               <strong className="evolution-stage-label">{stage.name}</strong>
               {stage.state === "current" && <small>Вы здесь</small>}
@@ -414,13 +336,27 @@ function EvolutionMap() {
         </div>
       </div>
       <p className="evolution-caption">
-        Альтруист ждёт оценки. Искатель ищет способ. Творец создаёт. Герой связывает и ведёт результат. Волшебник знает формулу. Провидец передаёт её системе. Правитель масштабирует через сильных лидеров.
+        Альтруист ждёт оценки. Искатель ищет способ. Творец создаёт. Герой связывает и ведёт результат. Волшебник знает формулу. Правитель передаёт её системе и масштабирует через сильных лидеров.
       </p>
     </section>
   );
 }
 
-function BusinessAnalysis() {
+function BusinessAnalysis({ analysis }: { analysis: BusinessAnalysisResult }) {
+  const moneyImpact = analysis.moneyImpact;
+  const sectionOrder = [
+    "whyHere",
+    ...(moneyImpact ? ["moneyImpact"] : []),
+    "growthLink",
+    "doNotDo",
+    "repeatability",
+  ];
+  const sectionNumber = (key: string) => String(sectionOrder.indexOf(key) + 1).padStart(2, "0");
+  const growthLevers: Array<ElementRecommendation & { role: string }> = [
+    { ...analysis.growthLink.leading, role: "Ведущий элемент" },
+    ...analysis.growthLink.supporting.map((lever) => ({ ...lever, role: "Поддерживающий элемент" })),
+  ];
+
   return (
     <div className="business-analysis">
       <div className="result-heading">
@@ -432,95 +368,95 @@ function BusinessAnalysis() {
       <section className="money-insight" aria-labelledby="money-now-title">
         <div className="money-insight-main">
           <span className="insight-label">Где деньги сейчас</span>
-          <h3 id="money-now-title">
-            Деньги находятся в уже доступных тёплых контактах и в переводе человека из разовой дешёвой сессии в понятный стартовый формат длительной работы.
-          </h3>
+          <h3 id="money-now-title">{analysis.moneyNow.headline}</h3>
         </div>
         <div className="month-focus">
-          <span>Фокус на 30 дней</span>
-          <strong>Тёплый контакт</strong>
-          <i aria-hidden="true">→</i>
-          <strong>Диагностический разговор</strong>
-          <i aria-hidden="true">→</i>
-          <strong>Пакет из четырёх встреч</strong>
+          <span className="month-focus-label">Фокус на 30 дней</span>
+          {analysis.moneyNow.chain.map((step, index) => (
+            <span className="month-focus-step" key={`${step}-${index}`}>
+              {index > 0 && <i aria-hidden="true">→</i>}
+              <strong>{step}</strong>
+            </span>
+          ))}
         </div>
       </section>
 
       <section className="result-section reasons-section" aria-labelledby="reasons-title">
         <div className="result-section-heading">
-          <span className="section-index">01</span>
+          <span className="section-index">{sectionNumber("whyHere")}</span>
           <div>
             <h3 id="reasons-title">Почему именно здесь</h3>
-            <p>Четыре факта, на которых держится вывод.</p>
+            <p>Факты из диагностики, на которых держится вывод.</p>
           </div>
         </div>
         <div className="reason-grid">
-          {analysisReasons.map((reason, index) => (
-            <article className="reason-card" key={reason}>
+          {analysis.whyHere.map((reason, index) => (
+            <article className="reason-card" key={`${reason.explanation}-${index}`}>
               <span>{String(index + 1).padStart(2, "0")}</span>
-              <p>{reason}</p>
+              <div>
+                {reason.title && <h4>{reason.title}</h4>}
+                <p>{reason.explanation}</p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="result-section revenue-section" aria-labelledby="revenue-title">
+      {moneyImpact && <section className="result-section revenue-section" aria-labelledby="revenue-title">
         <div className="result-section-heading">
-          <span className="section-index">02</span>
+          <span className="section-index">{sectionNumber("moneyImpact")}</span>
           <div>
             <h3 id="revenue-title">Как это может повлиять на деньги</h3>
-            <p>Проверяемая экономика без необходимости сразу строить большой блог.</p>
+            <p>{moneyImpact.intro}</p>
           </div>
         </div>
         <div className="revenue-board">
           <div className="package-formula">
-            <span>1 встреча</span>
-            <strong>2 500 ₽</strong>
-            <i aria-hidden="true">× 4</i>
-            <span>Стартовый пакет</span>
-            <strong className="package-total">10 000 ₽</strong>
+            <span>{moneyImpact.formula.baseLabel}</span>
+            <strong>{moneyImpact.formula.baseValue}</strong>
+            <i aria-hidden="true">{moneyImpact.formula.multiplierLabel}</i>
+            <span>{moneyImpact.formula.resultLabel}</span>
+            <strong className="package-total">{moneyImpact.formula.resultValue}</strong>
           </div>
           <div className="revenue-scenarios">
-            {[["2 продажи", "20 000 ₽"], ["3 продажи", "30 000 ₽"], ["4 продажи", "40 000 ₽"]].map(([label, value]) => (
-              <div className="revenue-scenario" key={label}>
-                <span>{label}</span>
-                <strong>{value}</strong>
+            {moneyImpact.scenarios.map((scenario) => (
+              <div className="revenue-scenario" key={scenario.label}>
+                <span>{scenario.label}</span>
+                <strong>{scenario.value}</strong>
               </div>
             ))}
           </div>
           <div className="capacity-card">
-            <span>Модель цели</span>
-            <strong>6 активных клиентов × 4 встречи × 2 500 ₽</strong>
-            <b>≈ 60 000 ₽ в месяц</b>
+            <span>{moneyImpact.capacityModel.label}</span>
+            <strong>{moneyImpact.capacityModel.formula}</strong>
+            <b>{moneyImpact.capacityModel.result}</b>
           </div>
         </div>
-        <p className="result-note">
-          Это не обещание, что шесть клиентов появятся за 30 дней. Это показывает, что для цели 60 000 ₽ Екатерине не нужен огромный блог. Ей нужно постепенно собрать примерно шесть стабильных клиентских мест.
-        </p>
-      </section>
+        <p className="result-note">{moneyImpact.disclaimer}</p>
+      </section>}
 
       <section className="change-card" aria-labelledby="change-title">
         <span className="change-days">30 дней</span>
         <div>
           <span className="result-kicker">Что изменить</span>
-          <h3 id="change-title">Перестать предлагать только отдельную сессию за 1 000 ₽.</h3>
-          <p>Подтвердить продажу одного понятного стартового пакета длительной работы через тёплые диагностические разговоры.</p>
+          <h3 id="change-title">{analysis.change30Days.headline}</h3>
+          <p>{analysis.change30Days.explanation}</p>
         </div>
       </section>
 
       <section className="result-section levers-section" aria-labelledby="levers-title">
         <div className="result-section-heading">
-          <span className="section-index">03</span>
+          <span className="section-index">{sectionNumber("growthLink")}</span>
           <div>
             <h3 id="levers-title">Что усиливает связку</h3>
-            <p>Один ведущий и два поддерживающих элемента системы.</p>
+            <p>Ведущий элемент и поддерживающие точки системы.</p>
           </div>
         </div>
         <div className="lever-grid">
           {growthLevers.map((lever, index) => (
-            <article className={`lever-card ${index === 0 ? "leading" : ""}`} key={lever.title}>
+            <article className={`lever-card ${index === 0 ? "leading" : ""}`} key={`${lever.elementId}-${index}`}>
               <span className="lever-role">{lever.role}</span>
-              <h4>{lever.title}</h4>
+              <h4>{systemElementDefinitions[lever.elementId].name}</h4>
               <dl>
                 <div>
                   <dt>Не выстроено</dt>
@@ -532,7 +468,7 @@ function BusinessAnalysis() {
                 </div>
                 <div>
                   <dt>Минимальное изменение</dt>
-                  <dd>{lever.change}</dd>
+                  <dd>{lever.minimumChange}</dd>
                 </div>
                 <div>
                   <dt>Критерий</dt>
@@ -546,19 +482,19 @@ function BusinessAnalysis() {
 
       <section className="result-section pause-section" aria-labelledby="pause-title">
         <div className="result-section-heading">
-          <span className="section-index">04</span>
+          <span className="section-index">{sectionNumber("doNotDo")}</span>
           <div>
             <h3 id="pause-title">Что пока не делать</h3>
             <p>Не распылять ресурс до подтверждения основной связки.</p>
           </div>
         </div>
         <div className="pause-grid">
-          {notNowItems.map(([title, explanation]) => (
-            <article className="pause-card" key={title}>
+          {analysis.doNotDo.map((item) => (
+            <article className="pause-card" key={item.title}>
               <span aria-hidden="true">×</span>
               <div>
-                <h4>{title}</h4>
-                <p>{explanation}</p>
+                <h4>{item.title}</h4>
+                <p>{item.explanation}</p>
               </div>
             </article>
           ))}
@@ -567,29 +503,27 @@ function BusinessAnalysis() {
 
       <section className="result-section repeat-section" aria-labelledby="repeat-title">
         <div className="result-section-heading">
-          <span className="section-index">05</span>
+          <span className="section-index">{sectionNumber("repeatability")}</span>
           <div>
             <h3 id="repeat-title">Как сделать результат повторяемым</h3>
             <p>Последовательность, которая превращает ручную продажу в систему.</p>
           </div>
         </div>
         <ol className="repeat-steps">
-          {repeatableSteps.map((step, index) => (
+          {analysis.repeatabilitySteps.map((step, index) => (
             <li key={step}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <p>{step}</p>
             </li>
           ))}
         </ol>
-        <aside className="analysis-caveat">
+        {analysis.importantCaveat && <aside className="analysis-caveat">
           <span>Важно для точности вывода</span>
-          <p>
-            Если новые поля покажут, что у Екатерины не восемь обращений, а одно-два, вывод изменится. Тогда «Где деньги сейчас» будет не в технологии продажи, а в увеличении количества подходящих разговоров. Именно поэтому новые вопросы нам нужны.
-          </p>
-        </aside>
+          <p>{analysis.importantCaveat}</p>
+        </aside>}
       </section>
 
-      <EvolutionMap />
+      <EvolutionMap currentArchetypeId={analysis.archetype.id} />
 
       <div className="analysis-export">
         <button type="button" className="pdf-button" onClick={() => window.print()}>
@@ -604,10 +538,20 @@ function BusinessAnalysis() {
   );
 }
 
-function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number; setActiveSlide: (slide: number) => void }) {
+function AnalysisSection({
+  analysis,
+  activeSlide,
+  setActiveSlide,
+}: {
+  analysis: BusinessAnalysisResult;
+  activeSlide: number;
+  setActiveSlide: (slide: number) => void;
+}) {
   const pointerStart = useRef<number | null>(null);
   const [archetypeOpen, setArchetypeOpen] = useState(false);
   const [archetypeFlipped, setArchetypeFlipped] = useState(false);
+  const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
+  const archetype = archetypeDefinitions[analysis.archetype.id];
   const slideCount = 3;
   const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));
   const closeArchetype = () => {
@@ -628,16 +572,16 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
       <button
         type="button"
         className="archetype-trigger"
-        aria-label="Открыть карту бизнес-архетипа Искатель"
+        aria-label={`Открыть карту бизнес-архетипа ${archetype.name}`}
         onClick={() => {
           setArchetypeFlipped(false);
           setArchetypeOpen(true);
         }}
       >
-        <ArchetypeMedallion className="trigger-medallion" />
+        <ArchetypeMedallion kind={archetype.id} className="trigger-medallion" />
         <span>
           <small>Ваш архетип</small>
-          <strong>Искатель</strong>
+          <strong>{archetype.name}</strong>
         </span>
       </button>
 
@@ -680,7 +624,7 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
                 <span>01</span>
                 <h3>Текущая бизнес-модель</h3>
               </div>
-              <SystemModel />
+              <SystemModel elements={systemElements} />
             </article>
 
             <article className="analysis-slide" aria-hidden={activeSlide !== 1}>
@@ -689,7 +633,7 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
                 <h3>Модель под вашу цель</h3>
               </div>
               <ModelLegend />
-              <SystemModel target />
+              <SystemModel elements={systemElements} target />
             </article>
 
             <article className="analysis-slide wheel-slide" aria-hidden={activeSlide !== 2}>
@@ -698,7 +642,7 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
                 <h3>Колесо бизнес-системы</h3>
               </div>
               <ModelLegend />
-              <SystemWheel />
+              <SystemWheel elements={systemElements} />
             </article>
           </div>
         </div>
@@ -728,9 +672,10 @@ function AnalysisSection({ activeSlide, setActiveSlide }: { activeSlide: number;
       </div>
       <p className="analysis-counter" aria-live="polite">{activeSlide + 1} / {slideCount}</p>
 
-      <BusinessAnalysis />
+      <BusinessAnalysis analysis={analysis} />
 
       <ArchetypeDialog
+        archetypeId={analysis.archetype.id}
         open={archetypeOpen}
         flipped={archetypeFlipped}
         onFlip={() => setArchetypeFlipped((current) => !current)}
@@ -1030,7 +975,8 @@ export default function Home() {
         </div>
       </section>
       ) : (
-        <AnalysisSection activeSlide={analysisSlide} setActiveSlide={setAnalysisSlide} />
+        // При подключении ИИ demoBusinessAnalysis заменяется валидированным ответом business_analysis_v1.
+        <AnalysisSection analysis={demoBusinessAnalysis} activeSlide={analysisSlide} setActiveSlide={setAnalysisSlide} />
       )}
 
       <nav className="journey" aria-label="Этапы работы">
