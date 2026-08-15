@@ -74,9 +74,9 @@ function Field({
   };
 
   return (
-    <label className={`field ${className}`} htmlFor={id}>
+    <label className={`field ${multiline ? "multiline-field" : ""} ${className}`} htmlFor={id}>
       <span>{label}</span>
-      {multiline ? <textarea {...shared} rows={rows} /> : <input {...shared} type="text" />}
+      <textarea {...shared} rows={multiline ? rows : 1} />
     </label>
   );
 }
@@ -91,7 +91,7 @@ function Brand() {
         <span className="brand-mark">▼</span>
         <strong>маркетинга</strong>
       </div>
-      <span className="brand-caption">Сухаревой Анастасии</span>
+      <span className="brand-caption">СУХАРЕВОЙ АНАСТАСИИ</span>
     </div>
   );
 }
@@ -109,7 +109,7 @@ export default function Home() {
     const now = values.currentIncome?.trim() || "_____";
     const struggles = values.struggles?.trim() || "_____, _____ и _____";
     const experience = values.experience?.trim() || "_____";
-    return `Правильно ли я вас поняла: вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}, а основными препятствиями выглядят ${struggles}. До этого вы пробовали ${experience}, но устойчивого результата не получили. Всё верно? Я ничего важного не пропустила?`;
+    return `Вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}, а основными препятствиями выглядят ${struggles}. До этого вы пробовали ${experience}, но устойчивого результата не получили.`;
   }, [values]);
 
   const goToTab = (tab: number) => {
@@ -126,10 +126,11 @@ export default function Home() {
       </header>
 
       <section className="hero" aria-labelledby="page-title">
+        <span className="hero-badge">Авторский разбор для экспертов</span>
         <h1 id="page-title">Твоя Бизнес-Система</h1>
         <p>
-          Короткая диагностика, чтобы увидеть текущую точку,
-          <br className="desktop-break" /> цель и следующий шаг роста.
+          Оцифруйте свой проект и постройте аутентичную систему, которая
+          <br className="desktop-break" /> дает ресурсы, а не забирает их.
         </p>
       </section>
 
@@ -137,8 +138,8 @@ export default function Home() {
         <div className="identity-grid">
           <label className="identity-field">
             <span className="sr-only">Имя эксперта</span>
-            <input
-              type="text"
+            <textarea
+              rows={1}
               value={values.expertName ?? ""}
               onChange={(event) => setValues((current) => ({ ...current, expertName: event.target.value }))}
               placeholder="ИМЯ ЭКСПЕРТА"
@@ -146,8 +147,8 @@ export default function Home() {
           </label>
           <label className="identity-field">
             <span className="sr-only">Ниша</span>
-            <input
-              type="text"
+            <textarea
+              rows={1}
               value={values.niche ?? ""}
               onChange={(event) => setValues((current) => ({ ...current, niche: event.target.value }))}
               placeholder="НИША"
@@ -283,7 +284,7 @@ export default function Home() {
               </section>
 
               <section className="formula-section" aria-live="polite">
-                <h3>Формула</h3>
+                <h3>Ваша ситуация</h3>
                 <div className="formula-card">
                   <span className="quote-mark">“</span>
                   <p>{formula}</p>

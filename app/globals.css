@@ -2,16 +2,18 @@
 
 :root {
   --ink: #21162a;
-  --plum: #401450;
-  --purple: #6d1eb2;
-  --violet: #7c20c8;
-  --magenta: #cd2c8f;
-  --pink: #e3119b;
+  --velvet: #2d123f;
+  --plum-dark: #3a103f;
+  --plum: #711d68;
+  --purple: #6d2fb6;
+  --violet: #6d2fb6;
+  --berry: #711d68;
+  --pink: #dc2e95;
   --gold: #e7a32e;
-  --blue-text: #4f6fa9;
-  --muted: #65779c;
-  --line: #dfe6f1;
-  --panel-line: #e8ebf2;
+  --blue-text: #69566f;
+  --muted: #6d6275;
+  --line: rgba(61, 35, 90, 0.13);
+  --panel-line: rgba(61, 35, 90, 0.12);
   --paper: #ffffff;
   --background: #fdf9ff;
 }
@@ -34,7 +36,7 @@ body {
     radial-gradient(800px 700px at 50% 100%, rgba(113, 29, 104, 0.08), transparent 60%),
     var(--background);
   background-attachment: fixed;
-  font-family: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 16px;
 }
 
@@ -93,19 +95,19 @@ button {
 }
 
 .brand-heart {
-  color: var(--gold);
+  color: var(--pink);
   font-size: 0.75em;
 }
 
 .brand-mark {
-  color: #9a1f86;
+  color: var(--gold);
   font-size: 0.62em;
 }
 
 .brand-caption {
   margin-top: 6px;
   padding-left: 1px;
-  color: #6d28d9;
+  color: var(--plum);
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
@@ -114,7 +116,7 @@ button {
 }
 
 .system-label {
-  color: var(--pink);
+  color: var(--plum);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.11em;
@@ -123,30 +125,49 @@ button {
 }
 
 .hero {
-  padding: 10px 24px 7px;
+  padding: 38px 24px 40px;
   text-align: center;
 }
 
+.hero-badge {
+  min-height: 29px;
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--plum-dark);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(61, 35, 90, 0.09);
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(61, 35, 90, 0.13);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .hero h1 {
-  display: inline-block;
-  margin: 0;
+  display: block;
+  width: fit-content;
+  margin: 38px auto 0;
   color: var(--plum);
-  background: linear-gradient(98deg, #34104f 2%, #5a1380 46%, #d10d8e 100%);
+  background: linear-gradient(98deg, var(--plum-dark) 0%, var(--purple) 66%, var(--berry) 95%, var(--pink) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-size: clamp(38px, 4vw, 56px);
+  font-size: clamp(48px, 4.8vw, 88px);
   font-weight: 900;
-  line-height: 1.12;
+  line-height: 1.08;
   letter-spacing: -0.035em;
 }
 
 .hero p {
-  margin: 8px 0 0;
-  color: #6380b5;
-  font-size: clamp(15px, 1.35vw, 19px);
+  margin: 30px 0 0;
+  color: #71839c;
+  font-size: clamp(17px, 1.25vw, 22px);
   font-weight: 600;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .diagnostic-card {
@@ -165,20 +186,23 @@ button {
   gap: 20px;
 }
 
-.identity-field input {
+.identity-field textarea {
   width: 100%;
   height: 50px;
-  padding: 0 18px;
+  min-height: 50px;
+  padding: 15px 18px 10px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.72);
-  border: 1px solid #d8e1ef;
+  border: 1px solid rgba(61, 35, 90, 0.16);
   border-radius: 9px;
   outline: none;
+  line-height: 1.25;
+  resize: vertical;
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
-.identity-field input::placeholder {
-  color: #5674ab;
+.identity-field textarea::placeholder {
+  color: #6d6275;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -199,7 +223,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 13px;
-  color: #5673a6;
+  color: #75627c;
   background: linear-gradient(180deg, rgba(250, 247, 252, 0.96), rgba(248, 246, 251, 0.82));
   border: 1px solid #f0eaf2;
   border-radius: 9px;
@@ -210,15 +234,15 @@ button {
 }
 
 .tab:hover {
-  color: #67128d;
-  border-color: rgba(205, 44, 143, 0.3);
+  color: var(--plum);
+  border-color: rgba(113, 29, 104, 0.3);
 }
 
 .tab.active {
-  color: #8c138e;
+  color: var(--plum);
   background: rgba(255, 255, 255, 0.9);
-  border-color: #d94adb;
-  box-shadow: inset 0 0 0 1px rgba(217, 74, 219, 0.04);
+  border-color: rgba(113, 29, 104, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(113, 29, 104, 0.04);
 }
 
 .tab-number {
@@ -228,8 +252,8 @@ button {
   align-items: center;
   justify-content: center;
   flex: 0 0 27px;
-  color: #496796;
-  background: #e9edf5;
+  color: #66556e;
+  background: #eee9f1;
   border-radius: 50%;
   font-size: 12px;
   font-weight: 800;
@@ -237,8 +261,8 @@ button {
 
 .tab.active .tab-number {
   color: white;
-  background: linear-gradient(145deg, #4e1587 6%, #ca1594 100%);
-  box-shadow: 0 5px 12px rgba(142, 22, 142, 0.22);
+  background: linear-gradient(145deg, var(--velvet) 4%, var(--purple) 58%, var(--berry) 100%);
+  box-shadow: 0 5px 12px rgba(113, 29, 104, 0.22);
 }
 
 .tab-content {
@@ -263,7 +287,7 @@ button {
 
 .form-section h2 {
   margin: 0;
-  color: #401ab1;
+  color: var(--plum-dark);
   font-size: 22px;
   font-weight: 900;
   line-height: 1.1;
@@ -289,13 +313,13 @@ button {
 
 .products-box {
   padding: 14px 18px 12px;
-  border: 1px solid #d6deeb;
+  border: 1px solid rgba(61, 35, 90, 0.16);
   border-radius: 10px;
 }
 
 .products-box h3 {
   margin: 0 0 10px;
-  color: #7125b1;
+  color: var(--plum);
   font-size: 16px;
   font-weight: 900;
 }
@@ -314,35 +338,29 @@ button {
   font-weight: 650;
 }
 
-.field input,
 .field textarea {
   width: 100%;
+  min-height: 35px;
+  padding: 8px 10px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid #d8e1ed;
+  border: 1px solid rgba(61, 35, 90, 0.16);
   border-radius: 7px;
   outline: none;
+  line-height: 1.45;
+  resize: vertical;
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
-.field input {
-  height: 35px;
-  padding: 5px 10px;
-}
-
-.field textarea {
+.field.multiline-field textarea {
   min-height: 58px;
-  padding: 8px 10px;
-  line-height: 1.45;
-  resize: vertical;
 }
 
-.identity-field input:focus,
-.field input:focus,
+.identity-field textarea:focus,
 .field textarea:focus {
   background: white;
-  border-color: #a931c3;
-  box-shadow: 0 0 0 3px rgba(183, 45, 190, 0.1);
+  border-color: var(--plum);
+  box-shadow: 0 0 0 3px rgba(113, 29, 104, 0.1);
 }
 
 .goal-section {
@@ -382,7 +400,7 @@ button {
 
 .deadline-options button,
 .personality-fieldset button {
-  color: #5673a6;
+  color: #75627c;
   background: linear-gradient(180deg, rgba(252, 249, 253, 0.94), rgba(248, 246, 251, 0.78));
   border: 1px solid #eee9f1;
   border-radius: 7px;
@@ -400,9 +418,9 @@ button {
 .personality-fieldset button:hover,
 .deadline-options button.selected,
 .personality-fieldset button.selected {
-  color: #8f168f;
-  background: #fffafd;
-  border-color: #d94adb;
+  color: var(--plum);
+  background: #fdf9ff;
+  border-color: var(--plum);
 }
 
 .goal-bottom-grid {
@@ -430,14 +448,14 @@ button {
   width: min(365px, 100%);
   margin: 12px auto 0;
   color: white;
-  background: linear-gradient(100deg, var(--plum) 0%, #7021bc 55%, #e10b98 100%);
+  background: linear-gradient(100deg, var(--velvet) 0%, var(--purple) 58%, var(--berry) 95%, var(--pink) 100%);
   border: 0;
-  box-shadow: 0 8px 20px rgba(112, 33, 188, 0.15);
+  box-shadow: 0 10px 24px rgba(113, 29, 104, 0.2);
 }
 
 .primary-button:hover {
   filter: saturate(1.1) brightness(1.04);
-  box-shadow: 0 11px 26px rgba(112, 33, 188, 0.22);
+  box-shadow: 0 13px 30px rgba(113, 29, 104, 0.26);
   transform: translateY(-1px);
 }
 
@@ -478,8 +496,8 @@ button {
   min-height: 66px;
 }
 
-.project-column .field:nth-child(n + 3) input {
-  height: 39px;
+.project-column .field:nth-child(n + 3) textarea {
+  min-height: 39px;
 }
 
 .personality-fieldset {
@@ -501,7 +519,7 @@ button {
   width: 25px;
   height: 25px;
   fill: none;
-  stroke: #bd4cd4;
+  stroke: var(--plum);
   stroke-width: 1.35;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -519,7 +537,7 @@ button {
 }
 
 .experience-grid .field {
-  color: #8d37d5;
+  color: var(--plum);
 }
 
 .experience-grid textarea {
@@ -529,12 +547,12 @@ button {
 .formula-section {
   margin-top: 12px;
   padding: 16px 25px 14px;
-  border-color: #d5dfef;
+  border-color: rgba(61, 35, 90, 0.16);
 }
 
 .formula-section h3 {
   margin: 0 0 8px;
-  color: #5b1bc0;
+  color: var(--plum-dark);
   font-size: 18px;
   font-weight: 900;
 }
@@ -545,9 +563,9 @@ button {
   display: flex;
   align-items: center;
   position: relative;
-  color: #51358b;
-  background: linear-gradient(105deg, rgba(247, 241, 255, 0.82), rgba(255, 240, 250, 0.88));
-  border: 1px solid #eed9f3;
+  color: #503b57;
+  background: linear-gradient(105deg, rgba(247, 240, 248, 0.9), rgba(255, 255, 255, 0.92));
+  border: 1px solid rgba(113, 29, 104, 0.15);
   border-radius: 14px;
 }
 
@@ -566,8 +584,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5c17cb;
-  background: #eee4ff;
+  color: var(--plum);
+  background: #f0e8f2;
   border-radius: 50%;
   font-family: Georgia, serif;
   font-size: 49px;
@@ -579,9 +597,9 @@ button {
   width: min(520px, 100%);
   margin: 12px auto 0;
   padding: 10px 16px;
-  color: #5f237a;
-  background: #fbf2ff;
-  border: 1px solid #e6c6ef;
+  color: var(--plum);
+  background: #f8f1f8;
+  border: 1px solid rgba(113, 29, 104, 0.18);
   border-radius: 10px;
   text-align: center;
   font-size: 13px;
@@ -598,14 +616,14 @@ button {
 
 .secondary-button {
   width: 242px;
-  color: #6920c6;
+  color: var(--purple);
   background: white;
-  border: 2px solid #7d2cff;
+  border: 2px solid var(--purple);
 }
 
 .secondary-button:hover {
   background: #fbf8ff;
-  box-shadow: 0 7px 18px rgba(125, 44, 255, 0.12);
+  box-shadow: 0 7px 18px rgba(109, 47, 182, 0.12);
   transform: translateY(-1px);
 }
 
@@ -640,7 +658,7 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  color: #6681b2;
+  color: #75677b;
   font-size: 11px;
   font-weight: 600;
   text-align: center;
@@ -652,8 +670,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #35507d;
-  background: #e9edf5;
+  color: #66556e;
+  background: #eee9f1;
   border: 5px solid rgba(253, 249, 255, 0.95);
   border-radius: 50%;
   font-size: 13px;
@@ -661,13 +679,13 @@ button {
 }
 
 .journey-stage.active {
-  color: #d20c99;
+  color: var(--plum);
 }
 
 .journey-stage.active .journey-number {
   color: white;
-  background: linear-gradient(145deg, #4e1587 6%, #d70c97 100%);
-  box-shadow: 0 5px 13px rgba(142, 22, 142, 0.22);
+  background: linear-gradient(145deg, var(--velvet) 6%, var(--purple) 55%, var(--berry) 100%);
+  box-shadow: 0 5px 13px rgba(113, 29, 104, 0.22);
 }
 
 .sr-only {
@@ -693,12 +711,24 @@ button {
   }
 
   .hero {
-    padding-top: 17px;
-    padding-bottom: 15px;
+    padding-top: 40px;
+    padding-bottom: 46px;
+  }
+
+  .hero-badge {
+    min-height: 36px;
+    padding: 8px 18px;
+    font-size: 11px;
   }
 
   .hero h1 {
+    margin-top: 32px;
     font-size: clamp(34px, 8vw, 46px);
+  }
+
+  .hero p {
+    margin-top: 24px;
+    font-size: clamp(16px, 3vw, 19px);
   }
 
   .diagnostic-card {
@@ -761,15 +791,26 @@ button {
   }
 
   .hero {
+    padding-top: 28px;
+    padding-bottom: 36px;
     padding-left: 14px;
     padding-right: 14px;
   }
 
+  .hero-badge {
+    min-height: 32px;
+    padding: 8px 13px;
+    font-size: 9px;
+    letter-spacing: 0.07em;
+  }
+
   .hero h1 {
-    font-size: 34px;
+    margin-top: 26px;
+    font-size: 36px;
   }
 
   .hero p {
+    margin-top: 18px;
     font-size: 14px;
   }
 
