@@ -131,84 +131,6 @@ function SystemModel({ elements, target = false }: { elements: ResolvedSystemEle
   );
 }
 
-function polarPoint(cx: number, cy: number, radius: number, angle: number) {
-  const radians = (angle * Math.PI) / 180;
-  return { x: cx + radius * Math.cos(radians), y: cy + radius * Math.sin(radians) };
-}
-
-function ringSectorPath(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) {
-  const centerX = 350;
-  const centerY = 255;
-  const outerStart = polarPoint(centerX, centerY, outerRadius, startAngle);
-  const outerEnd = polarPoint(centerX, centerY, outerRadius, endAngle);
-  const innerEnd = polarPoint(centerX, centerY, innerRadius, endAngle);
-  const innerStart = polarPoint(centerX, centerY, innerRadius, startAngle);
-  return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerRadius} ${outerRadius} 0 0 1 ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerEnd.x} ${innerEnd.y}`,
-    `A ${innerRadius} ${innerRadius} 0 0 0 ${innerStart.x} ${innerStart.y}`,
-    "Z",
-  ].join(" ");
-}
-
-function SystemWheel({ elements }: { elements: ResolvedSystemElement[] }) {
-  const sectorAngle = 360 / elements.length;
-  return (
-    <div className="wheel-wrap">
-      <svg className="wheel-svg" viewBox="0 0 700 510" role="img" aria-labelledby="wheel-title wheel-description">
-        <title id="wheel-title">Колесо бизнес-системы</title>
-        <desc id="wheel-description">
-          Семь элементов бизнес-системы. Текущий уровень показан жёлтым и коралловым, зоны достройки — фиолетовым.
-        </desc>
-        {elements.map((element, elementIndex) => {
-          const centerAngle = -90 + elementIndex * sectorAngle;
-          const startAngle = centerAngle - sectorAngle / 2 + 1.2;
-          const endAngle = centerAngle + sectorAngle / 2 - 1.2;
-          return (
-            <g key={element.id}>
-              <title>{`${element.name}: сейчас ${element.current}, под цель ${element.current + element.added}`}</title>
-              {Array.from({ length: 10 }, (_, levelIndex) => {
-                const level = levelIndex + 1;
-                const innerRadius = 48 + levelIndex * 15.2;
-                const outerRadius = innerRadius + 13.2;
-                const state =
-                  level <= element.current
-                    ? `current ${element.tone}`
-                    : level <= element.current + element.added
-                      ? "added"
-                      : "empty";
-                return (
-                  <path
-                    className={`wheel-segment ${state}`}
-                    d={ringSectorPath(innerRadius, outerRadius, startAngle, endAngle)}
-                    key={level}
-                  />
-                );
-              })}
-              {(() => {
-                const labelPoint = polarPoint(350, 255, 218, centerAngle);
-                return (
-                  <text className="wheel-label" x={labelPoint.x} y={labelPoint.y} textAnchor="middle">
-                    {element.labelLines.map((line, lineIndex) => (
-                      <tspan x={labelPoint.x} dy={lineIndex === 0 ? 0 : 16} key={line}>
-                        {line}
-                      </tspan>
-                    ))}
-                  </text>
-                );
-              })()}
-            </g>
-          );
-        })}
-        <circle className="wheel-center" cx="350" cy="255" r="43" />
-        <text className="wheel-center-title" x="350" y="250" textAnchor="middle">7D</text>
-        <text className="wheel-center-caption" x="350" y="272" textAnchor="middle">система</text>
-      </svg>
-    </div>
-  );
-}
-
 function ModelLegend({ includeTarget = true }: { includeTarget?: boolean }) {
   return (
     <div className="model-legend" aria-label="Обозначения цветов">
@@ -552,7 +474,7 @@ function AnalysisSection({
   const [archetypeFlipped, setArchetypeFlipped] = useState(false);
   const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
   const archetype = archetypeDefinitions[analysis.archetype.id];
-  const slideCount = 3;
+  const slideCount = 2;
   const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));
   const closeArchetype = () => {
     setArchetypeOpen(false);
@@ -587,8 +509,9 @@ function AnalysisSection({
 
       <div className="analysis-heading">
         <span className="analysis-kicker">Шаг 2 · Разбор</span>
-        <h2 id="analysis-title">Ваша бизнес-система</h2>
-        <p>Сравните текущую конструкцию с моделью под вашу цель и посмотрите, какие элементы важно достроить.</p>
+        <h2 id="analysis-title">Бизнес-модель <span>7К</span></h2>
+        <strong className="analysis-method-subtitle">Система пошагового роста эксперта</strong>
+        <p>Показывает, как шаг за шагом построить сильную аутентичную систему. Сравните текущую модель с моделью под вашу цель и посмотрите, какие элементы важно достроить.</p>
       </div>
 
       <div className="analysis-carousel">
@@ -622,7 +545,7 @@ function AnalysisSection({
             <article className="analysis-slide" aria-hidden={activeSlide !== 0}>
               <div className="analysis-slide-heading">
                 <span>01</span>
-                <h3>Текущая бизнес-модель</h3>
+                <h3>Текущая бизнес-модель 7К</h3>
               </div>
               <SystemModel elements={systemElements} />
             </article>
@@ -630,19 +553,10 @@ function AnalysisSection({
             <article className="analysis-slide" aria-hidden={activeSlide !== 1}>
               <div className="analysis-slide-heading">
                 <span>02</span>
-                <h3>Модель под вашу цель</h3>
+                <h3>Модель 7К под вашу цель</h3>
               </div>
               <ModelLegend />
               <SystemModel elements={systemElements} target />
-            </article>
-
-            <article className="analysis-slide wheel-slide" aria-hidden={activeSlide !== 2}>
-              <div className="analysis-slide-heading">
-                <span>03</span>
-                <h3>Колесо бизнес-системы</h3>
-              </div>
-              <ModelLegend />
-              <SystemWheel elements={systemElements} />
             </article>
           </div>
         </div>
@@ -659,7 +573,7 @@ function AnalysisSection({
       </div>
 
       <div className="analysis-pagination" aria-label="Экраны разбора">
-        {["Текущая бизнес-модель", "Модель под вашу цель", "Колесо бизнес-системы"].map((label, index) => (
+        {["Текущая бизнес-модель 7К", "Модель 7К под вашу цель"].map((label, index) => (
           <button
             type="button"
             className={activeSlide === index ? "active" : ""}
@@ -765,9 +679,9 @@ export default function Home() {
     const goal = values.goalIncome?.trim() || "_____";
     const model = values.goalModel?.trim() || "_____";
     const now = values.currentIncome?.trim() || "_____";
-    const struggles = values.struggles?.trim() || "_____, _____ и _____";
-    const experience = values.experience?.trim() || "_____";
-    return `Вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}, а основными препятствиями выглядят ${struggles}. До этого вы пробовали ${experience}, но устойчивого результата не получили.`;
+    const bestPeriod = values.bestPeriod?.trim() || "_____";
+    const failures = values.failures?.trim() || "_____";
+    return `Вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}. Ваш лучший период: ${bestPeriod}. Ошибки и провалы, которые важно учесть при построении новой системы: ${failures}.`;
   }, [values]);
 
   const goToTab = (tab: number) => {
@@ -912,8 +826,8 @@ export default function Home() {
                     <Field label="Путь клиента" name="clientPath" values={values} setValues={setValues} />
                     <Field label="Продажи" name="sales" values={values} setValues={setValues} />
                   </div>
-                  <div className="project-column">
-                    <Field label="Блог" name="blog" multiline rows={3} values={values} setValues={setValues} />
+                  <div className="project-column project-assets-column">
+                    <Field label="Социальные активы" name="socialAssets" multiline rows={3} values={values} setValues={setValues} />
                     <Field label="Команда" name="team" multiline rows={3} values={values} setValues={setValues} />
                     <Field label="Уникальность" name="uniqueness" multiline rows={3} values={values} setValues={setValues} />
                   </div>
@@ -949,8 +863,8 @@ export default function Home() {
               <section className="form-section experience-section">
                 <h2>3. ОПЫТ</h2>
                 <div className="experience-grid">
-                  <Field label="Трудности" name="struggles" multiline rows={6} values={values} setValues={setValues} />
-                  <Field label="Опыт" name="experience" multiline rows={6} values={values} setValues={setValues} />
+                  <Field label="Лучший период" name="bestPeriod" multiline rows={6} values={values} setValues={setValues} />
+                  <Field label="Ошибки и провалы" name="failures" multiline rows={6} values={values} setValues={setValues} />
                 </div>
               </section>
 

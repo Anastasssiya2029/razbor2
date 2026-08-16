@@ -527,6 +527,10 @@ button {
   min-height: 39px;
 }
 
+.project-assets-column .field textarea {
+  min-height: 82px;
+}
+
 .personality-fieldset {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -687,8 +691,26 @@ button {
   letter-spacing: -0.035em;
 }
 
+.analysis-heading h2 span {
+  color: var(--purple);
+  background: linear-gradient(105deg, var(--purple), var(--berry));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.analysis-method-subtitle {
+  margin-top: 8px;
+  display: block;
+  color: var(--berry);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
 .analysis-heading p {
-  margin: 11px auto 0;
+  margin: 10px auto 0;
   color: #71839c;
   font-size: 15px;
   line-height: 1.5;
