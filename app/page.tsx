@@ -30,7 +30,7 @@ const tabs = [
   { id: 2, label: "Опыт" },
 ];
 
-const stages = ["Диагностика", "Разбор", "План перехода", "Рост и система"];
+const stages = ["Диагностика", "Разбор", "План перехода", ""];
 
 type ArchetypeKind = ArchetypeId;
 
@@ -494,17 +494,16 @@ function BusinessAnalysis({
   return (
     <div className="business-analysis decision-analysis">
       <div className="result-heading decision-heading">
-        <span className="result-kicker">Персональный вывод</span>
-        <h2>Что сейчас определяет ваш переход</h2>
-        <p>AI сопоставляет текущую точку, цель, опыт и конфигурацию 7К, а затем собирает только те выводы, которые подтверждаются ответами диагностики.</p>
+        <span className="result-kicker">Ваш путь к цели</span>
+        <h2>Как перейти в желаемую реальность</h2>
+        <p>Сначала определяем ближайший денежный горизонт на 30 дней. Затем собираем связку элементов, которая поможет перейти от текущей точки к выбранной цели.</p>
       </div>
 
       <section className="locked-money-card" aria-labelledby="locked-money-title">
         <div className="locked-money-topline">
-          <span className="insight-label">Где деньги сейчас</span>
-          <span className="locked-access"><LockIcon /> Доступно после перехода в работу</span>
+          <h3 id="locked-money-title">Где деньги сейчас</h3>
+          <span className="locked-access"><LockIcon /> Доступно для действующих клиентов</span>
         </div>
-        <h3 id="locked-money-title">Ваша ключевая денежная связка найдена</h3>
         <div className="locked-money-content" aria-hidden="true">
           <p>{analysis.moneyNow.headline}</p>
           <div className="locked-chain">
@@ -515,16 +514,17 @@ function BusinessAnalysis({
         </div>
         <div className="locked-money-overlay" aria-label="Содержание блока закрыто">
           <span className="locked-circle"><LockIcon /></span>
-          <strong>Связка сохранена в вашем разборе</strong>
-          <p>Полная рекомендация войдёт в персональную презентацию после оплаты продукта.</p>
         </div>
       </section>
 
       <div className="decision-grid">
         <section className="decision-card constraint-card" aria-labelledby="constraint-title">
           <span className="decision-card-number">01</span>
-          <span className="decision-card-label">Что ограничивает переход</span>
-          <h3 id="constraint-title">{leadingDefinition.name}</h3>
+          <h3 id="constraint-title">Что мешает в первую очередь</h3>
+          <div className="constraint-element">
+            <span>Ключевое ограничение</span>
+            <strong>{leadingDefinition.name}</strong>
+          </div>
           <p>{leading.notBuilt}</p>
           <div className="decision-proof">
             <span>Почему это ограничивает рост</span>
@@ -534,11 +534,11 @@ function BusinessAnalysis({
 
         <section className="decision-card growth-card" aria-labelledby="growth-title">
           <span className="decision-card-number">02</span>
-          <span className="decision-card-label">Что нужно растить</span>
-          <h3 id="growth-title">Связка из {supporting.length + 1} элементов</h3>
+          <h3 id="growth-title">Ключевая связка для роста</h3>
+          <p className="growth-card-subtitle">Ключевая связка из трёх элементов</p>
           <div className="growth-element-list">
             <article className="growth-element leading">
-              <span>Ведущий элемент</span>
+              <span>Ключевой элемент</span>
               <strong>{leadingDefinition.name}</strong>
               <p>{leading.minimumChange}</p>
             </article>
@@ -561,8 +561,8 @@ function BusinessAnalysis({
         <div className="deferred-heading">
           <span className="decision-card-number">03</span>
           <div>
-            <span className="decision-card-label">Сохраняем фокус</span>
-            <h3 id="deferred-title">Почему остальные элементы пока не трогать</h3>
+            <h3 id="deferred-title">Что сейчас нельзя делать</h3>
+            <p>Почему остальные элементы пока не нужно трогать</p>
           </div>
         </div>
         <div className="deferred-grid">
@@ -607,8 +607,8 @@ function NeuroAnalysisScreen({ mode }: { mode: "analysis" | "plan" }) {
       <span className="neuro-badge">
         <span aria-hidden="true">✧</span> Нейро-анализ
       </span>
-      <h2>{isPlan ? "Собираю ваш" : "Анализирую вашу"}<br /><span>{isPlan ? "маршрут перехода" : "систему"}</span></h2>
-      <p>
+      <p className="neuro-status-title">{isPlan ? "Собираю маршрут перехода" : "Анализирую вашу систему"}</p>
+      <p className="neuro-status-copy">
         {isPlan
           ? "Алекс сопоставляет текущий уровень каждого элемента 7К с вашей целью и собирает последовательность действий без лишней нагрузки."
           : "Сейчас наш нейро-маркетолог Алекс анализирует все ваши ответы, состояние бизнес-системы и определяет ключевую точку перехода к цели."}
@@ -641,6 +641,54 @@ function declineClientName(name: string) {
     .join(" ");
 }
 
+const prototypePlanTasks: Record<SystemElementId, string[]> = {
+  authenticity: [
+    "Собрать факты профессионального пути и результаты клиентов.",
+    "Сформулировать сильные стороны и собственный способ помощи.",
+    "Подготовить короткую самопрезентацию с уверенным обозначением ценности.",
+  ],
+  audience: [
+    "Выбрать сегмент клиентов, которому результат нужен сильнее всего.",
+    "Зафиксировать главный запрос, ситуацию и критерий готовности к покупке.",
+    "Собрать формулировки клиентов из реальных разговоров.",
+  ],
+  products_method: [
+    "Собрать один понятный стартовый продукт с конкретным результатом.",
+    "Описать путь клиента и логику работы внутри продукта.",
+    "Проверить предложение в реальных диагностических разговорах.",
+  ],
+  sales_technology: [
+    "Зафиксировать единую структуру диагностического разговора.",
+    "Добавить понятный переход от проблемы клиента к предложению продукта.",
+    "Собирать причины покупки, отказа и повторяющиеся возражения.",
+  ],
+  funnel: [
+    "Зафиксировать текущие источники обращений и их результативность.",
+    "Выбрать одну точку входа в путь клиента.",
+    "Проверить связку на небольшом объёме трафика.",
+  ],
+  blog: [
+    "Определить роль блога в пути клиента.",
+    "Собрать серию материалов под ключевой запрос аудитории.",
+    "Отслеживать обращения и реакции на каждый смысловой блок.",
+  ],
+  team: [
+    "Выделить повторяющиеся задачи, которые не требуют личного участия эксперта.",
+    "Выбрать одну безопасную зону для первого делегирования.",
+    "Описать результат задачи и критерии качества.",
+  ],
+};
+
+const prototypePlanCriteria: Record<SystemElementId, string> = {
+  authenticity: "Эксперт уверенно объясняет свою ценность и не снижает цену заранее.",
+  audience: "Выбран один приоритетный сегмент, а его запрос описан словами реальных клиентов.",
+  products_method: "Клиент за минуту понимает результат продукта и путь внутри него.",
+  sales_technology: "Проведена серия однотипных разговоров, собраны покупки, отказы и возражения.",
+  funnel: "Определена конверсия одной проверяемой точки входа в обращение.",
+  blog: "Понятно, какие материалы приводят подходящие обращения и поддерживают продажу.",
+  team: "Первая задача передана с понятным результатом и принимается без постоянных переделок.",
+};
+
 function TransitionPlan({
   analysis,
   values,
@@ -655,19 +703,23 @@ function TransitionPlan({
   const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
   const recommendations = useMemo(() => {
     const items = [analysis.growthLink.leading, ...analysis.growthLink.supporting];
-    return new Map<SystemElementId, { item: ElementRecommendation; priority: number }>(
-      items.map((item, index) => [item.elementId, { item, priority: index + 1 }]),
-    );
+    return new Map<SystemElementId, ElementRecommendation>(items.map((item) => [item.elementId, item]));
   }, [analysis]);
 
-  const orderedElements = useMemo(
-    () => [...systemElements].sort((left, right) => {
-      const leftPriority = recommendations.get(left.elementId)?.priority ?? 99;
-      const rightPriority = recommendations.get(right.elementId)?.priority ?? 99;
-      return leftPriority - rightPriority || left.id - right.id;
-    }),
-    [recommendations, systemElements],
-  );
+  const priorityByElement = useMemo(() => {
+    const growthElements = systemElements
+      .filter((element) => element.added > 0)
+      .sort((left, right) => right.added - left.added || left.id - right.id);
+    return new Map<SystemElementId, number>(
+      growthElements.map((element, index) => [element.elementId, index + 1]),
+    );
+  }, [systemElements]);
+
+  const orderedElements = useMemo(() => [...systemElements].sort((left, right) => {
+    const leftPriority = priorityByElement.get(left.elementId) ?? 99;
+    const rightPriority = priorityByElement.get(right.elementId) ?? 99;
+    return leftPriority - rightPriority || left.id - right.id;
+  }), [priorityByElement, systemElements]);
 
   const expertName = values.expertName?.trim() || "Екатерина";
   const currentIncome = values.currentIncome?.trim() || "не указан";
@@ -677,23 +729,22 @@ function TransitionPlan({
     <section className="diagnostic-card transition-plan" aria-labelledby="transition-plan-title">
       <div className="plan-heading">
         <span className="analysis-kicker">Шаг 3 · План перехода</span>
-        <h2 id="transition-plan-title">Индивидуальный план перехода <span>для {declineClientName(expertName)}</span></h2>
+        <h2 id="transition-plan-title">Индивидуальный план перехода<br /><span>для {declineClientName(expertName)}</span></h2>
         <p>Чек-лист показывает порядок усиления 7К. В работу попадают только элементы, которые действительно влияют на выбранную цель.</p>
       </div>
 
       <div className="income-route" aria-label="Переход от текущего дохода к желаемому">
-        <div>
+        <div className="income-point">
           <span>Текущий доход</span>
           <strong>{currentIncome}</strong>
         </div>
-        <span className="income-route-arrow"><ArrowIcon /></span>
-        <div>
+        <div className="income-route-arrow">
+          <span>за {deadline}</span>
+          <ArrowIcon />
+        </div>
+        <div className="income-point target">
           <span>Желаемый доход</span>
           <strong>{goalIncome}</strong>
-        </div>
-        <div className="income-route-deadline">
-          <span>Срок перехода</span>
-          <strong>{deadline}</strong>
         </div>
       </div>
 
@@ -706,31 +757,38 @@ function TransitionPlan({
       <div className="plan-element-grid">
         {orderedElements.map((element) => {
           const recommendation = recommendations.get(element.elementId);
+          const priority = priorityByElement.get(element.elementId);
+          const hasTask = element.added > 0;
+          const taskCandidates = [
+            recommendation?.minimumChange,
+            ...prototypePlanTasks[element.elementId],
+          ].filter((task): task is string => Boolean(task));
+          const tasks = [...new Set(taskCandidates)].slice(0, 3);
+          const criterion = recommendation?.criterion ?? prototypePlanCriteria[element.elementId];
           return (
-            <article className={`plan-element-card ${recommendation ? "has-task" : "no-task"}`} key={element.elementId}>
+            <article className={`plan-element-card ${hasTask ? "has-task" : "no-task"}`} key={element.elementId}>
               <div className="plan-element-topline">
                 <span className="plan-element-number">{String(element.id).padStart(2, "0")}</span>
-                {recommendation ? (
-                  <span className="priority-chip">Приоритет {recommendation.priority}</span>
+                {hasTask ? (
+                  <span className="priority-chip">Приоритет {priority}</span>
                 ) : (
                   <span className="priority-chip later">Без задач сейчас</span>
                 )}
               </div>
               <h4>{element.name}</h4>
-              <div className="plan-score-row">
-                <span>Сейчас <b>{element.current}/10</b></span>
-                <i aria-hidden="true">→</i>
-                <span>Цель <b>{element.current + element.added}/10</b></span>
-              </div>
-              {recommendation ? (
+              {hasTask ? (
                 <>
-                  <div className="plan-task">
-                    <span className="task-check"><CheckIcon /></span>
-                    <p>{recommendation.item.minimumChange}</p>
-                  </div>
+                  <ul className="plan-task-list">
+                    {tasks.map((task, index) => (
+                      <li key={`${element.elementId}-${index}`}>
+                        <input type="checkbox" aria-label={`${element.name}: ${task}`} />
+                        <span>{task}</span>
+                      </li>
+                    ))}
+                  </ul>
                   <div className="plan-criterion">
                     <span>Критерий выполнения</span>
-                    <p>{recommendation.item.criterion}</p>
+                    <p>{criterion}</p>
                   </div>
                 </>
               ) : (
@@ -847,7 +905,7 @@ function AnalysisSection({
             <article className="analysis-slide" aria-hidden={activeSlide !== 0}>
               <div className="analysis-slide-heading">
                 <span>01</span>
-                <h3>Текущая бизнес-модель 7К</h3>
+                <h3>Текущая модель 7К</h3>
               </div>
               <SystemModel elements={systemElements} />
             </article>
@@ -855,7 +913,7 @@ function AnalysisSection({
             <article className="analysis-slide" aria-hidden={activeSlide !== 1}>
               <div className="analysis-slide-heading">
                 <span>02</span>
-                <h3>Модель 7К под вашу цель</h3>
+                <h3>Модель 7К под цель</h3>
               </div>
               <ModelLegend />
               <SystemModel elements={systemElements} target />
@@ -875,7 +933,7 @@ function AnalysisSection({
       </div>
 
       <div className="analysis-pagination" aria-label="Экраны разбора">
-        {["Текущая бизнес-модель 7К", "Модель 7К под вашу цель"].map((label, index) => (
+        {["Текущая модель 7К", "Модель 7К под цель"].map((label, index) => (
           <button
             type="button"
             className={activeSlide === index ? "active" : ""}
@@ -1065,20 +1123,20 @@ export default function Home() {
   const visibleAnalysis = analysisResult ?? demoBusinessAnalysis;
 
   return (
-    <main className="site-shell">
-      <header className="site-header">
+    <main className={`site-shell ${loadingTarget ? "is-neuro-loading" : ""}`}>
+      {!loadingTarget && <header className="site-header">
         <Brand />
         <span className="system-label">Система пошагового роста</span>
-      </header>
+      </header>}
 
-      <section className="hero" aria-labelledby="page-title">
+      {!loadingTarget && <section className="hero" aria-labelledby="page-title">
         <span className="hero-badge">Авторский разбор для экспертов</span>
         <h1 id="page-title">Твоя Бизнес-Система</h1>
         <p>
           Оцифруйте свой проект и постройте аутентичную систему, которая
           <br className="desktop-break" /> дает ресурсы, а не забирает их.
         </p>
-      </section>
+      </section>}
 
       {loadingTarget ? (
         <NeuroAnalysisScreen mode={loadingTarget} />
@@ -1273,10 +1331,11 @@ export default function Home() {
         />
       )}
 
-      <nav className="journey" aria-label="Этапы работы">
+      {!loadingTarget && <nav className="journey" aria-label="Этапы работы">
         {stages.map((stage, index) => (
           <button
             type="button"
+            aria-label={stage || "Следующий этап"}
             className={`journey-stage ${index === currentStage ? "active" : ""}`}
             aria-current={index === currentStage ? "step" : undefined}
             disabled={Boolean(loadingTarget) || index > maxUnlockedStage || index > 2}
@@ -1287,7 +1346,7 @@ export default function Home() {
             <span>{stage}</span>
           </button>
         ))}
-      </nav>
+      </nav>}
     </main>
   );
 }

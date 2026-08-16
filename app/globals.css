@@ -3120,6 +3120,287 @@ button {
   }
 }
 
+/* Refinements for the analysis and transition flow */
+.site-shell.is-neuro-loading {
+  min-height: 100vh;
+  padding: 0;
+}
+
+.is-neuro-loading .neuro-screen {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding-top: 52px;
+  padding-bottom: 52px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.neuro-status-title {
+  margin: 30px 0 0 !important;
+  color: var(--plum-dark) !important;
+  font-family: var(--display-font);
+  font-size: clamp(22px, 2.5vw, 30px) !important;
+  font-weight: 760 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.025em;
+}
+
+.neuro-status-copy {
+  max-width: 720px !important;
+  margin-top: 16px !important;
+  color: #68778c !important;
+  font-size: 14px !important;
+  font-weight: 520 !important;
+  line-height: 1.65 !important;
+}
+
+.neuro-status-title + .neuro-status-copy {
+  margin-bottom: 0;
+}
+
+.locked-money-topline h3 {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 30px);
+}
+
+.locked-money-content {
+  min-height: 156px;
+  margin-top: 24px;
+}
+
+.locked-money-overlay {
+  bottom: 69px;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.locked-circle {
+  width: 64px;
+  height: 64px;
+  grid-row: auto;
+  box-shadow: 0 14px 30px rgba(39, 8, 50, 0.32);
+}
+
+.locked-circle .lock-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.decision-card > h3 {
+  margin-top: 18px;
+  font-size: 23px;
+}
+
+.constraint-element {
+  margin-top: 19px;
+  padding: 18px 19px;
+  color: white;
+  background:
+    radial-gradient(190px 110px at 100% 0%, rgba(220, 46, 149, 0.2), transparent 72%),
+    linear-gradient(120deg, #3b134a, #6c299d 70%, #8d287e);
+  border-radius: 16px;
+  box-shadow: 0 14px 30px rgba(72, 20, 88, 0.14);
+}
+
+.constraint-element span {
+  display: block;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.constraint-element strong {
+  margin-top: 5px;
+  display: block;
+  color: white;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.growth-card-subtitle {
+  margin: 7px 0 0;
+  color: #806c84;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.deferred-heading h3 {
+  margin-top: 2px;
+  font-size: 23px;
+}
+
+.deferred-heading p {
+  margin: 6px 0 0;
+  color: #806f85;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.plan-heading {
+  max-width: 900px;
+}
+
+.plan-heading h2 {
+  font-size: clamp(30px, 3.5vw, 45px);
+  line-height: 1.12;
+}
+
+.plan-heading h2 span {
+  margin-top: 3px;
+}
+
+.income-route {
+  padding: 21px 28px;
+  grid-template-columns: 1fr minmax(150px, 0.56fr) 1fr;
+  gap: 18px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(109, 47, 182, 0.15);
+  box-shadow: 0 15px 34px rgba(64, 22, 78, 0.08);
+}
+
+.income-route > div {
+  padding: 10px 18px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.income-route .income-point {
+  text-align: center;
+}
+
+.income-route .income-point:first-child {
+  border-right: 1px solid rgba(109, 47, 182, 0.1);
+}
+
+.income-route .income-point.target {
+  border-left: 1px solid rgba(109, 47, 182, 0.1);
+}
+
+.income-route .income-point span,
+.income-route .income-route-arrow span {
+  color: #8d7b92;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.income-route .income-point strong {
+  color: var(--plum-dark);
+  font-size: 28px;
+  font-weight: 790;
+}
+
+.income-route .income-point.target strong {
+  color: var(--purple);
+}
+
+.income-route-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--purple);
+}
+
+.income-route-arrow .arrow-icon {
+  width: 50px;
+  height: 30px;
+}
+
+.plan-task-list {
+  margin: 17px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.plan-task-list li {
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 10px;
+  background: white;
+  border: 1px solid rgba(109, 47, 182, 0.09);
+  border-radius: 11px;
+}
+
+.plan-task-list input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--purple);
+  cursor: pointer;
+}
+
+.plan-task-list span {
+  color: #5f5264;
+  font-size: 11px;
+  line-height: 1.48;
+}
+
+.journey-stage > span:last-child:empty {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .is-neuro-loading .neuro-screen {
+    padding-top: 38px;
+    padding-bottom: 38px;
+  }
+
+  .locked-money-topline h3 {
+    font-size: 25px;
+  }
+
+  .locked-money-overlay {
+    bottom: 100px;
+  }
+
+  .income-route {
+    grid-template-columns: 1fr;
+  }
+
+  .income-route .income-point:first-child,
+  .income-route .income-point.target {
+    border: 0;
+  }
+
+  .income-route-arrow {
+    transform: none;
+  }
+
+  .income-route-arrow .arrow-icon {
+    transform: rotate(90deg);
+  }
+}
+
+@media print {
+  .plan-task-list input {
+    appearance: none;
+    width: 4.5mm;
+    height: 4.5mm;
+    border: 0.4mm solid #6d2fb6;
+    border-radius: 1mm;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
