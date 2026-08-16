@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --display-font: "Montserrat Variable", Montserrat, "Inter Variable", Inter, sans-serif;
   --ink: #21162a;
   --velvet: #2d123f;
   --plum-dark: #3a103f;
@@ -16,6 +17,7 @@
   --panel-line: rgba(61, 35, 90, 0.12);
   --paper: #ffffff;
   --background: #fdf9ff;
+  --action-gradient: linear-gradient(135deg, #47185d 0%, #682797 52%, #c93198 100%);
 }
 
 * {
@@ -80,37 +82,43 @@ button {
   align-items: center;
   white-space: nowrap;
   font-size: clamp(18px, 1.6vw, 22px);
-  font-weight: 700;
+  color: #1f1527;
+  font-family: var(--display-font);
+  font-weight: 750;
   line-height: 1.05;
-  letter-spacing: 0;
-  color: #1f2937;
+  letter-spacing: -0.025em;
 }
 
 .brand-line strong {
-  font-weight: 700;
+  font-weight: 750;
 }
 
 .brand-heart,
 .brand-mark {
   display: inline-block;
-  padding: 0 6px;
-  filter: drop-shadow(0 0 4px rgba(154, 31, 134, 0.24));
+  line-height: 1;
+  filter: none;
 }
 
 .brand-heart {
-  color: var(--pink);
-  font-size: 0.75em;
+  padding: 0 5px;
+  color: #ec65da;
+  font-size: 0.34em;
+  transform: translateY(0.08em);
 }
 
 .brand-mark {
-  color: var(--gold);
-  font-size: 0.62em;
+  padding: 0 6px;
+  color: #edb14c;
+  font-size: 0.36em;
+  transform: translateY(0.04em);
 }
 
 .brand-caption {
   margin-top: 5px;
   padding-left: 1px;
-  color: var(--plum);
+  color: #68418d;
+  font-family: var(--display-font);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.12;
@@ -155,14 +163,15 @@ button {
   width: fit-content;
   margin: 38px auto 0;
   color: var(--plum);
-  background: linear-gradient(98deg, var(--plum-dark) 0%, var(--purple) 66%, var(--berry) 95%, var(--pink) 100%);
+  background: linear-gradient(102deg, #2d123f 0%, #60248b 54%, #942c9c 79%, #c62e98 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  font-family: var(--display-font);
   font-size: clamp(48px, 5.65vw, 76px);
-  font-weight: 700;
-  line-height: 1.09;
-  letter-spacing: -0.035em;
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.047em;
 }
 
 .hero p {
@@ -461,6 +470,7 @@ button {
   gap: 26px;
   border-radius: 13px;
   cursor: pointer;
+  font-family: var(--display-font);
   font-size: 15px;
   font-weight: 800;
   line-height: 1.2;
@@ -471,18 +481,18 @@ button {
   width: min(365px, 100%);
   margin: 36px auto 18px;
   color: white;
-  background: linear-gradient(100deg, var(--velvet) 0%, var(--purple) 58%, var(--berry) 95%, var(--pink) 100%);
+  background: var(--action-gradient);
   border: 0;
   box-shadow:
-    -7px 8px 25px rgba(109, 47, 182, 0.2),
-    9px 10px 27px rgba(113, 29, 104, 0.17);
+    -9px 10px 27px rgba(82, 24, 106, 0.2),
+    10px 11px 29px rgba(201, 49, 152, 0.15);
 }
 
 .primary-button:hover {
   filter: saturate(1.1) brightness(1.04);
   box-shadow:
-    -9px 10px 31px rgba(109, 47, 182, 0.26),
-    11px 12px 33px rgba(113, 29, 104, 0.22);
+    -11px 12px 33px rgba(82, 24, 106, 0.25),
+    12px 13px 35px rgba(201, 49, 152, 0.2);
   transform: translateY(-1px);
 }
 
@@ -946,7 +956,7 @@ button {
   align-items: center;
   justify-content: center;
   color: white;
-  background: linear-gradient(145deg, var(--velvet), var(--purple) 65%, var(--berry));
+  background: var(--action-gradient);
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 50%;
   cursor: pointer;
@@ -2237,10 +2247,11 @@ button {
   justify-content: center;
   gap: 12px;
   color: white;
-  background: linear-gradient(100deg, var(--velvet), var(--purple) 58%, var(--berry));
+  background: var(--action-gradient);
   border: 0;
   border-radius: 13px;
   cursor: pointer;
+  font-family: var(--display-font);
   box-shadow:
     -8px 9px 25px rgba(109, 47, 182, 0.2),
     9px 10px 26px rgba(113, 29, 104, 0.16);
