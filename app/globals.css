@@ -4420,9 +4420,7 @@ button {
   top: 0;
   left: 50%;
   overflow: hidden;
-  background-image: url("/business-archetype-map.png");
-  background-repeat: no-repeat;
-  background-size: 890% auto;
+  background: #291334;
   border: 3px solid #d4a849;
   border-radius: 50%;
   box-shadow:
@@ -4431,12 +4429,10 @@ button {
   transform: translateX(-50%);
 }
 
-.archetype-photo-altruist .archetype-photo-circle { background-position: 7.3% 84.6%; }
-.archetype-photo-explorer .archetype-photo-circle { background-position: 34.8% 66.8%; }
-.archetype-photo-creator .archetype-photo-circle { background-position: 61.4% 67.9%; }
-.archetype-photo-hero .archetype-photo-circle { background-position: 84.6% 44.1%; }
-.archetype-photo-magician .archetype-photo-circle { background-position: 60.9% 10.3%; }
-.archetype-photo-ruler .archetype-photo-circle { background-position: 91.9% 3.1%; }
+.archetype-photo-image {
+  object-fit: cover;
+  transform: scale(1.025);
+}
 
 .archetype-photo-plaque {
   width: 220px;
@@ -4678,6 +4674,59 @@ button {
   box-shadow: none;
 }
 
+.locked-money-overlay {
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  bottom: 44px;
+  display: grid;
+  grid-template-columns: 1fr;
+  place-items: center;
+  column-gap: 0;
+  color: white;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 16px 38px rgba(34, 9, 45, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.locked-circle {
+  width: 50px;
+  height: 50px;
+  grid-row: auto;
+  color: white;
+  background: linear-gradient(145deg, #4a175b, #792bad 68%, #b82e91);
+  border-radius: 14px;
+  box-shadow: 0 9px 20px rgba(72, 18, 86, 0.25);
+}
+
+.locked-circle .lock-icon {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.9;
+}
+
+.alex-brain-icon,
+.neuro-badge-brain {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.alex-brain-icon {
+  width: 36px;
+  height: 36px;
+  stroke-width: 1.55;
+}
+
+.neuro-badge-brain {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.6;
+}
+
 @media (max-width: 600px) {
   .archetype-photo-unit {
     width: 198px;
@@ -4759,6 +4808,19 @@ button {
 
   .income-route-line-arrow .arrow-icon {
     width: 35px;
+  }
+
+  .locked-money-overlay {
+    width: 72px;
+    height: 72px;
+    bottom: 43px;
+    border-radius: 18px;
+  }
+
+  .locked-circle {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
   }
 }
 

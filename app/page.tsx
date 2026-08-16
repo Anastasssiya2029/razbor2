@@ -112,11 +112,30 @@ const archetypePortraitCaptions: Record<ArchetypeId, string> = {
   ruler: "Масштабирует через команду и систему",
 };
 
+const archetypePortraits: Record<ArchetypeId, { src: string; position: string }> = {
+  altruist: { src: "/archetype-altruist.jpg", position: "50% 28%" },
+  explorer: { src: "/archetype-explorer.jpg", position: "50% 31%" },
+  creator: { src: "/archetype-creator.jpg", position: "50% 50%" },
+  hero: { src: "/archetype-hero.png", position: "50% 24%" },
+  magician: { src: "/archetype-magician.png", position: "50% 27%" },
+  ruler: { src: "/archetype-ruler.png", position: "50% 23%" },
+};
+
 function ArchetypePortrait({ kind }: { kind: ArchetypeId }) {
   const archetype = archetypeDefinitions[kind];
+  const portrait = archetypePortraits[kind];
   return (
     <span className={`archetype-photo-unit archetype-photo-${kind}`} aria-hidden="true">
-      <span className="archetype-photo-circle" />
+      <span className="archetype-photo-circle">
+        <Image
+          src={portrait.src}
+          alt=""
+          fill
+          sizes="184px"
+          className="archetype-photo-image"
+          style={{ objectPosition: portrait.position }}
+        />
+      </span>
       <span className="archetype-photo-plaque">
         <strong>{archetype.name}</strong>
         <small>{archetypePortraitCaptions[kind]}</small>
@@ -517,6 +536,16 @@ function LockIcon() {
   );
 }
 
+function BrainIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M11.2 6.1c-.2-1.8-1.6-3.1-3.3-3.1-1.8 0-3.3 1.5-3.3 3.4v.2A3.5 3.5 0 0 0 3 9.5c0 1.2.6 2.3 1.5 2.9a3.5 3.5 0 0 0-.5 1.8c0 1.9 1.5 3.4 3.4 3.5.5 1.7 2.2 2.8 3.8 2.1V6.1Z" />
+      <path d="M12.8 6.1c.2-1.8 1.6-3.1 3.3-3.1 1.8 0 3.3 1.5 3.3 3.4v.2A3.5 3.5 0 0 1 21 9.5c0 1.2-.6 2.3-1.5 2.9.3.5.5 1.1.5 1.8 0 1.9-1.5 3.4-3.4 3.5-.5 1.7-2.2 2.8-3.8 2.1V6.1Z" />
+      <path d="M7.8 6.4c1.3 0 2.2 1 2.2 2.2M6.4 11.3c1.5-.3 2.8.7 2.9 2.2M8 17.5c-.1-1.2.7-2.2 1.8-2.5M16.2 6.4c-1.3 0-2.2 1-2.2 2.2M17.6 11.3c-1.5-.3-2.8.7-2.9 2.2M16 17.5c.1-1.2-.7-2.2-1.8-2.5" />
+    </svg>
+  );
+}
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="check-icon">
@@ -644,13 +673,11 @@ function NeuroAnalysisScreen({ mode }: { mode: "analysis" | "plan" }) {
       <div className="alex-portrait-wrap">
         <div className="alex-portrait" role="img" aria-label="Нейро-маркетолог Алекс" />
         <span className="alex-brain-badge" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M9.1 4.5A3 3 0 0 0 4.8 8a3.2 3.2 0 0 0 .6 6.2A3.4 3.4 0 0 0 9.7 19M14.9 4.5A3 3 0 0 1 19.2 8a3.2 3.2 0 0 1-.6 6.2 3.4 3.4 0 0 1-4.3 4.8M9.2 4.4V19M14.8 4.4V19M9.2 8.4H7.6M14.8 8.4h1.6M9.2 14.7H7.4M14.8 14.7h1.8M9.2 11.5h5.6" />
-          </svg>
+          <BrainIcon className="alex-brain-icon" />
         </span>
       </div>
       <span className="neuro-badge">
-        <span aria-hidden="true">✧</span> Нейро-анализ
+        <BrainIcon className="neuro-badge-brain" /> Нейро-анализ
       </span>
       <p className="neuro-status-title">{isPlan ? "Собираю маршрут перехода" : "Анализирую вашу систему"}</p>
       <p className="neuro-status-copy">
