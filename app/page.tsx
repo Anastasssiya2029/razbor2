@@ -679,9 +679,10 @@ export default function Home() {
     const goal = values.goalIncome?.trim() || "_____";
     const model = values.goalModel?.trim() || "_____";
     const now = values.currentIncome?.trim() || "_____";
+    const struggles = values.struggles?.trim() || "_____";
     const bestPeriod = values.bestPeriod?.trim() || "_____";
     const failures = values.failures?.trim() || "_____";
-    return `Вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}. Ваш лучший период: ${bestPeriod}. Ошибки и провалы, которые важно учесть при построении новой системы: ${failures}.`;
+    return `Вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}. Почему пока не получается прийти к цели: ${struggles}. Ваш лучший период: ${bestPeriod}. Ошибки и провалы, которые важно учесть при построении новой системы: ${failures}.`;
   }, [values]);
 
   const goToTab = (tab: number) => {
@@ -863,8 +864,11 @@ export default function Home() {
               <section className="form-section experience-section">
                 <h2>3. ОПЫТ</h2>
                 <div className="experience-grid">
-                  <Field label="Лучший период" name="bestPeriod" multiline rows={6} values={values} setValues={setValues} />
-                  <Field label="Ошибки и провалы" name="failures" multiline rows={6} values={values} setValues={setValues} />
+                  <Field className="experience-main-field" label="Трудности" name="struggles" multiline rows={1} values={values} setValues={setValues} />
+                  <div className="experience-history-column">
+                    <Field label="Лучший период" name="bestPeriod" multiline rows={5} values={values} setValues={setValues} />
+                    <Field label="Ошибки и провалы" name="failures" multiline rows={5} values={values} setValues={setValues} />
+                  </div>
                 </div>
               </section>
 

@@ -575,6 +575,21 @@ button {
   min-height: 190px;
 }
 
+.experience-grid > .experience-main-field {
+  height: 100%;
+}
+
+.experience-grid > .experience-main-field textarea {
+  min-height: 0;
+  flex: 1;
+}
+
+.experience-history-column {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
 .formula-section {
   margin-top: 12px;
   padding: 16px 25px 14px;
@@ -2476,6 +2491,16 @@ button {
 
   .experience-grid textarea {
     min-height: 150px;
+  }
+
+  .experience-grid > .experience-main-field {
+    height: auto;
+  }
+
+  .experience-grid > .experience-main-field textarea,
+  .experience-history-column .field.multiline-field textarea {
+    min-height: 150px;
+    flex: none;
   }
 }
 
