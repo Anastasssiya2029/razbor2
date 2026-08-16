@@ -11,6 +11,7 @@ import {
   type BusinessAnalysisResult,
   type ElementRecommendation,
   type ResolvedSystemElement,
+  type SystemElementId,
 } from "@/lib/business-analysis";
 
 type FieldProps = {
@@ -264,7 +265,9 @@ function EvolutionMap({ currentArchetypeId }: { currentArchetypeId: ArchetypeId 
   );
 }
 
-function BusinessAnalysis({ analysis }: { analysis: BusinessAnalysisResult }) {
+// Старая компоновка сохранена до подключения генерации PDF для полной версии разбора.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function LegacyBusinessAnalysis({ analysis }: { analysis: BusinessAnalysisResult }) {
   const moneyImpact = analysis.moneyImpact;
   const sectionOrder = [
     "whyHere",
@@ -460,14 +463,312 @@ function BusinessAnalysis({ analysis }: { analysis: BusinessAnalysisResult }) {
   );
 }
 
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="lock-icon">
+      <rect x="5" y="10" width="14" height="11" rx="3" />
+      <path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14.5v2.5" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="check-icon">
+      <path d="m5 12 4 4L19 6" />
+    </svg>
+  );
+}
+
+function BusinessAnalysis({
+  analysis,
+  onOpenPlan,
+}: {
+  analysis: BusinessAnalysisResult;
+  onOpenPlan: () => void;
+}) {
+  const leading = analysis.growthLink.leading;
+  const supporting = analysis.growthLink.supporting;
+  const leadingDefinition = systemElementDefinitions[leading.elementId];
+
+  return (
+    <div className="business-analysis decision-analysis">
+      <div className="result-heading decision-heading">
+        <span className="result-kicker">Персональный вывод</span>
+        <h2>Что сейчас определяет ваш переход</h2>
+        <p>AI сопоставляет текущую точку, цель, опыт и конфигурацию 7К, а затем собирает только те выводы, которые подтверждаются ответами диагностики.</p>
+      </div>
+
+      <section className="locked-money-card" aria-labelledby="locked-money-title">
+        <div className="locked-money-topline">
+          <span className="insight-label">Где деньги сейчас</span>
+          <span className="locked-access"><LockIcon /> Доступно после перехода в работу</span>
+        </div>
+        <h3 id="locked-money-title">Ваша ключевая денежная связка найдена</h3>
+        <div className="locked-money-content" aria-hidden="true">
+          <p>{analysis.moneyNow.headline}</p>
+          <div className="locked-chain">
+            {analysis.moneyNow.chain.map((step, index) => (
+              <span key={`${step}-${index}`}>{step}</span>
+            ))}
+          </div>
+        </div>
+        <div className="locked-money-overlay" aria-label="Содержание блока закрыто">
+          <span className="locked-circle"><LockIcon /></span>
+          <strong>Связка сохранена в вашем разборе</strong>
+          <p>Полная рекомендация войдёт в персональную презентацию после оплаты продукта.</p>
+        </div>
+      </section>
+
+      <div className="decision-grid">
+        <section className="decision-card constraint-card" aria-labelledby="constraint-title">
+          <span className="decision-card-number">01</span>
+          <span className="decision-card-label">Что ограничивает переход</span>
+          <h3 id="constraint-title">{leadingDefinition.name}</h3>
+          <p>{leading.notBuilt}</p>
+          <div className="decision-proof">
+            <span>Почему это ограничивает рост</span>
+            <strong>{leading.impact}</strong>
+          </div>
+        </section>
+
+        <section className="decision-card growth-card" aria-labelledby="growth-title">
+          <span className="decision-card-number">02</span>
+          <span className="decision-card-label">Что нужно растить</span>
+          <h3 id="growth-title">Связка из {supporting.length + 1} элементов</h3>
+          <div className="growth-element-list">
+            <article className="growth-element leading">
+              <span>Ведущий элемент</span>
+              <strong>{leadingDefinition.name}</strong>
+              <p>{leading.minimumChange}</p>
+            </article>
+            {supporting.map((item) => (
+              <article className="growth-element" key={item.elementId}>
+                <span>Поддерживающий элемент</span>
+                <strong>{systemElementDefinitions[item.elementId].name}</strong>
+                <p>{item.minimumChange}</p>
+              </article>
+            ))}
+          </div>
+          <aside className="growth-argument">
+            <span>Почему именно эта связка</span>
+            <p>{analysis.change30Days.explanation}</p>
+          </aside>
+        </section>
+      </div>
+
+      <section className="deferred-elements" aria-labelledby="deferred-title">
+        <div className="deferred-heading">
+          <span className="decision-card-number">03</span>
+          <div>
+            <span className="decision-card-label">Сохраняем фокус</span>
+            <h3 id="deferred-title">Почему остальные элементы пока не трогать</h3>
+          </div>
+        </div>
+        <div className="deferred-grid">
+          {analysis.doNotDo.map((item) => (
+            <article key={item.title}>
+              <span aria-hidden="true">×</span>
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.explanation}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <EvolutionMap currentArchetypeId={analysis.archetype.id} />
+
+      <div className="route-action-wrap">
+        <span>Следующий шаг</span>
+        <h3>Посмотреть, в какой последовательности усиливать систему</h3>
+        <button type="button" className="primary-button route-button" onClick={onOpenPlan}>
+          Маршрут перехода <ArrowIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NeuroAnalysisScreen({ mode }: { mode: "analysis" | "plan" }) {
+  const isPlan = mode === "plan";
+
+  return (
+    <section className="diagnostic-card neuro-screen" aria-live="polite" aria-busy="true">
+      <div className="alex-portrait-wrap">
+        <div className="alex-portrait" role="img" aria-label="Нейро-маркетолог Алекс" />
+        <span className="alex-brain-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M9.1 4.5A3 3 0 0 0 4.8 8a3.2 3.2 0 0 0 .6 6.2A3.4 3.4 0 0 0 9.7 19M14.9 4.5A3 3 0 0 1 19.2 8a3.2 3.2 0 0 1-.6 6.2 3.4 3.4 0 0 1-4.3 4.8M9.2 4.4V19M14.8 4.4V19M9.2 8.4H7.6M14.8 8.4h1.6M9.2 14.7H7.4M14.8 14.7h1.8M9.2 11.5h5.6" />
+          </svg>
+        </span>
+      </div>
+      <span className="neuro-badge">
+        <span aria-hidden="true">✧</span> Нейро-анализ
+      </span>
+      <h2>{isPlan ? "Собираю ваш" : "Анализирую вашу"}<br /><span>{isPlan ? "маршрут перехода" : "систему"}</span></h2>
+      <p>
+        {isPlan
+          ? "Алекс сопоставляет текущий уровень каждого элемента 7К с вашей целью и собирает последовательность действий без лишней нагрузки."
+          : "Сейчас наш нейро-маркетолог Алекс анализирует все ваши ответы, состояние бизнес-системы и определяет ключевую точку перехода к цели."}
+      </p>
+      <div className="neuro-progress">
+        <span className="neuro-spinner" aria-hidden="true" />
+        <div>
+          <strong>Прогресс</strong>
+          <span>{isPlan ? "Выстраиваем приоритеты…" : "Обрабатываем данные…"}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function declineClientName(name: string) {
+  const clean = name.trim();
+  if (!clean) return "Екатерины";
+  return clean
+    .split(/\s+/)
+    .map((part) => {
+      if (/ова$/i.test(part)) return `${part.slice(0, -3)}овой`;
+      if (/ева$/i.test(part)) return `${part.slice(0, -3)}евой`;
+      if (/ина$/i.test(part) && part.length > 5) return `${part.slice(0, -1)}ой`;
+      if (/я$/i.test(part)) return `${part.slice(0, -1)}и`;
+      if (/[гкхжчшщ]а$/i.test(part)) return `${part.slice(0, -1)}и`;
+      if (/а$/i.test(part)) return `${part.slice(0, -1)}ы`;
+      return part;
+    })
+    .join(" ");
+}
+
+function TransitionPlan({
+  analysis,
+  values,
+  deadline,
+  onBack,
+}: {
+  analysis: BusinessAnalysisResult;
+  values: Record<string, string>;
+  deadline: string;
+  onBack: () => void;
+}) {
+  const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
+  const recommendations = useMemo(() => {
+    const items = [analysis.growthLink.leading, ...analysis.growthLink.supporting];
+    return new Map<SystemElementId, { item: ElementRecommendation; priority: number }>(
+      items.map((item, index) => [item.elementId, { item, priority: index + 1 }]),
+    );
+  }, [analysis]);
+
+  const orderedElements = useMemo(
+    () => [...systemElements].sort((left, right) => {
+      const leftPriority = recommendations.get(left.elementId)?.priority ?? 99;
+      const rightPriority = recommendations.get(right.elementId)?.priority ?? 99;
+      return leftPriority - rightPriority || left.id - right.id;
+    }),
+    [recommendations, systemElements],
+  );
+
+  const expertName = values.expertName?.trim() || "Екатерина";
+  const currentIncome = values.currentIncome?.trim() || "не указан";
+  const goalIncome = values.goalIncome?.trim() || "не указан";
+
+  return (
+    <section className="diagnostic-card transition-plan" aria-labelledby="transition-plan-title">
+      <div className="plan-heading">
+        <span className="analysis-kicker">Шаг 3 · План перехода</span>
+        <h2 id="transition-plan-title">Индивидуальный план перехода <span>для {declineClientName(expertName)}</span></h2>
+        <p>Чек-лист показывает порядок усиления 7К. В работу попадают только элементы, которые действительно влияют на выбранную цель.</p>
+      </div>
+
+      <div className="income-route" aria-label="Переход от текущего дохода к желаемому">
+        <div>
+          <span>Текущий доход</span>
+          <strong>{currentIncome}</strong>
+        </div>
+        <span className="income-route-arrow"><ArrowIcon /></span>
+        <div>
+          <span>Желаемый доход</span>
+          <strong>{goalIncome}</strong>
+        </div>
+        <div className="income-route-deadline">
+          <span>Срок перехода</span>
+          <strong>{deadline}</strong>
+        </div>
+      </div>
+
+      <div className="plan-checklist-heading">
+        <span className="result-kicker">Маршрут перехода</span>
+        <h3>Что усиливать и в какой последовательности</h3>
+        <p>Карточки расположены по приоритету. Если элемент не требует действий сейчас, мы сохраняем его без дополнительной нагрузки.</p>
+      </div>
+
+      <div className="plan-element-grid">
+        {orderedElements.map((element) => {
+          const recommendation = recommendations.get(element.elementId);
+          return (
+            <article className={`plan-element-card ${recommendation ? "has-task" : "no-task"}`} key={element.elementId}>
+              <div className="plan-element-topline">
+                <span className="plan-element-number">{String(element.id).padStart(2, "0")}</span>
+                {recommendation ? (
+                  <span className="priority-chip">Приоритет {recommendation.priority}</span>
+                ) : (
+                  <span className="priority-chip later">Без задач сейчас</span>
+                )}
+              </div>
+              <h4>{element.name}</h4>
+              <div className="plan-score-row">
+                <span>Сейчас <b>{element.current}/10</b></span>
+                <i aria-hidden="true">→</i>
+                <span>Цель <b>{element.current + element.added}/10</b></span>
+              </div>
+              {recommendation ? (
+                <>
+                  <div className="plan-task">
+                    <span className="task-check"><CheckIcon /></span>
+                    <p>{recommendation.item.minimumChange}</p>
+                  </div>
+                  <div className="plan-criterion">
+                    <span>Критерий выполнения</span>
+                    <p>{recommendation.item.criterion}</p>
+                  </div>
+                </>
+              ) : (
+                <div className="plan-empty-task">
+                  <span className="task-check"><CheckIcon /></span>
+                  <div>
+                    <strong>Сейчас задач нет</strong>
+                    <p>Сохраняем текущий уровень и не распыляем ресурс на этот элемент.</p>
+                  </div>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="plan-actions">
+        <button type="button" className="secondary-button" onClick={onBack}>Вернуться к разбору</button>
+        <button type="button" className="primary-button compact" onClick={() => window.print()}>
+          Сохранить план в PDF <ArrowIcon />
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function AnalysisSection({
   analysis,
   activeSlide,
   setActiveSlide,
+  submittedFieldCount,
+  onOpenPlan,
 }: {
   analysis: BusinessAnalysisResult;
   activeSlide: number;
   setActiveSlide: (slide: number) => void;
+  submittedFieldCount: number;
+  onOpenPlan: () => void;
 }) {
   const pointerStart = useRef<number | null>(null);
   const [archetypeOpen, setArchetypeOpen] = useState(false);
@@ -512,6 +813,7 @@ function AnalysisSection({
         <h2 id="analysis-title">Бизнес-модель <span>7К</span></h2>
         <strong className="analysis-method-subtitle">Система пошагового роста эксперта</strong>
         <p>Показывает, как шаг за шагом построить сильную аутентичную систему. Сравните текущую модель с моделью под вашу цель и посмотрите, какие элементы важно достроить.</p>
+        <span className="analysis-context-chip">Проанализировано ответов: {submittedFieldCount}</span>
       </div>
 
       <div className="analysis-carousel">
@@ -586,7 +888,7 @@ function AnalysisSection({
       </div>
       <p className="analysis-counter" aria-live="polite">{activeSlide + 1} / {slideCount}</p>
 
-      <BusinessAnalysis analysis={analysis} />
+      <BusinessAnalysis analysis={analysis} onOpenPlan={onOpenPlan} />
 
       <ArchetypeDialog
         archetypeId={analysis.archetype.id}
@@ -667,13 +969,41 @@ function Brand() {
   );
 }
 
+type SubmittedDiagnostic = {
+  values: Record<string, string>;
+  deadline: string;
+  personality: string;
+};
+
+function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalysisResult {
+  const factualAnswers = [
+    { title: "Откуда приходят клиенты", value: diagnostic.values.sources },
+    { title: "Как устроены продажи", value: diagnostic.values.sales },
+    { title: "Что покупают чаще", value: diagnostic.values.bestSeller },
+    { title: "Лучший период", value: diagnostic.values.bestPeriod },
+    { title: "Почему пока не получается", value: diagnostic.values.struggles },
+  ]
+    .filter((item) => item.value?.trim())
+    .slice(0, 4)
+    .map((item) => ({ title: item.title, explanation: item.value.trim() }));
+
+  return {
+    ...demoBusinessAnalysis,
+    whyHere: factualAnswers.length >= 2 ? factualAnswers : demoBusinessAnalysis.whyHere,
+  };
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
+  const [maxUnlockedStage, setMaxUnlockedStage] = useState(0);
   const [analysisSlide, setAnalysisSlide] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
   const [deadline, setDeadline] = useState("6 месяцев");
   const [personality, setPersonality] = useState("Амбиверт");
+  const [loadingTarget, setLoadingTarget] = useState<"analysis" | "plan" | null>(null);
+  const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
 
   const formula = useMemo(() => {
     const goal = values.goalIncome?.trim() || "_____";
@@ -686,22 +1016,53 @@ export default function Home() {
   }, [values]);
 
   const goToTab = (tab: number) => {
+    setLoadingTarget(null);
     setCurrentStage(0);
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const openAnalysis = () => {
-    setCurrentStage(1);
+    const diagnostic = { values: { ...values }, deadline, personality };
+    setSubmittedDiagnostic(diagnostic);
+    setAnalysisResult(buildPrototypeAnalysis(diagnostic));
+    setLoadingTarget("analysis");
     setAnalysisSlide(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const openTransitionPlan = () => {
+    setLoadingTarget("plan");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (!loadingTarget) return;
+    const destination = loadingTarget;
+    const timer = window.setTimeout(() => {
+      if (destination === "analysis") {
+        setCurrentStage(1);
+        setMaxUnlockedStage((current) => Math.max(current, 1));
+      } else {
+        setCurrentStage(2);
+        setMaxUnlockedStage((current) => Math.max(current, 2));
+      }
+      setLoadingTarget(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 10000);
+
+    return () => window.clearTimeout(timer);
+  }, [loadingTarget]);
+
   const showJourneyStage = (stage: number) => {
-    if (stage > 1) return;
+    if (stage > maxUnlockedStage || stage > 2 || loadingTarget) return;
     setCurrentStage(stage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const submittedValues = submittedDiagnostic?.values ?? values;
+  const submittedFieldCount = Object.values(submittedValues).filter((value) => value.trim()).length + 2;
+  const visibleAnalysis = analysisResult ?? demoBusinessAnalysis;
 
   return (
     <main className="site-shell">
@@ -719,7 +1080,9 @@ export default function Home() {
         </p>
       </section>
 
-      {currentStage === 0 ? (
+      {loadingTarget ? (
+        <NeuroAnalysisScreen mode={loadingTarget} />
+      ) : currentStage === 0 ? (
       <section className="diagnostic-card" aria-label="Диагностика бизнес-системы">
         <div className="identity-grid">
           <label className="identity-field">
@@ -892,9 +1255,22 @@ export default function Home() {
           )}
         </div>
       </section>
+      ) : currentStage === 1 ? (
+        // При подключении ИИ buildPrototypeAnalysis заменяется серверным ответом business_analysis_v1.
+        <AnalysisSection
+          analysis={visibleAnalysis}
+          activeSlide={analysisSlide}
+          setActiveSlide={setAnalysisSlide}
+          submittedFieldCount={submittedFieldCount}
+          onOpenPlan={openTransitionPlan}
+        />
       ) : (
-        // При подключении ИИ demoBusinessAnalysis заменяется валидированным ответом business_analysis_v1.
-        <AnalysisSection analysis={demoBusinessAnalysis} activeSlide={analysisSlide} setActiveSlide={setAnalysisSlide} />
+        <TransitionPlan
+          analysis={visibleAnalysis}
+          values={submittedValues}
+          deadline={submittedDiagnostic?.deadline ?? deadline}
+          onBack={() => showJourneyStage(1)}
+        />
       )}
 
       <nav className="journey" aria-label="Этапы работы">
@@ -903,7 +1279,7 @@ export default function Home() {
             type="button"
             className={`journey-stage ${index === currentStage ? "active" : ""}`}
             aria-current={index === currentStage ? "step" : undefined}
-            disabled={index > 1}
+            disabled={Boolean(loadingTarget) || index > maxUnlockedStage || index > 2}
             onClick={() => showJourneyStage(index)}
             key={stage}
           >
