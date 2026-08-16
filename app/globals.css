@@ -4402,6 +4402,366 @@ button {
   }
 }
 
+/* Archetype portrait, visual growth map and simplified transition summary */
+.archetype-photo-unit {
+  width: 220px;
+  height: 235px;
+  margin-top: 22px;
+  position: relative;
+  z-index: 1;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.archetype-photo-circle {
+  width: 184px;
+  height: 184px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  overflow: hidden;
+  background-image: url("/business-archetype-map.png");
+  background-repeat: no-repeat;
+  background-size: 890% auto;
+  border: 3px solid #d4a849;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 7px rgba(255, 255, 255, 0.1),
+    0 22px 48px rgba(17, 5, 24, 0.42);
+  transform: translateX(-50%);
+}
+
+.archetype-photo-altruist .archetype-photo-circle { background-position: 7.3% 84.6%; }
+.archetype-photo-explorer .archetype-photo-circle { background-position: 34.8% 66.8%; }
+.archetype-photo-creator .archetype-photo-circle { background-position: 61.4% 67.9%; }
+.archetype-photo-hero .archetype-photo-circle { background-position: 84.6% 44.1%; }
+.archetype-photo-magician .archetype-photo-circle { background-position: 60.9% 10.3%; }
+.archetype-photo-ruler .archetype-photo-circle { background-position: 91.9% 3.1%; }
+
+.archetype-photo-plaque {
+  width: 220px;
+  min-height: 66px;
+  padding: 9px 16px 10px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #f9dfaa;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 35%),
+    linear-gradient(120deg, #2c103b, #4c175a 58%, #2b0d39);
+  border: 2px solid #d2a64a;
+  border-radius: 15px;
+  box-shadow: 0 13px 30px rgba(17, 5, 24, 0.38);
+  text-align: center;
+}
+
+.archetype-photo-plaque strong {
+  color: #ffe3aa;
+  font-family: var(--display-font);
+  font-size: 23px;
+  font-weight: 790;
+  line-height: 1;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.48);
+}
+
+.archetype-photo-plaque small {
+  margin-top: 5px;
+  color: rgba(255, 239, 206, 0.82);
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.archetype-card-front .archetype-card-quote {
+  margin-top: 20px;
+}
+
+.evolution-card {
+  padding: 34px 30px 30px;
+}
+
+.evolution-heading p {
+  max-width: 700px;
+  margin: 10px auto 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evolution-map-button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 0;
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #25142a;
+  border: 1px solid rgba(109, 47, 182, 0.2);
+  border-radius: 18px;
+  cursor: zoom-in;
+  box-shadow: 0 22px 48px rgba(48, 19, 58, 0.16);
+}
+
+.evolution-map-button img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 420ms ease, filter 420ms ease;
+}
+
+.evolution-map-button:hover img,
+.evolution-map-button:focus-visible img {
+  filter: saturate(1.06) brightness(1.03);
+  transform: scale(1.012);
+}
+
+.evolution-map-button:focus-visible {
+  outline: 3px solid rgba(160, 84, 215, 0.46);
+  outline-offset: 4px;
+}
+
+.evolution-map-hint {
+  padding: 9px 13px;
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: white;
+  background: rgba(40, 13, 51, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 22px rgba(14, 4, 20, 0.26);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.evolution-map-hint b {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 0.8;
+}
+
+.evolution-map-overlay {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 8, 27, 0.84);
+  backdrop-filter: blur(14px);
+  cursor: zoom-out;
+  animation: archetype-overlay-in 220ms ease both;
+}
+
+.evolution-map-dialog {
+  width: min(1500px, 96vw);
+  max-height: 94vh;
+  position: relative;
+  cursor: default;
+}
+
+.evolution-map-dialog img {
+  width: 100%;
+  max-height: 92vh;
+  display: block;
+  object-fit: contain;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 19px;
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.48);
+}
+
+.evolution-map-close {
+  width: 43px;
+  height: 43px;
+  padding: 0;
+  position: absolute;
+  z-index: 2;
+  top: -16px;
+  right: -16px;
+  display: grid;
+  place-items: center;
+  color: var(--plum-dark);
+  background: white;
+  border: 1px solid rgba(109, 47, 182, 0.18);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.plan-heading {
+  max-width: 760px;
+}
+
+.plan-heading h2 {
+  font-size: clamp(28px, 3.45vw, 45px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.plan-heading h2 span {
+  display: inline;
+}
+
+.income-route-line {
+  margin: 30px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 9px 14px;
+  color: #6f6075;
+  font-size: 16px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.income-route-line strong {
+  color: var(--plum-dark);
+  font-family: var(--display-font);
+  font-size: clamp(23px, 2.7vw, 34px);
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.income-route-line-arrow {
+  width: 54px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple);
+}
+
+.income-route-line-arrow .arrow-icon {
+  width: 44px;
+  height: 26px;
+}
+
+.income-route-line-deadline {
+  color: #8d368f;
+  font-size: 14px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.plan-element-card {
+  overflow: hidden;
+}
+
+.plan-element-card h4 {
+  margin: 15px -22px 0;
+  padding: 13px 22px 14px;
+  color: white;
+  background: linear-gradient(110deg, #3b154c, #6d2fad 64%, #b62e92);
+  box-shadow: 0 10px 22px rgba(70, 20, 84, 0.15);
+  font-family: var(--display-font);
+  font-size: 19px;
+  font-weight: 780;
+  letter-spacing: -0.015em;
+}
+
+.plan-element-card.no-task h4 {
+  color: #5d276f;
+  background: linear-gradient(100deg, #f1e8f7, #f8f3fa);
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  .archetype-photo-unit {
+    width: 198px;
+    height: 214px;
+    margin-top: 18px;
+  }
+
+  .archetype-photo-circle {
+    width: 166px;
+    height: 166px;
+  }
+
+  .archetype-photo-plaque {
+    width: 198px;
+    min-height: 61px;
+  }
+
+  .archetype-photo-plaque strong {
+    font-size: 20px;
+  }
+
+  .archetype-card-front .archetype-card-quote {
+    margin-top: 15px;
+    font-size: 15px;
+  }
+
+  .evolution-card {
+    padding: 25px 13px 18px;
+  }
+
+  .evolution-heading p {
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .evolution-map-button {
+    margin-top: 18px;
+    border-radius: 14px;
+  }
+
+  .evolution-map-hint {
+    right: 9px;
+    bottom: 9px;
+    padding: 7px 10px;
+  }
+
+  .evolution-map-overlay {
+    padding: 12px;
+  }
+
+  .evolution-map-dialog {
+    width: 98vw;
+  }
+
+  .evolution-map-close {
+    width: 40px;
+    height: 40px;
+    top: -13px;
+    right: 2px;
+  }
+
+  .plan-heading h2 {
+    font-size: 29px;
+  }
+
+  .income-route-line {
+    max-width: 330px;
+    margin-top: 25px;
+    gap: 7px 10px;
+  }
+
+  .income-route-line strong {
+    font-size: 24px;
+  }
+
+  .income-route-line-arrow {
+    width: 38px;
+  }
+
+  .income-route-line-arrow .arrow-icon {
+    width: 35px;
+  }
+}
+
 @media print {
   .transition-plan {
     width: 100%;
@@ -4418,6 +4778,7 @@ button {
   }
 
   .income-route,
+  .income-route-line,
   .plan-element-card,
   .locked-money-card,
   .decision-card,
@@ -4429,5 +4790,10 @@ button {
 
   .plan-element-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .evolution-map-hint,
+  .evolution-map-overlay {
+    display: none !important;
   }
 }

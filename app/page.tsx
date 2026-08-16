@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   archetypeDefinitions,
-  archetypeOrder,
   demoBusinessAnalysis,
   resolveSystemElements,
   systemElementDefinitions,
@@ -103,6 +103,28 @@ function ArchetypeMedallion({ kind, className = "" }: { kind: ArchetypeKind; cla
   );
 }
 
+const archetypePortraitCaptions: Record<ArchetypeId, string> = {
+  altruist: "Готов всем помочь",
+  explorer: "Исследует возможности",
+  creator: "Создаёт формы",
+  hero: "Запускает маховик",
+  magician: "Создаёт собственную формулу",
+  ruler: "Масштабирует через команду и систему",
+};
+
+function ArchetypePortrait({ kind }: { kind: ArchetypeId }) {
+  const archetype = archetypeDefinitions[kind];
+  return (
+    <span className={`archetype-photo-unit archetype-photo-${kind}`} aria-hidden="true">
+      <span className="archetype-photo-circle" />
+      <span className="archetype-photo-plaque">
+        <strong>{archetype.name}</strong>
+        <small>{archetypePortraitCaptions[kind]}</small>
+      </span>
+    </span>
+  );
+}
+
 function SystemModel({ elements, target = false }: { elements: ResolvedSystemElement[]; target?: boolean }) {
   return (
     <div className="system-model" aria-label={target ? "Модель под вашу цель" : "Текущая бизнес-модель"}>
@@ -195,8 +217,8 @@ function ArchetypeDialog({
           >
             <span className="archetype-card-face archetype-card-front" aria-hidden={flipped}>
               <span className="archetype-card-eyebrow">Ваш бизнес-архетип</span>
-              <ArchetypeMedallion kind={archetype.id} className="card-medallion" />
-              <strong id="archetype-card-title">{archetype.name}</strong>
+              <span id="archetype-card-title" className="sr-only">{archetype.name}</span>
+              <ArchetypePortrait kind={archetype.id} />
               <span className="archetype-card-quote">«{archetype.quote}»</span>
               <span className="archetype-card-hint">Нажмите на карту, чтобы увидеть ключ перехода</span>
             </span>
@@ -224,43 +246,66 @@ function ArchetypeDialog({
 }
 
 function EvolutionMap({ currentArchetypeId }: { currentArchetypeId: ArchetypeId }) {
-  const currentIndex = archetypeOrder.indexOf(currentArchetypeId);
-  const archetypeJourney = archetypeOrder.map((id, index) => ({
-    number: index + 1,
-    ...archetypeDefinitions[id],
-    state: index < currentIndex ? "passed" : index === currentIndex ? "current" : index === currentIndex + 1 ? "next" : "",
-  }));
+  const [mapOpen, setMapOpen] = useState(false);
+  const currentArchetype = archetypeDefinitions[currentArchetypeId];
+
+  useEffect(() => {
+    if (!mapOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMapOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mapOpen]);
 
   return (
     <section className="evolution-card" aria-labelledby="evolution-title">
       <div className="evolution-heading">
-        <span className="result-kicker">Карта роста</span>
+        <span className="result-kicker">Навигатор роста</span>
         <h3 id="evolution-title">Эволюция предпринимательского мышления</h3>
-        <p>Не тип личности, а способ, которым человек сейчас строит именно этот бизнес.</p>
+        <p>Не тип личности, а способ мышления, через который человек сейчас строит именно этот бизнес.</p>
       </div>
-      <div className="evolution-legend" aria-label="Обозначения карты">
-        <span><i className="evolution-dot passed" />Пройденная опора</span>
-        <span><i className="evolution-dot current" />Текущий архетип</span>
-        <span><i className="evolution-dot next" />Следующий переход</span>
-      </div>
-      <div className="evolution-scroll">
-        <div className="evolution-flow">
-          {archetypeJourney.map((stage) => (
-            <article className={`evolution-stage ${stage.state ?? ""}`} key={stage.name}>
-              <span className="evolution-stage-number">{String(stage.number).padStart(2, "0")}</span>
-              <span className="evolution-orb">
-                <ArchetypeGlyph kind={stage.id} />
-              </span>
-              <strong className="evolution-stage-label">{stage.name}</strong>
-              {stage.state === "current" && <small>Вы здесь</small>}
-              {stage.state === "next" && <small>Следующий уровень</small>}
-            </article>
-          ))}
+      <button
+        type="button"
+        className="evolution-map-button"
+        onClick={() => setMapOpen(true)}
+        aria-label={`Увеличить карту эволюции. Текущий архетип: ${currentArchetype.name}`}
+      >
+        <Image
+          src="/business-archetype-map.png"
+          alt="Карта эволюции предпринимательского мышления от Альтруиста к Правителю"
+          width={2048}
+          height={1152}
+          sizes="(max-width: 920px) 92vw, 980px"
+        />
+        <span className="evolution-map-hint"><b aria-hidden="true">＋</b> Увеличить карту</span>
+      </button>
+
+      {mapOpen && (
+        <div
+          className="evolution-map-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setMapOpen(false);
+          }}
+        >
+          <div className="evolution-map-dialog" role="dialog" aria-modal="true" aria-label="Увеличенная карта эволюции предпринимательского мышления">
+            <button type="button" className="evolution-map-close" onClick={() => setMapOpen(false)} aria-label="Закрыть карту" autoFocus>×</button>
+            <Image
+              src="/business-archetype-map.png"
+              alt="Карта эволюции предпринимательского мышления от Альтруиста к Правителю"
+              width={2048}
+              height={1152}
+              sizes="96vw"
+            />
+          </div>
         </div>
-      </div>
-      <p className="evolution-caption">
-        Альтруист ждёт оценки. Искатель ищет способ. Творец создаёт. Герой связывает и ведёт результат. Волшебник знает формулу. Правитель передаёт её системе и масштабирует через сильных лидеров.
-      </p>
+      )}
     </section>
   );
 }
@@ -641,6 +686,14 @@ function declineClientName(name: string) {
     .join(" ");
 }
 
+function formatIncome(value: string) {
+  const cleaned = value.trim();
+  if (!cleaned || cleaned === "не указан" || /(?:₽|руб)/i.test(cleaned)) return cleaned || "не указан";
+  const digits = cleaned.replace(/\s/g, "");
+  if (/^\d+$/.test(digits)) return `${Number(digits).toLocaleString("ru-RU")} ₽`;
+  return cleaned;
+}
+
 const prototypePlanTasks: Record<SystemElementId, string[]> = {
   authenticity: [
     "Собрать факты профессионального пути и результаты клиентов.",
@@ -722,31 +775,23 @@ function TransitionPlan({
   }), [priorityByElement, systemElements]);
 
   const expertName = values.expertName?.trim() || "Екатерина";
-  const currentIncome = values.currentIncome?.trim() || "не указан";
-  const goalIncome = values.goalIncome?.trim() || "не указан";
+  const currentIncome = formatIncome(values.currentIncome?.trim() || "не указан");
+  const goalIncome = formatIncome(values.goalIncome?.trim() || "не указан");
 
   return (
     <section className="diagnostic-card transition-plan" aria-labelledby="transition-plan-title">
       <div className="plan-heading">
         <span className="analysis-kicker">Шаг 3 · План перехода</span>
-        <h2 id="transition-plan-title">Индивидуальный план перехода<br /><span>для {declineClientName(expertName)}</span></h2>
+        <h2 id="transition-plan-title">Индивидуальный план перехода <span>для {declineClientName(expertName)}</span></h2>
         <p>Чек-лист показывает порядок усиления 7К. В работу попадают только элементы, которые действительно влияют на выбранную цель.</p>
       </div>
 
-      <div className="income-route" aria-label="Переход от текущего дохода к желаемому">
-        <div className="income-point">
-          <span>Текущий доход</span>
-          <strong>{currentIncome}</strong>
-        </div>
-        <div className="income-route-arrow">
-          <span>за {deadline}</span>
-          <ArrowIcon />
-        </div>
-        <div className="income-point target">
-          <span>Желаемый доход</span>
-          <strong>{goalIncome}</strong>
-        </div>
-      </div>
+      <p className="income-route-line" aria-label={`Переход от ${currentIncome} к ${goalIncome} за ${deadline}`}>
+        <strong>{currentIncome}</strong>
+        <span className="income-route-line-arrow"><ArrowIcon /></span>
+        <strong>{goalIncome}</strong>
+        <span className="income-route-line-deadline">за {deadline}</span>
+      </p>
 
       <div className="plan-checklist-heading">
         <span className="result-kicker">Маршрут перехода</span>
