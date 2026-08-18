@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { check, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const diagnostics = sqliteTable(
   "diagnostics",
@@ -60,5 +60,45 @@ export const analysisResults = sqliteTable(
   (table) => [
     uniqueIndex("analysis_results_run_unique").on(table.analysisRunId),
     index("analysis_results_diagnostic_idx").on(table.diagnosticId),
+  ],
+);
+
+export const p01AnalysisResults = sqliteTable(
+  "p01_analysis_results",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    promptVersion: text("prompt_version").notNull(),
+    outputSchemaVersion: text("output_schema_version").notNull(),
+    ruleVersionsJson: text("rule_versions_json").notNull(),
+    inputHash: text("input_hash").notNull(),
+    resultJson: text("result_json"),
+    providerRawResponseJson: text("provider_raw_response_json"),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    startedAt: text("started_at").notNull(),
+    finishedAt: text("finished_at").notNull(),
+    latencyMs: integer("latency_ms").notNull(),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalTokens: integer("total_tokens"),
+    costUsd: real("cost_usd"),
+    retryCount: integer("retry_count").notNull(),
+    technicalRetryCount: integer("technical_retry_count").notNull(),
+    reevaluationRetryCount: integer("reevaluation_retry_count").notNull(),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("p01_analysis_results_run_unique").on(table.analysisRunId),
+    index("p01_analysis_results_diagnostic_idx").on(table.diagnosticId),
+    index("p01_analysis_results_input_hash_idx").on(table.inputHash),
   ],
 );

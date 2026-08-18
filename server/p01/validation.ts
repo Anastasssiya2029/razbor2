@@ -1,0 +1,223 @@
+import Ajv2020, { type ErrorObject } from "ajv/dist/2020.js";
+import p01OutputSchema from "@/schemas/p01-evidence-scorer.output.v1.3.schema.json";
+import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
+import { MODEL_FAMILIES, BASE_MODEL_FAMILIES } from "@/server/7k/config/target-rules.v2.1";
+import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
+import { TARGET_RULE_CODE_SET } from "@/server/7k/config/target-model-dictionary.v2.1";
+import { SEVEN_K_ELEMENT_IDS } from "@/server/7k/types";
+import type { P01ResultV1_3 } from "./types";
+
+export type P01ValidationIssue = {
+  path: string;
+  code: string;
+  message: string;
+};
+
+export class P01SchemaValidationError extends Error {
+  readonly code = "P01_SCHEMA_VALIDATION_FAILED" as const;
+  readonly issues: P01ValidationIssue[];
+
+  constructor(issues: P01ValidationIssue[]) {
+    super("P-01 output does not satisfy schema v1.3");
+    this.name = "P01SchemaValidationError";
+    this.issues = issues;
+  }
+}
+
+export class P01InvariantError extends Error {
+  readonly code = "P01_INVARIANT_FAILED" as const;
+  readonly issues: P01ValidationIssue[];
+
+  constructor(issues: P01ValidationIssue[]) {
+    super("P-01 output violates semantic invariants");
+    this.name = "P01InvariantError";
+    this.issues = issues;
+  }
+}
+
+const ajv = new Ajv2020({ allErrors: true, strict: false });
+const validateSchema = ajv.compile(p01OutputSchema);
+const ELEMENT_SET = new Set<string>(SEVEN_K_ELEMENT_IDS);
+const MODEL_SET = new Set<string>(MODEL_FAMILIES);
+const BASE_MODEL_SET = new Set<string>(BASE_MODEL_FAMILIES);
+const SCORING_RULE_IDS = new Set(
+  SEVEN_K_ELEMENT_IDS.flatMap((elementId) =>
+    SCORING_RULES.elements[elementId].levels.map((level) => level.ruleId),
+  ),
+);
+
+function schemaIssue(error: ErrorObject): P01ValidationIssue {
+  return {
+    path: error.instancePath || "/",
+    code: `schema.${error.keyword}`,
+    message: error.message ?? "Schema validation failed",
+  };
+}
+
+export function validateP01Schema(value: unknown): P01ResultV1_3 {
+  if (!validateSchema(value)) {
+    throw new P01SchemaValidationError((validateSchema.errors ?? []).map(schemaIssue));
+  }
+  return value as P01ResultV1_3;
+}
+
+function findForbiddenLegacyId(value: unknown, path = ""): P01ValidationIssue[] {
+  const issues: P01ValidationIssue[] = [];
+  if (value === "products_method") {
+    issues.push({ path: path || "/", code: "legacy_element_id", message: "products_method запрещён в P-01." });
+  } else if (Array.isArray(value)) {
+    value.forEach((item, index) => issues.push(...findForbiddenLegacyId(item, `${path}/${index}`)));
+  } else if (typeof value === "object" && value !== null) {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "products_method") {
+        issues.push({ path: `${path}/${key}`, code: "legacy_element_id", message: "Используйте product_method." });
+      }
+      issues.push(...findForbiddenLegacyId(child, `${path}/${key}`));
+    }
+  }
+  return issues;
+}
+
+function addDanglingEvidenceIssues(
+  issues: P01ValidationIssue[],
+  ids: readonly string[],
+  evidenceIds: ReadonlySet<string>,
+  path: string,
+): void {
+  ids.forEach((id, index) => {
+    if (!evidenceIds.has(id)) {
+      issues.push({ path: `${path}/${index}`, code: "dangling_evidence_id", message: `Evidence ${id} отсутствует в ledger.` });
+    }
+  });
+}
+
+function allEvidenceReferences(result: P01ResultV1_3): Array<{ path: string; ids: string[] }> {
+  const references: Array<{ path: string; ids: string[] }> = [];
+  for (const elementId of SEVEN_K_ELEMENT_IDS) {
+    const score = result.current7k[elementId];
+    references.push(
+      { path: `/current7k/${elementId}/evidence_ids`, ids: score.evidence_ids },
+      { path: `/current7k/${elementId}/counterevidence_ids`, ids: score.counterevidence_ids },
+    );
+  }
+  result.businessMap.experience.attempts.forEach((attempt, index) =>
+    references.push({ path: `/businessMap/experience/attempts/${index}/evidence_ids`, ids: attempt.evidence_ids }),
+  );
+  result.moneyChainFacts.forEach((fact, index) =>
+    references.push({ path: `/moneyChainFacts/${index}/evidence_ids`, ids: fact.evidence_ids }),
+  );
+  result.moneyNowSignals.forEach((signal, index) =>
+    references.push({ path: `/moneyNowSignals/${index}/evidence_ids`, ids: signal.evidence_ids }),
+  );
+  MONEY_NOW_SCENARIO_IDS.forEach((scenarioId) => {
+    const history = result.moneyNowHistory[scenarioId];
+    references.push(
+      { path: `/moneyNowHistory/${scenarioId}/evidence_ids`, ids: history.evidence_ids },
+      { path: `/moneyNowHistory/${scenarioId}/new_condition_evidence_ids`, ids: history.new_condition_evidence_ids },
+    );
+  });
+  result.sanityChecks.forEach((check, index) =>
+    references.push({ path: `/sanityChecks/${index}/evidence_ids`, ids: check.evidence_ids }),
+  );
+  return references;
+}
+
+export function validateP01Invariants(result: P01ResultV1_3): P01ResultV1_3 {
+  const issues = findForbiddenLegacyId(result);
+  const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));
+  if (evidenceById.size !== result.evidenceLedger.length) {
+    issues.push({ path: "/evidenceLedger", code: "duplicate_evidence_id", message: "Evidence IDs должны быть уникальными." });
+  }
+
+  for (const evidence of result.evidenceLedger) {
+    if (/^(?:target\.|\/target\/)/u.test(evidence.source_field)) {
+      issues.push({
+        path: `/evidenceLedger/${evidence.id}/source_field`,
+        code: "target_evidence_in_current_ledger",
+        message: "Target evidence запрещён в current evidence ledger.",
+      });
+    }
+    evidence.elements.forEach((elementId) => {
+      if (!ELEMENT_SET.has(elementId)) {
+        issues.push({ path: `/evidenceLedger/${evidence.id}/elements`, code: "unknown_element", message: `Неизвестный элемент ${elementId}.` });
+      }
+    });
+  }
+
+  const mustHaveScores = result.analysisStatus === "ok" || result.analysisStatus === "low_confidence";
+  for (const elementId of SEVEN_K_ELEMENT_IDS) {
+    const element = result.current7k[elementId];
+    if (mustHaveScores && (!Number.isInteger(element.score) || element.score === null)) {
+      issues.push({ path: `/current7k/${elementId}/score`, code: "score_required", message: "Для ok/low_confidence требуется integer 0–10." });
+    }
+    if (element.score !== null && element.evidence_cap !== null && element.score > element.evidence_cap) {
+      issues.push({ path: `/current7k/${elementId}/score`, code: "score_above_cap", message: `Score ${element.score} выше evidence_cap ${element.evidence_cap}.` });
+    }
+    if (element.matched_level_rule_id !== null && !SCORING_RULE_IDS.has(element.matched_level_rule_id)) {
+      issues.push({ path: `/current7k/${elementId}/matched_level_rule_id`, code: "unknown_scoring_rule", message: "Неизвестный scoring rule ID." });
+    }
+    if (element.next_level_rule_id !== null && !SCORING_RULE_IDS.has(element.next_level_rule_id)) {
+      issues.push({ path: `/current7k/${elementId}/next_level_rule_id`, code: "unknown_scoring_rule", message: "Неизвестный next scoring rule ID." });
+    }
+  }
+
+  const evidenceIds = new Set(evidenceById.keys());
+  allEvidenceReferences(result).forEach(({ path, ids }) =>
+    addDanglingEvidenceIssues(issues, ids, evidenceIds, path),
+  );
+
+  const target = result.targetIntent;
+  if (target.normalizedModelFamily !== null && !MODEL_SET.has(target.normalizedModelFamily)) {
+    issues.push({ path: "/targetIntent/normalizedModelFamily", code: "unknown_model_family", message: "Неизвестная model_family." });
+  }
+  if (target.primaryModelFamily !== null && !BASE_MODEL_SET.has(target.primaryModelFamily)) {
+    issues.push({ path: "/targetIntent/primaryModelFamily", code: "unknown_model_family", message: "Неизвестная primary model_family." });
+  }
+  target.secondaryModelFamilies.forEach((model, index) => {
+    if (!BASE_MODEL_SET.has(model)) issues.push({ path: `/targetIntent/secondaryModelFamilies/${index}`, code: "unknown_model_family", message: "Неизвестная secondary model_family." });
+  });
+  target.activatedCapabilities.forEach((capability, index) => {
+    if (!TARGET_RULE_CODE_SET.has(capability.code)) {
+      issues.push({ path: `/targetIntent/activatedCapabilities/${index}/code`, code: "unknown_capability", message: `Capability ${capability.code} отсутствует в target-rules.v2.1.` });
+    }
+  });
+
+  MONEY_NOW_SCENARIO_IDS.forEach((scenarioId) => {
+    const history = result.moneyNowHistory[scenarioId];
+    if (history.new_material_condition === "yes") {
+      if (history.new_condition_evidence_ids.length === 0) {
+        issues.push({ path: `/moneyNowHistory/${scenarioId}/new_condition_evidence_ids`, code: "new_condition_without_evidence", message: "new_material_condition=yes требует current evidence." });
+      }
+      history.new_condition_evidence_ids.forEach((evidenceId, index) => {
+        const evidence = evidenceById.get(evidenceId);
+        if (evidence && evidence.time_scope !== "current") {
+          issues.push({ path: `/moneyNowHistory/${scenarioId}/new_condition_evidence_ids/${index}`, code: "new_condition_not_current", message: "Новое существенное условие должно ссылаться на current evidence." });
+        }
+      });
+    }
+    if (history.history_status === "not_reported") {
+      if (history.new_material_condition !== "not_applicable") {
+        issues.push({ path: `/moneyNowHistory/${scenarioId}/new_material_condition`, code: "not_reported_is_not_not_tried", message: "not_reported означает отсутствие сведений, поэтому новое условие — not_applicable." });
+      }
+      if (history.evidence_ids.length > 0) {
+        issues.push({ path: `/moneyNowHistory/${scenarioId}/evidence_ids`, code: "not_reported_with_attempt_evidence", message: "Для not_reported не должно быть доказательств попытки." });
+      }
+    }
+  });
+
+  if (issues.length > 0) throw new P01InvariantError(issues);
+  return result;
+}
+
+export function p01SanityErrors(result: P01ResultV1_3): P01ValidationIssue[] {
+  return result.sanityChecks
+    .filter((check) => check.severity === "error")
+    .map((check, index) => ({
+      path: `/sanityChecks/${index}`,
+      code: `sanity.${check.code}`,
+      message: check.message,
+    }));
+}
+
+export const P01_OUTPUT_SCHEMA = p01OutputSchema as Record<string, unknown>;
+

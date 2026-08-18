@@ -102,6 +102,27 @@ Use build and validation commands for targeted diagnosis after a remote failure,
 
 The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
 
+## P-01 Evidence + Current 7K
+
+Submitting `POST /api/diagnostics` stores the immutable raw answers and the
+normalized `DiagnosticInput v1.2`, then creates an analysis run in `queued`.
+The response exposes the server-side `POST /api/analysis-runs/:analysisRunId/p01`
+next step. That endpoint runs only P-01 v1.3 and moves a successful run to
+`targeting`; it does not execute target, archetype, Money Now selection, P-02,
+P-03 or P-04.
+
+Runtime configuration:
+
+- `P01_AI_PROVIDER=openrouter` (currently the supported adapter; default);
+- `OPENROUTER_API_KEY` (required, server-only);
+- `P01_AI_MODEL` (required; no model is hardcoded);
+- `OPENROUTER_BASE_URL` (optional);
+- `P01_STRUCTURED_OUTPUT=false` only for a model without JSON Schema support;
+- `P01_APP_URL` and `P01_APP_TITLE` (optional OpenRouter attribution headers).
+
+Provider raw responses and usage metadata are stored only in the server-side
+`p01_analysis_results` table and are never returned by the P-01 API route.
+
 ## Learn More
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)

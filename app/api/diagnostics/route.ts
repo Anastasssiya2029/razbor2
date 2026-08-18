@@ -55,6 +55,11 @@ export async function POST(request: Request) {
         diagnosticId,
         analysisRunId,
         status: "queued",
+        nextStep: {
+          method: "POST",
+          href: `/api/analysis-runs/${analysisRunId}/p01`,
+          module: "P-01.v1.3",
+        },
         schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
         methodologyVersion: METHODOLOGY_VERSION,
         input: normalized.input,
