@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
@@ -9,7 +10,9 @@ import {
   MONEY_NOW_PRESCRIPTION_CAUSE_CODES,
   MONEY_NOW_PRESCRIPTION_INTEGRITY,
   MONEY_NOW_PRESCRIPTION_REGISTRY,
+  MONEY_NOW_RESERVED_CAUSE_CODES,
   MONEY_NOW_RESERVED_INTERVENTION_CODES,
+  MONEY_NOW_SELECTABLE_CAUSE_CODES,
   MONEY_NOW_SELECTABLE_INTERVENTION_CODES,
 } from "../server/7k/config/money-now-prescription-rules.v1";
 import { MONEY_NOW_SELECTOR_CONTRACT } from "../server/7k/config/money-now-selector-contract.v1";
@@ -28,6 +31,8 @@ import { sha256 } from "../server/stage4/hash";
 import { P03Error } from "../server/p03/errors";
 import { prepareP03Input, type P03SelectedPreparedInput } from "../server/p03/projections";
 import { buildP03SystemPrompt } from "../server/p03/request";
+import { buildP03BackendMetrics } from "../server/p03/metrics";
+import { authorizeP03PublicRequest } from "../server/p03/public-guard";
 import { runP03MoneyNowPrescription } from "../server/p03/runner";
 import { runP03Stage } from "../server/p03/stage-runner";
 import type { P03Repository, P03Source, StoredP03Result } from "../server/p03/stage-types";
@@ -36,8 +41,13 @@ import {
   type P03Provider,
   type P03ProviderRequest,
   type P03ProviderResponse,
-  type P03ResultV1_4,
+  type P03ResultV1_5,
 } from "../server/p03/types";
+import {
+  P03_PROMPT_SHA256,
+  P03_PROMPT_VERSION,
+  P03_SYSTEM_PROMPT,
+} from "../server/7k/prompts/p03.v1.5";
 import {
   canonicalizeP03SupportingElements,
   finalizeAndValidateP03Output,
@@ -86,6 +96,7 @@ function p01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_
     evidence("E07", "На бесплатном разборе клиент уже получает существенную часть решения и готовый план."),
     evidence("E08", "Эксперт говорит: мне страшно назвать эту цену, кажется, я столько не стою.", { elements: ["authenticity", "sales_technology"] }),
     evidence("E09", "Ранее тестировали квалификацию, результата не удержали.", { source_field: "experience.failures", time_scope: "historical_only" }),
+    evidence("E10", "Сейчас перед встречей появилась обязательная анкета с тремя критериями и ответственным за проверку."),
   ];
   const current7k = Object.fromEntries(SEVEN_K_ELEMENT_IDS.map((elementId) => [elementId, {
     score: 2,
@@ -226,10 +237,10 @@ async function source(selectedScenario: MoneyNowScenarioId | null = "MN14"): Pro
   };
 }
 
-function validOutput(input: P03SelectedPreparedInput): P03ResultV1_4 {
+function validOutput(input: P03SelectedPreparedInput): P03ResultV1_5 {
   return {
-    promptVersion: "P-03.v1.4",
-    schemaVersion: "1.4",
+    promptVersion: "P-03.v1.5",
+    schemaVersion: "1.5",
     analysisStatus: "ok",
     selectedScenario: {
       scenario_id: input.selectedScenario.scenario_id,
@@ -258,9 +269,29 @@ function validOutput(input: P03SelectedPreparedInput): P03ResultV1_4 {
       do_not_scale_yet: ["Не увеличивать трафик до проверки нового перехода."],
       zero_step: null,
     },
+    interventionHistoryReview: [
+      {
+        intervention_code: "INT_QUALIFY_BEFORE_SALE",
+        match_status: "matched",
+        matched_attempt_evidence_ids: ["E09"],
+        new_condition_status: "confirmed",
+        new_condition_evidence_ids: ["E10"],
+        conclusion: "clear_to_test",
+      },
+      {
+        intervention_code: "INT_LIMIT_FREE_CONSULTING",
+        match_status: "no_match",
+        matched_attempt_evidence_ids: [],
+        new_condition_status: "not_applicable",
+        new_condition_evidence_ids: [],
+        conclusion: "clear_to_test",
+      },
+    ],
     targetMetric: {
       metric_name: "Оплаты после продающих встреч",
+      baseline_metric_code: "money_chain.0.payment.value",
       baseline_value: 1,
+      target_metric_code: null,
       target_value: null,
       unit: null,
       target_rule: "Зафиксировать, меняется ли число оплат после квалификации.",
@@ -291,17 +322,51 @@ function validOutput(input: P03SelectedPreparedInput): P03ResultV1_4 {
   };
 }
 
-function blockedOutput(input: P03SelectedPreparedInput): P03ResultV1_4 {
+function blockedOutput(input: P03SelectedPreparedInput): P03ResultV1_5 {
   const value = validOutput(input);
   value.analysisStatus = "blocked_by_insufficient_evidence";
   value.diagnosis.primary_cause_code = null;
+  value.diagnosis.cause_statement = null;
   value.diagnosis.contributing_cause_codes = [];
   value.diagnosis.evidence_ids = [];
   value.diagnosis.missing_evidence = ["Нужна запись или разбор нескольких встреч."];
   value.businessPrescription = null;
+  value.interventionHistoryReview = [];
   value.targetMetric = null;
   value.test30d = null;
   value.supportingElements = [];
+  return value;
+}
+
+function blockedRepeatOutput(input: P03SelectedPreparedInput): P03ResultV1_5 {
+  const value = validOutput(input);
+  value.analysisStatus = "blocked_by_inconsistency";
+  value.businessPrescription = null;
+  value.targetMetric = null;
+  value.test30d = null;
+  value.supportingElements = [];
+  value.interventionHistoryReview = [{
+    intervention_code: "INT_QUALIFY_BEFORE_SALE",
+    match_status: "matched",
+    matched_attempt_evidence_ids: ["E09"],
+    new_condition_status: "unknown",
+    new_condition_evidence_ids: [],
+    conclusion: "blocked_repeat_without_new_condition",
+  }];
+  value.sanityChecks = [];
+  return value;
+}
+
+function blockedUnclearHistoryOutput(input: P03SelectedPreparedInput): P03ResultV1_5 {
+  const value = blockedOutput(input);
+  value.interventionHistoryReview = [{
+    intervention_code: "INT_QUALIFY_BEFORE_SALE",
+    match_status: "unclear",
+    matched_attempt_evidence_ids: ["E09"],
+    new_condition_status: "unknown",
+    new_condition_evidence_ids: [],
+    conclusion: "blocked_insufficient_history_evidence",
+  }];
   return value;
 }
 
@@ -342,6 +407,8 @@ class MemoryRepository implements P03Repository {
 test("prescription registry has 15 causes, 21 selectable interventions and all MN01–MN16", () => {
   assert.deepEqual(assertMoneyNowPrescriptionRegistryIntegrity(), MONEY_NOW_PRESCRIPTION_INTEGRITY);
   assert.equal(MONEY_NOW_PRESCRIPTION_CAUSE_CODES.length, 15);
+  assert.equal(MONEY_NOW_SELECTABLE_CAUSE_CODES.length, 14);
+  assert.deepEqual(MONEY_NOW_RESERVED_CAUSE_CODES, ["CAPACITY_BOTTLENECK"]);
   assert.equal(MONEY_NOW_SELECTABLE_INTERVENTION_CODES.length, 21);
   assert.deepEqual(MONEY_NOW_RESERVED_INTERVENTION_CODES, ["INT_FREE_CAPACITY"]);
   assert.deepEqual(Object.keys(MONEY_NOW_PRESCRIPTION_REGISTRY.scenarioRules).sort(), [...MONEY_NOW_SCENARIO_IDS].sort());
@@ -377,6 +444,14 @@ test("MN16 P-03 output accepts only the new cause and preserves the scenario anc
     personalized_action: "Повторять подтверждённую рабочую связку в пределах свободной ёмкости.",
     why_needed: "Механизм уже доказан, но используется реже доступной мощности.",
   }];
+  value.interventionHistoryReview = [{
+    intervention_code: "INT_INCREASE_PROVEN_REPETITIONS",
+    match_status: "no_match",
+    matched_attempt_evidence_ids: [],
+    new_condition_status: "not_applicable",
+    new_condition_evidence_ids: [],
+    conclusion: "clear_to_test",
+  }];
   value.test30d!.actions = [{
     intervention_code: "INT_INCREASE_PROVEN_REPETITIONS",
     action: "Повторять только доказанное действие и фиксировать оплаты.",
@@ -398,6 +473,30 @@ test("supporting elements are the exact canonical union and unknown history tags
 test("old text-only intervention rules are removed as a second source of truth", () => {
   const legacy = readFileSync("server/7k/config/money-now.v2.2.ts", "utf8");
   assert.doesNotMatch(legacy, /MONEY_NOW_INTERVENTION_RULES|MONEY_NOW_CAUSE_CODES/u);
+});
+
+test("P-03 prompt and schema are versioned as v1.5 without legacy schema symbols", () => {
+  assert.equal(P03_PROMPT_VERSION, "P-03.v1.5");
+  assert.equal(P03_PROMPT_SHA256, "577b177834110f5071eb132b2a1594a7f19981bad39cf04dee1b9cb73f28feaf");
+  assert.equal(createHash("sha256").update(P03_SYSTEM_PROMPT).digest("hex"), P03_PROMPT_SHA256);
+  assert.match(P03_SYSTEM_PROMPT, /P03_OUTPUT_SCHEMA_V1_5/u);
+  assert.doesNotMatch(P03_SYSTEM_PROMPT, /P03_OUTPUT_SCHEMA_V1_[34]|Canonical codes:|CAPACITY_BOTTLENECK/u);
+});
+
+test("reserved intervention and cause are absent from the scenario-specific P-03 projection", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  assert.doesNotMatch(JSON.stringify(prepared.interventionLibrary), /INT_FREE_CAPACITY/u);
+  assert.doesNotMatch(JSON.stringify(prepared.prescriptionRules), /CAPACITY_BOTTLENECK/u);
+});
+
+test("backend metrics assign baseline/reference roles and never create an implicit target", () => {
+  const metrics = buildP03BackendMetrics(p01().moneyChainFacts);
+  assert.deepEqual(metrics.map((metric) => [metric.metric_code, metric.role]), [
+    ["money_chain.0.payment.value", "baseline"],
+    ["money_chain.0.payment.denominator", "reference"],
+    ["money_chain.0.payment.conversion_pct", "baseline"],
+  ]);
+  assert.ok(metrics.every((metric) => metric.role !== "target"));
 });
 
 test("P03_CONTEXT contains exact approved keys and no alternatives or strategic pipeline", async () => {
@@ -483,6 +582,58 @@ test("cause without evidence rejects and no cause evidence can return a valid bl
   assert.equal(finalizeAndValidateP03Output(blockedOutput(prepared), prepared).analysisStatus, "blocked_by_insufficient_evidence");
 });
 
+test("blocked insufficient evidence requires cause_statement=null", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const blocked = blockedOutput(prepared);
+  assert.equal(blocked.diagnosis.cause_statement, null);
+  assert.doesNotThrow(() => finalizeAndValidateP03Output(blocked, prepared));
+  blocked.diagnosis.cause_statement = "Предварительная недоказанная причина";
+  assert.throws(() => finalizeAndValidateP03Output(blocked, prepared), P03InvariantError);
+});
+
+test("every selected intervention requires exactly one structured history review", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const valid = validOutput(prepared);
+  assert.equal(valid.businessPrescription!.interventions.length, 2);
+  assert.equal(valid.interventionHistoryReview.length, 2);
+  assert.doesNotThrow(() => finalizeAndValidateP03Output(valid, prepared));
+
+  const missing = validOutput(prepared);
+  missing.interventionHistoryReview.pop();
+  assert.throws(() => finalizeAndValidateP03Output(missing, prepared), P03InvariantError);
+
+  const duplicate = validOutput(prepared);
+  duplicate.interventionHistoryReview[1] = structuredClone(duplicate.interventionHistoryReview[0]);
+  assert.throws(() => finalizeAndValidateP03Output(duplicate, prepared), P03InvariantError);
+
+  const extra = validOutput(prepared);
+  extra.interventionHistoryReview.push({
+    intervention_code: "INT_BUILD_SALES_STRUCTURE",
+    match_status: "no_match",
+    matched_attempt_evidence_ids: [],
+    new_condition_status: "not_applicable",
+    new_condition_evidence_ids: [],
+    conclusion: "clear_to_test",
+  });
+  assert.throws(() => finalizeAndValidateP03Output(extra, prepared), P03InvariantError);
+});
+
+test("matched history with confirmed current new condition remains valid", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const value = validOutput(prepared);
+  assert.equal(value.interventionHistoryReview[0].match_status, "matched");
+  assert.equal(value.interventionHistoryReview[0].new_condition_status, "confirmed");
+  assert.doesNotThrow(() => finalizeAndValidateP03Output(value, prepared));
+});
+
+test("unclear intervention history requires blocked_by_insufficient_evidence", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const blocked = blockedUnclearHistoryOutput(prepared);
+  assert.doesNotThrow(() => finalizeAndValidateP03Output(blocked, prepared));
+  blocked.analysisStatus = "blocked_by_inconsistency";
+  assert.throws(() => finalizeAndValidateP03Output(blocked, prepared), P03InvariantError);
+});
+
 test("gratitude alone does not prove overconsulting", async () => {
   const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
   const value = validOutput(prepared);
@@ -511,16 +662,32 @@ test("zero-step rejects tactical doubt and accepts direct self-value evidence", 
   assert.doesNotThrow(() => finalizeAndValidateP03Output(valid, prepared));
 });
 
-test("numeric target must match backend metrics and exact client metric is valid", async () => {
+test("baseline metric cannot be reused as a numeric target", async () => {
   const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
-  const bad = validOutput(prepared);
-  bad.targetMetric!.target_value = 7;
-  assert.throws(() => finalizeAndValidateP03Output(bad, prepared), P03InvariantError);
+  const value = validOutput(prepared);
+  value.targetMetric!.target_metric_code = "money_chain.0.payment.value";
+  value.targetMetric!.target_value = 1;
+  assert.throws(() => finalizeAndValidateP03Output(value, prepared), P03InvariantError);
+});
+
+test("numeric target requires an exact role=target backend metric", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const missingTarget = validOutput(prepared);
+  missingTarget.targetMetric!.target_metric_code = "money_chain.target.payment.value";
+  missingTarget.targetMetric!.target_value = 3;
+  assert.throws(() => finalizeAndValidateP03Output(missingTarget, prepared), P03InvariantError);
+
+  prepared.backendMetrics.push({
+    metric_code: "money_chain.target.payment.value",
+    role: "target",
+    value: 3,
+    unit: null,
+    source: "derived_client_fact",
+    evidence_ids: ["E06"],
+  });
   const exact = validOutput(prepared);
-  exact.targetMetric!.target_value = 10;
-  exact.targetMetric!.unit = "%";
-  exact.targetMetric!.baseline_value = 10;
-  exact.test30d!.baseline = 10;
+  exact.targetMetric!.target_metric_code = "money_chain.target.payment.value";
+  exact.targetMetric!.target_value = 3;
   assert.doesNotThrow(() => finalizeAndValidateP03Output(exact, prepared));
 });
 
@@ -556,19 +723,16 @@ test("metric-only task title triggers targeted semantic reevaluation", async () 
 test("repeated intervention without new condition gets one targeted reevaluation then blocks", async () => {
   const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
   const repeated = validOutput(prepared);
-  repeated.sanityChecks = [{
-    code: "REPEATED_INTERVENTION_WITHOUT_NEW_CONDITION",
-    severity: "error",
-    message: "Квалификация повторяет прошлую попытку без нового условия.",
-    evidence_ids: ["E09"],
-  }];
-  const blocked = blockedOutput(prepared);
-  blocked.analysisStatus = "blocked_by_inconsistency";
-  blocked.sanityChecks = structuredClone(repeated.sanityChecks);
+  repeated.interventionHistoryReview[0].new_condition_status = "unknown";
+  repeated.interventionHistoryReview[0].new_condition_evidence_ids = [];
+  repeated.interventionHistoryReview[0].conclusion = "blocked_repeat_without_new_condition";
+  repeated.sanityChecks = [];
+  const blocked = blockedRepeatOutput(prepared);
   const provider = new QueueProvider([repeated, blocked]);
   const outcome = await runP03MoneyNowPrescription(prepared, { provider });
   assert.equal(outcome.result.analysisStatus, "blocked_by_inconsistency");
   assert.equal(outcome.metadata.reevaluationRetryCount, 1);
+  assert.equal(provider.requests.length, 2);
 });
 
 test("low_confidence is a valid analytical outcome and is not retried", async () => {
@@ -638,26 +802,67 @@ test("changed upstream after persistence returns P03_VERSION_CONFLICT", async ()
   );
 });
 
-test("repeated intervention guard requires matched attempt evidence and blocks", async () => {
+test("persisted v1.4 snapshot is never rewritten by the v1.5 runner", async () => {
+  const src = await source();
+  const prepared = await prepareP03Input(src) as P03SelectedPreparedInput;
+  const repository = new MemoryRepository(src);
+  await runP03Stage("run-1", {
+    repository,
+    provider: new QueueProvider([validOutput(prepared)]),
+    createId: () => "p03-existing",
+  });
+  const oldSnapshot = structuredClone(repository.stored!);
+  (oldSnapshot as unknown as { promptVersion: string }).promptVersion = "P-03.v1.4";
+  (oldSnapshot as unknown as { outputSchemaVersion: string }).outputSchemaVersion = "1.4";
+  oldSnapshot.deterministicInputHash = "persisted-v1.4-input-hash";
+  repository.stored = oldSnapshot;
+  const before = JSON.stringify(repository.stored);
+  await assert.rejects(
+    () => runP03Stage("run-1", { repository, provider: new QueueProvider([]) }),
+    (error: unknown) => error instanceof P03Error && error.code === "P03_VERSION_CONFLICT",
+  );
+  assert.equal(JSON.stringify(repository.stored), before);
+});
+
+test("repeated intervention guard requires matched attempt evidence and does not depend on sanityChecks", async () => {
   const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
-  const repeated = blockedOutput(prepared);
-  repeated.analysisStatus = "blocked_by_inconsistency";
-  repeated.sanityChecks = [{
-    code: "REPEATED_INTERVENTION_WITHOUT_NEW_CONDITION",
-    severity: "error",
-    message: "Квалификация повторяет прежнюю попытку без нового существенного условия.",
-    evidence_ids: ["E09"],
-  }];
+  const repeated = blockedRepeatOutput(prepared);
+  assert.equal(repeated.sanityChecks.length, 0);
   assert.doesNotThrow(() => finalizeAndValidateP03Output(repeated, prepared));
-  repeated.sanityChecks[0].evidence_ids = ["E01"];
+  repeated.interventionHistoryReview[0].matched_attempt_evidence_ids = ["E01"];
   assert.throws(() => finalizeAndValidateP03Output(repeated, prepared), P03InvariantError);
 });
 
 test("public P-03 endpoint contains no full paid prescription payload", () => {
   const route = readFileSync("app/api/analysis-runs/[analysisRunId]/p03/route.ts", "utf8");
   assert.doesNotMatch(route, /result:\s*executed\.result\.result|diagnosis\s*:|interventions\s*:|test30d\s*:|targetMetric\s*:|revenueScenario\s*:/u);
+  assert.doesNotMatch(route, /failureMessage:\s*executed|error\.details|details:\s*error/u);
   assert.match(route, /lockedTeaser/u);
   assert.match(route, /p04Started:\s*false/u);
+});
+
+test("public P-03 execution is fail-closed without feature flag and server token", () => {
+  const request = (token?: string) => new Request("https://example.test/p03", {
+    method: "POST",
+    headers: token ? { "x-p03-orchestrator-token": token } : {},
+  });
+  assert.deepEqual(authorizeP03PublicRequest(request(), {}), {
+    allowed: false,
+    status: 503,
+    code: "P03_PUBLIC_EXECUTION_DISABLED",
+    message: "P-03 execution is not available through the public endpoint.",
+  });
+  assert.equal(authorizeP03PublicRequest(request(), {
+    P03_PUBLIC_EXECUTION_ENABLED: "true",
+  }).allowed, false);
+  assert.equal(authorizeP03PublicRequest(request("wrong"), {
+    P03_PUBLIC_EXECUTION_ENABLED: "true",
+    P03_ORCHESTRATOR_TOKEN: "secret",
+  }).allowed, false);
+  assert.deepEqual(authorizeP03PublicRequest(request("secret"), {
+    P03_PUBLIC_EXECUTION_ENABLED: "true",
+    P03_ORCHESTRATOR_TOKEN: "secret",
+  }), { allowed: true });
 });
 
 test("P-03 storage is additive, immutable and server-only for provider/result payloads", () => {

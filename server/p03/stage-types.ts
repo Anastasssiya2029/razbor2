@@ -5,7 +5,7 @@ import type {
   BackendRevenueScenario,
   P03Context,
   P03Provider,
-  P03ResultV1_4,
+  P03ResultV1_5,
   P03RuleVersions,
   P03SelectedScenarioProjection,
 } from "./types";
@@ -40,8 +40,8 @@ export type StoredP03Result = {
   p01AnalysisResultId: string;
   p01ResultHash: string;
   stageVersion: "p03-money-now-prescription-stage.v1";
-  promptVersion: "P-03.v1.4";
-  outputSchemaVersion: "1.4";
+  promptVersion: "P-03.v1.5";
+  outputSchemaVersion: "1.5";
   ruleVersions: P03RuleVersions;
   contextHash: string | null;
   inputHash: string;
@@ -52,7 +52,7 @@ export type StoredP03Result = {
   backendRevenueScenario: BackendRevenueScenario | null;
   lockedTeaserVersion: "money-now-locked-teaser.v1";
   lockedTeaser: string;
-  result: P03ResultV1_4 | null;
+  result: P03ResultV1_5 | null;
   skippedOutcome: P03SkippedOutcome | null;
   providerRawResponse: unknown;
   provider: string | null;
@@ -81,7 +81,7 @@ export interface P03Repository {
       status: "writing_report" | "analysis_failed";
       errorCode: string | null;
       errorMessage: string | null;
-      promptVersion: "P-03.v1.4";
+      promptVersion: "P-03.v1.5";
       metadata: Record<string, unknown>;
     },
   ): Promise<void>;
@@ -100,7 +100,6 @@ export type P03StageExecutionResult = {
   idempotentReplay: boolean;
   nextStep: string | null;
   publicTeaser: string | null;
-  outcomeStatus: P03ResultV1_4["analysisStatus"] | "skipped_no_eligible_scenario" | "technical_failure";
+  outcomeStatus: P03ResultV1_5["analysisStatus"] | "skipped_no_eligible_scenario" | "technical_failure";
   result: StoredP03Result;
 };
-

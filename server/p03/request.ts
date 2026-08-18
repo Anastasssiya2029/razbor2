@@ -1,4 +1,4 @@
-import { P03_SYSTEM_PROMPT } from "@/server/7k/prompts/p03.v1.4";
+import { P03_SYSTEM_PROMPT } from "@/server/7k/prompts/p03.v1.5";
 import type { P03SelectedPreparedInput } from "./projections";
 
 export function buildP03SystemPrompt(
@@ -17,4 +17,3 @@ export function buildP03SystemPrompt(
   if (!correction) return prompt;
   return `${prompt}\n\n<CORRECTION_REQUIRED>\n${correction}\n</CORRECTION_REQUIRED>`;
 }
-

@@ -16,7 +16,7 @@ import type {
 } from "@/server/p01/types";
 
 export const P03_STAGE_VERSION = "p03-money-now-prescription-stage.v1" as const;
-export const P03_OUTPUT_SCHEMA_VERSION = "1.4" as const;
+export const P03_OUTPUT_SCHEMA_VERSION = "1.5" as const;
 export const P03_LOCKED_TEASER_VERSION = "money-now-locked-teaser.v1" as const;
 export const P03_LOCKED_TEASER =
   "Мы нашли ближайший денежный сценарий, который опирается на уже существующий у вас актив и не требует запуска нового большого канала. Полная связка, бизнес-рецепт и 30-дневный тест доступны в полной карте." as const;
@@ -51,11 +51,12 @@ export type P03Context = {
 };
 
 export type BackendMetric = {
-  code: string;
+  metric_code: string;
+  role: "baseline" | "target" | "reference";
   value: number;
   unit: string | null;
   source: "client_fact" | "derived_client_fact";
-  evidenceIds: string[];
+  evidence_ids: string[];
 };
 
 export type BackendRevenueScenario = {
@@ -66,9 +67,21 @@ export type BackendRevenueScenario = {
   is_forecast: false;
 };
 
-export type P03ResultV1_4 = {
-  promptVersion: "P-03.v1.4";
-  schemaVersion: "1.4";
+export type InterventionHistoryReview = {
+  intervention_code: MoneyNowInterventionCode;
+  match_status: "not_reported" | "no_match" | "matched" | "unclear";
+  matched_attempt_evidence_ids: string[];
+  new_condition_status: "not_applicable" | "confirmed" | "not_confirmed" | "unknown";
+  new_condition_evidence_ids: string[];
+  conclusion:
+    | "clear_to_test"
+    | "blocked_repeat_without_new_condition"
+    | "blocked_insufficient_history_evidence";
+};
+
+export type P03ResultV1_5 = {
+  promptVersion: "P-03.v1.5";
+  schemaVersion: "1.5";
   analysisStatus: P03AnalysisStatus;
   selectedScenario: {
     scenario_id: MoneyNowScenarioId;
@@ -78,7 +91,7 @@ export type P03ResultV1_4 = {
     observed_fact: string;
     money_leak: string;
     primary_cause_code: MoneyNowPrescriptionCauseCode | null;
-    cause_statement: string;
+    cause_statement: string | null;
     contributing_cause_codes: MoneyNowPrescriptionCauseCode[];
     evidence_ids: string[];
     counterevidence_ids: string[];
@@ -103,9 +116,12 @@ export type P03ResultV1_4 = {
       evidence_ids: string[];
     };
   };
+  interventionHistoryReview: InterventionHistoryReview[];
   targetMetric: null | {
     metric_name: string;
+    baseline_metric_code: string | null;
     baseline_value: number | null;
+    target_metric_code: string | null;
     target_value: number | null;
     unit: string | null;
     target_rule: string;
@@ -147,6 +163,7 @@ export type P03RuleVersions = {
   prescriptionMethodology: "money-now.v2.3";
   prescriptionRules: "money-now-prescription-rules.v1";
   factExtraction: "money-now-fact-extraction.v1";
+  promptSha256: string;
 };
 
 export type P03ProviderRequest = {
@@ -170,8 +187,8 @@ export interface P03Provider {
 export type P03RunMetadata = {
   provider: string;
   model: string;
-  promptVersion: "P-03.v1.4";
-  outputSchemaVersion: "1.4";
+  promptVersion: "P-03.v1.5";
+  outputSchemaVersion: "1.5";
   ruleVersions: P03RuleVersions;
   inputHash: string;
   startedAt: string;
@@ -184,7 +201,7 @@ export type P03RunMetadata = {
 };
 
 export type P03RunOutcome = {
-  result: P03ResultV1_4;
+  result: P03ResultV1_5;
   metadata: P03RunMetadata;
   providerRawResponse: unknown;
 };

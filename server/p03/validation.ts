@@ -1,23 +1,24 @@
 import Ajv2020, { type ErrorObject } from "ajv/dist/2020.js";
-import p03OutputSchema from "@/schemas/p03-money-now-prescription.output.v1.4.schema.json";
+import p03OutputSchema from "@/schemas/p03-money-now-prescription.output.v1.5.schema.json";
 import {
   allowedInterventionsForCauses,
   derivePrescriptionSupportingElements,
   getMoneyNowScenarioPrescriptionRule,
   MONEY_NOW_PRESCRIPTION_REGISTRY,
+  MONEY_NOW_RESERVED_CAUSE_CODES,
   MONEY_NOW_SELECTABLE_INTERVENTION_CODES,
   type MoneyNowInterventionCode,
   type MoneyNowPrescriptionCauseCode,
 } from "@/server/7k/config/money-now-prescription-rules.v1";
 import type { P03SelectedPreparedInput } from "./projections";
-import type { BackendMetric, P03ResultV1_4 } from "./types";
+import type { BackendMetric, P03ResultV1_5 } from "./types";
 
 export type P03ValidationIssue = { path: string; code: string; message: string };
 
 export class P03SchemaValidationError extends Error {
   readonly code = "P03_SCHEMA_VALIDATION_FAILED" as const;
   constructor(readonly issues: P03ValidationIssue[]) {
-    super("P-03 output does not satisfy schema 1.4");
+    super("P-03 output does not satisfy schema 1.5");
     this.name = "P03SchemaValidationError";
   }
 }
@@ -42,11 +43,11 @@ function schemaIssue(error: ErrorObject): P03ValidationIssue {
   };
 }
 
-export function validateP03Schema(value: unknown): P03ResultV1_4 {
+export function validateP03Schema(value: unknown): P03ResultV1_5 {
   if (!validateSchema(value)) {
     throw new P03SchemaValidationError((validateSchema.errors ?? []).map(schemaIssue));
   }
-  return value as P03ResultV1_4;
+  return value as P03ResultV1_5;
 }
 
 function add(issues: P03ValidationIssue[], path: string, code: string, message: string): void {
@@ -57,7 +58,7 @@ function truncate(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 }
 
-export function canonicalizeP03SupportingElements(result: P03ResultV1_4): P03ResultV1_4 {
+export function canonicalizeP03SupportingElements(result: P03ResultV1_5): P03ResultV1_5 {
   const normalized = structuredClone(result);
   const interventions = normalized.businessPrescription?.interventions ?? [];
   const codes = interventions
@@ -72,7 +73,7 @@ export function canonicalizeP03SupportingElements(result: P03ResultV1_4): P03Res
     throw new P03InvariantError([{
       path: "/supportingElements",
       code: "supporting_elements_schema_limit",
-      message: `Selected interventions derive ${elements.length} supporting elements; schema 1.4 allows at most 3. Select a smaller causal set without losing the primary anchor.`,
+      message: `Selected interventions derive ${elements.length} supporting elements; schema 1.5 allows at most 3. Select a smaller causal set without losing the primary anchor.`,
     }]);
   }
   normalized.supportingElements = elements.map((elementId) => {
@@ -106,14 +107,18 @@ function forbiddenLegacyIssues(value: unknown, path = ""): P03ValidationIssue[] 
 
 function metricMatches(
   metrics: readonly BackendMetric[],
+  metricCode: string,
+  allowedRoles: readonly BackendMetric["role"][],
   value: number,
   evidenceIds: readonly string[],
   unit: string | null,
 ): boolean {
   return metrics.some((metric) =>
+    metric.metric_code === metricCode &&
+    allowedRoles.includes(metric.role) &&
     metric.value === value &&
     (unit === null || metric.unit === unit) &&
-    metric.evidenceIds.some((id) => evidenceIds.includes(id)),
+    metric.evidence_ids.every((id) => evidenceIds.includes(id)),
   );
 }
 
@@ -137,14 +142,14 @@ function evidenceText(input: P03SelectedPreparedInput, ids: readonly string[]): 
     .toLocaleLowerCase("ru-RU");
 }
 
-function canonicalSupport(result: P03ResultV1_4): P03ResultV1_4["supportingElements"] {
+function canonicalSupport(result: P03ResultV1_5): P03ResultV1_5["supportingElements"] {
   return canonicalizeP03SupportingElements(result).supportingElements;
 }
 
 export function validateP03Invariants(
-  result: P03ResultV1_4,
+  result: P03ResultV1_5,
   input: P03SelectedPreparedInput,
-): P03ResultV1_4 {
+): P03ResultV1_5 {
   const issues = forbiddenLegacyIssues(result);
   const normal = result.analysisStatus === "ok" || result.analysisStatus === "low_confidence";
   const blocked = !normal;
@@ -175,6 +180,9 @@ export function validateP03Invariants(
   const contributing = result.diagnosis.contributing_cause_codes;
   if (normal) {
     if (!primary) add(issues, "/diagnosis/primary_cause_code", "primary_cause_required", "ok/low_confidence requires a primary cause.");
+    if (!result.diagnosis.cause_statement?.trim()) {
+      add(issues, "/diagnosis/cause_statement", "cause_statement_required", "ok/low_confidence requires a cause statement.");
+    }
     if (result.diagnosis.evidence_ids.length === 0) add(issues, "/diagnosis/evidence_ids", "cause_evidence_required", "Primary cause requires supporting evidence.");
     if (!result.businessPrescription || !result.targetMetric || !result.test30d) {
       add(issues, "/", "normal_prescription_required", "ok/low_confidence requires prescription, targetMetric and test30d.");
@@ -188,6 +196,24 @@ export function validateP03Invariants(
   }
   if (result.analysisStatus === "blocked_by_insufficient_evidence" && primary !== null) {
     add(issues, "/diagnosis/primary_cause_code", "insufficient_evidence_primary_forbidden", "Insufficient evidence requires primary cause=null.");
+  }
+  if (
+    result.analysisStatus === "blocked_by_insufficient_evidence" &&
+    result.diagnosis.cause_statement !== null
+  ) {
+    add(issues, "/diagnosis/cause_statement", "insufficient_evidence_statement_forbidden", "Insufficient evidence requires cause_statement=null.");
+  }
+  if (
+    result.analysisStatus === "blocked_by_insufficient_evidence" &&
+    result.diagnosis.contributing_cause_codes.length !== 0
+  ) {
+    add(issues, "/diagnosis/contributing_cause_codes", "insufficient_evidence_contributing_forbidden", "Insufficient evidence requires no contributing causes.");
+  }
+  if (primary === null && result.diagnosis.cause_statement !== null) {
+    add(issues, "/diagnosis/cause_statement", "statement_without_cause", "A null primary cause requires cause_statement=null.");
+  }
+  if (primary && MONEY_NOW_RESERVED_CAUSE_CODES.includes(primary)) {
+    add(issues, "/diagnosis/primary_cause_code", "reserved_cause_forbidden", `${primary} is reserved and cannot be selected by P-03.`);
   }
 
   if (primary && !scenarioRule.allowedPrimaryCauses.includes(primary)) {
@@ -218,6 +244,129 @@ export function validateP03Invariants(
     if (!provesFreeSolution) {
       add(issues, "/diagnosis/evidence_ids", "gratitude_not_overconsulting_evidence", "Gratitude alone does not prove that a free contact delivered a substantial solution.");
     }
+  }
+
+  const attempts = input.context.businessMap.experience.attempts;
+  const attemptEvidence = new Set(attempts.flatMap((attempt) => attempt.evidence_ids));
+  const currentEvidence = new Set(
+    input.context.evidenceLedger
+      .filter((item) => item.time_scope === "current")
+      .map((item) => item.id),
+  );
+  const scenarioInterventions = new Set(
+    Object.values(MONEY_NOW_PRESCRIPTION_REGISTRY.scenarioCauseInterventions[scenarioId])
+      .flatMap((codes) => codes ?? []),
+  );
+  const reviewCodes = result.interventionHistoryReview.map((review) => review.intervention_code);
+  const uniqueReviewCodes = new Set(reviewCodes);
+  if (uniqueReviewCodes.size !== reviewCodes.length) {
+    add(issues, "/interventionHistoryReview", "duplicate_history_review", "Each intervention can have exactly one history review.");
+  }
+  result.interventionHistoryReview.forEach((review, index) => {
+    const path = `/interventionHistoryReview/${index}`;
+    if (!scenarioInterventions.has(review.intervention_code)) {
+      add(issues, `${path}/intervention_code`, "history_review_intervention_not_visible", "History review can reference only an intervention exposed for the selected scenario.");
+    }
+    assertEvidenceIds(issues, evidenceSet, review.matched_attempt_evidence_ids, `${path}/matched_attempt_evidence_ids`);
+    assertEvidenceIds(issues, evidenceSet, review.new_condition_evidence_ids, `${path}/new_condition_evidence_ids`);
+    review.matched_attempt_evidence_ids.forEach((id, evidenceIndex) => {
+      if (!attemptEvidence.has(id)) {
+        add(issues, `${path}/matched_attempt_evidence_ids/${evidenceIndex}`, "history_review_not_attempt_evidence", `${id} is not linked to a persisted experience attempt.`);
+      }
+    });
+    review.new_condition_evidence_ids.forEach((id, evidenceIndex) => {
+      if (!currentEvidence.has(id)) {
+        add(issues, `${path}/new_condition_evidence_ids/${evidenceIndex}`, "new_condition_not_current", `${id} is not current evidence for a new condition.`);
+      }
+    });
+
+    if (review.match_status === "not_reported") {
+      if (attempts.length !== 0) {
+        add(issues, `${path}/match_status`, "not_reported_with_attempts", "Use no_match, matched or unclear when persisted attempts exist.");
+      }
+      if (review.matched_attempt_evidence_ids.length || review.new_condition_evidence_ids.length) {
+        add(issues, path, "not_reported_has_evidence", "not_reported requires empty attempt and new-condition evidence.");
+      }
+      if (review.new_condition_status !== "not_applicable" || review.conclusion !== "clear_to_test") {
+        add(issues, path, "not_reported_semantics", "not_reported requires new_condition_status=not_applicable and conclusion=clear_to_test.");
+      }
+    }
+    if (review.match_status === "no_match") {
+      if (attempts.length === 0) {
+        add(issues, `${path}/match_status`, "no_match_without_history", "no_match requires at least one persisted attempt to review.");
+      }
+      if (
+        review.new_condition_status !== "not_applicable" ||
+        review.new_condition_evidence_ids.length !== 0 ||
+        review.conclusion !== "clear_to_test"
+      ) {
+        add(issues, path, "no_match_semantics", "no_match requires no new condition and conclusion=clear_to_test.");
+      }
+    }
+    if (review.match_status === "matched") {
+      if (review.matched_attempt_evidence_ids.length === 0) {
+        add(issues, `${path}/matched_attempt_evidence_ids`, "matched_attempt_evidence_required", "matched requires evidence linked to a persisted attempt.");
+      }
+      if (review.new_condition_status === "confirmed") {
+        if (review.new_condition_evidence_ids.length === 0) {
+          add(issues, `${path}/new_condition_evidence_ids`, "confirmed_new_condition_evidence_required", "A confirmed new condition requires current evidence.");
+        }
+        if (review.conclusion !== "clear_to_test") {
+          add(issues, `${path}/conclusion`, "confirmed_new_condition_conclusion", "A confirmed new condition requires conclusion=clear_to_test.");
+        }
+      } else if (
+        review.new_condition_status === "not_confirmed" ||
+        review.new_condition_status === "unknown"
+      ) {
+        if (review.conclusion !== "blocked_repeat_without_new_condition") {
+          add(issues, `${path}/conclusion`, "repeat_without_condition_conclusion", "An unconfirmed/unknown new condition must block the repeated intervention.");
+        }
+        if (result.analysisStatus !== "blocked_by_inconsistency") {
+          add(issues, "/analysisStatus", "repeat_without_condition_status", "A matched repeated intervention without a confirmed new condition requires blocked_by_inconsistency.");
+        }
+      } else {
+        add(issues, `${path}/new_condition_status`, "matched_condition_not_applicable", "matched cannot use new_condition_status=not_applicable.");
+      }
+    }
+    if (review.match_status === "unclear") {
+      if (review.conclusion !== "blocked_insufficient_history_evidence") {
+        add(issues, `${path}/conclusion`, "unclear_history_conclusion", "unclear requires blocked_insufficient_history_evidence.");
+      }
+      if (result.analysisStatus !== "blocked_by_insufficient_evidence") {
+        add(issues, "/analysisStatus", "unclear_history_status", "Unclear intervention history requires blocked_by_insufficient_evidence.");
+      }
+    }
+  });
+
+  if (normal && result.businessPrescription) {
+    const selectedCodes = result.businessPrescription.interventions.map((item) => item.intervention_code);
+    if (
+      selectedCodes.length !== reviewCodes.length ||
+      selectedCodes.some((code) => !uniqueReviewCodes.has(code))
+    ) {
+      add(issues, "/interventionHistoryReview", "history_review_coverage", "Every selected intervention requires exactly one structured history review.");
+    }
+    if (result.interventionHistoryReview.some((review) => review.conclusion !== "clear_to_test")) {
+      add(issues, "/interventionHistoryReview", "normal_history_review_blocked", "ok/low_confidence can contain only clear_to_test history reviews.");
+    }
+  }
+  if (
+    result.analysisStatus === "blocked_by_insufficient_evidence" &&
+    result.interventionHistoryReview.length > 0 &&
+    !result.interventionHistoryReview.some(
+      (review) => review.conclusion === "blocked_insufficient_history_evidence",
+    )
+  ) {
+    add(issues, "/interventionHistoryReview", "insufficient_history_review_reason_missing", "A non-empty history review on insufficient evidence must identify an unclear history match.");
+  }
+  if (
+    result.analysisStatus === "blocked_by_inconsistency" &&
+    !result.interventionHistoryReview.some(
+      (review) => review.conclusion === "blocked_repeat_without_new_condition",
+    ) &&
+    !result.sanityChecks.some((check) => check.severity === "error")
+  ) {
+    add(issues, "/", "inconsistency_reason_missing", "blocked_by_inconsistency requires a blocking history review or error sanity check.");
   }
 
   if (normal && primary && result.businessPrescription && result.targetMetric && result.test30d) {
@@ -255,11 +404,39 @@ export function validateP03Invariants(
 
     const metric = result.targetMetric;
     assertEvidenceIds(issues, evidenceSet, metric.evidence_ids, "/targetMetric/evidence_ids");
-    if (metric.baseline_value !== null && !metricMatches(input.backendMetrics, metric.baseline_value, metric.evidence_ids, metric.unit)) {
-      add(issues, "/targetMetric/baseline_value", "unsupported_numeric_metric", "Numeric baseline must exactly match a backend metric with evidence provenance.");
+    if (metric.baseline_value === null && metric.baseline_metric_code !== null) {
+      add(issues, "/targetMetric/baseline_metric_code", "baseline_code_without_value", "A null baseline requires baseline_metric_code=null.");
     }
-    if (metric.target_value !== null && !metricMatches(input.backendMetrics, metric.target_value, metric.evidence_ids, metric.unit)) {
-      add(issues, "/targetMetric/target_value", "unsupported_numeric_metric", "Numeric target must exactly match a backend metric with evidence provenance.");
+    if (metric.baseline_value !== null) {
+      if (!metric.baseline_metric_code) {
+        add(issues, "/targetMetric/baseline_metric_code", "baseline_metric_code_required", "Numeric baseline requires an exact backend metric code.");
+      } else if (!metricMatches(
+        input.backendMetrics,
+        metric.baseline_metric_code,
+        ["baseline", "reference"],
+        metric.baseline_value,
+        metric.evidence_ids,
+        metric.unit,
+      )) {
+        add(issues, "/targetMetric/baseline_value", "unsupported_baseline_metric", "Numeric baseline must exactly match a baseline/reference backend metric with evidence provenance.");
+      }
+    }
+    if (metric.target_value === null && metric.target_metric_code !== null) {
+      add(issues, "/targetMetric/target_metric_code", "target_code_without_value", "A null target requires target_metric_code=null.");
+    }
+    if (metric.target_value !== null) {
+      if (!metric.target_metric_code) {
+        add(issues, "/targetMetric/target_metric_code", "target_metric_code_required", "Numeric target requires an exact backend target metric code.");
+      } else if (!metricMatches(
+        input.backendMetrics,
+        metric.target_metric_code,
+        ["target"],
+        metric.target_value,
+        metric.evidence_ids,
+        metric.unit,
+      )) {
+        add(issues, "/targetMetric/target_value", "unsupported_target_metric", "Numeric target must exactly match a role=target backend metric; baseline/reference values cannot be reused.");
+      }
     }
     if (metric.source === "qualitative_rule" && (metric.baseline_value !== null || metric.target_value !== null)) {
       add(issues, "/targetMetric/source", "qualitative_metric_has_number", "qualitative_rule cannot carry numeric baseline/target.");
@@ -311,7 +488,7 @@ export function validateP03Invariants(
 export function finalizeAndValidateP03Output(
   value: unknown,
   input: P03SelectedPreparedInput,
-): P03ResultV1_4 {
+): P03ResultV1_5 {
   const schemaValid = validateP03Schema(value);
   const normalized = canonicalizeP03SupportingElements(schemaValid);
   validateP03Schema(normalized);
@@ -319,4 +496,3 @@ export function finalizeAndValidateP03Output(
 }
 
 export const P03_OUTPUT_SCHEMA = p03OutputSchema as Record<string, unknown>;
-

@@ -1,4 +1,8 @@
 import { P03Error, runP03Stage } from "@/server/p03";
+import {
+  authorizeP03PublicRequest,
+  loadP03PublicGuardEnvironment,
+} from "@/server/p03/public-guard";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
 
@@ -6,8 +10,18 @@ type RouteContext = { params: Promise<{ analysisRunId: string }> };
  * Public-safe stage endpoint. The full prescription, diagnosis, interventions,
  * metrics, revenue object and provider payload stay in server-side storage.
  */
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
+  const guard = authorizeP03PublicRequest(
+    request,
+    await loadP03PublicGuardEnvironment(),
+  );
+  if (!guard.allowed) {
+    return Response.json(
+      { error: guard.code, message: guard.message },
+      { status: guard.status },
+    );
+  }
   try {
     const executed = await runP03Stage(analysisRunId);
     if (executed.status === "analysis_failed") {
@@ -15,8 +29,8 @@ export async function POST(_request: Request, context: RouteContext) {
         analysisRunId,
         status: executed.status,
         outcomeStatus: executed.outcomeStatus,
-        failureCode: executed.result.failureCode,
-        failureMessage: executed.result.failureMessage,
+        error: executed.result.failureCode ?? "P03_ANALYSIS_FAILED",
+        message: "P-03 analysis could not be completed.",
         idempotentReplay: executed.idempotentReplay,
         nextStep: null,
         p04Started: false,
@@ -42,10 +56,14 @@ export async function POST(_request: Request, context: RouteContext) {
         : error.kind === "technical"
           ? 500
           : 409;
-      return Response.json(
-        { error: error.code, message: error.message, details: error.details },
-        { status },
-      );
+      return Response.json({
+        error: error.code,
+        message: status === 404
+          ? "Analysis run was not found."
+          : status === 500
+            ? "P-03 analysis could not be completed."
+            : "P-03 request could not be accepted.",
+      }, { status });
     }
     return Response.json(
       { error: "P03_TECHNICAL_ERROR", message: "Money Now Prescription failed." },
@@ -53,4 +71,3 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 }
-

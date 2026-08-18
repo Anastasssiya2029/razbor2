@@ -35,7 +35,7 @@ export class OpenRouterP03Provider implements P03Provider {
       appUrl: this.options.appUrl ?? null,
       appTitle: this.options.appTitle ?? "7K Business Diagnostic",
       structuredOutput: this.options.structuredOutput ?? true,
-      schemaName: "p03_money_now_prescription_v1_4",
+      schemaName: "p03_money_now_prescription_v1_5",
       outputSchema: request.outputSchema,
       systemPrompt: request.systemPrompt,
       fetchImpl: this.options.fetchImpl,
@@ -65,4 +65,3 @@ export function createConfiguredP03Provider(
     fetchImpl: options.fetchImpl,
   });
 }
-

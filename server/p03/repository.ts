@@ -13,7 +13,7 @@ import type {
   BackendMetric,
   BackendRevenueScenario,
   P03Context,
-  P03ResultV1_4,
+  P03ResultV1_5,
   P03RuleVersions,
   P03SelectedScenarioProjection,
 } from "./types";
@@ -55,7 +55,7 @@ export function storedP03ResultFromRow(
     backendRevenueScenario: parseNullable<BackendRevenueScenario>(row.backendRevenueScenarioJson),
     lockedTeaserVersion: row.lockedTeaserVersion as StoredP03Result["lockedTeaserVersion"],
     lockedTeaser: row.lockedTeaser,
-    result: parseNullable<P03ResultV1_4>(row.resultJson),
+    result: parseNullable<P03ResultV1_5>(row.resultJson),
     skippedOutcome: parseNullable<StoredP03Result["skippedOutcome"]>(row.skippedOutcomeJson),
     providerRawResponse: parseNullable<unknown>(row.providerRawResponseJson),
     provider: row.provider,
@@ -191,4 +191,3 @@ export function createD1P03Repository(): P03Repository {
     },
   };
 }
-

@@ -153,7 +153,7 @@ P-02 runtime configuration is independent from P-01:
 Validated output, versioned input hashes, usage, retries and server-only raw
 provider response are stored in the additive `p02_analysis_results` table.
 
-## P-03 Money Now Prescription v1.4
+## P-03 Money Now Prescription v1.5
 
 `POST /api/analysis-runs/:analysisRunId/p03` consumes only the immutable Stage 7
 selection and the persisted validated P-01 evidence result. It never receives
@@ -163,7 +163,9 @@ Archetype, Task Resolver output or raw diagnostic answers.
 The server uses `money-now-prescription-rules.v1` as the only prescription
 registry. Causes and interventions are validated against the selected
 MN01–MN16 scenario, supporting 7K elements are derived by the backend, and all
-numeric baselines/targets come from the backend metrics projection. A valid or
+numeric baselines/targets come from role-separated backend metrics. Every
+selected intervention also requires a structured persisted-attempt history
+review. A valid or
 evidence-blocked result moves `money_now` to `writing_report`. When Stage 7
 returns `no_eligible_scenario`, P-03 stores a deterministic skipped result and
 does not call the AI provider. P-04 is not started automatically.
@@ -175,6 +177,13 @@ Runtime configuration:
 - `P03_AI_MODEL` (required; no model is hardcoded);
 - `P03_STRUCTURED_OUTPUT=false` only when JSON Schema output is unavailable;
 - `P03_APP_URL` and `P03_APP_TITLE` are optional attribution headers.
+- `P03_PUBLIC_EXECUTION_ENABLED=true` explicitly enables the HTTP execution
+  surface; it is disabled by default;
+- `P03_ORCHESTRATOR_TOKEN` is required together with the feature flag and must
+  match the server-only `x-p03-orchestrator-token` request header.
+
+The public HTTP route is fail-closed unless both protection settings are
+present. Internal server orchestration may call the stage runner directly.
 
 Full P-03 output and provider raw responses stay in the server-only
 `p03_prescription_results` table. The public endpoint returns only the outcome,

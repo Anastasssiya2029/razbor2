@@ -7,29 +7,32 @@ export function buildP03BackendMetrics(facts: readonly P01MoneyChainFact[]): Bac
     const prefix = `money_chain.${index}.${fact.stage}`;
     if (fact.value !== null) {
       metrics.push({
-        code: `${prefix}.value`,
+        metric_code: `${prefix}.value`,
+        role: "baseline",
         value: fact.value,
         unit: null,
         source: "client_fact",
-        evidenceIds: [...fact.evidence_ids],
+        evidence_ids: [...fact.evidence_ids],
       });
     }
     if (fact.denominator !== null) {
       metrics.push({
-        code: `${prefix}.denominator`,
+        metric_code: `${prefix}.denominator`,
+        role: "reference",
         value: fact.denominator,
         unit: "count",
         source: "client_fact",
-        evidenceIds: [...fact.evidence_ids],
+        evidence_ids: [...fact.evidence_ids],
       });
     }
     if (fact.conversionPct !== null) {
       metrics.push({
-        code: `${prefix}.conversion_pct`,
+        metric_code: `${prefix}.conversion_pct`,
+        role: "baseline",
         value: fact.conversionPct,
         unit: "%",
         source: "derived_client_fact",
-        evidenceIds: [...fact.evidence_ids],
+        evidence_ids: [...fact.evidence_ids],
       });
     }
   });
@@ -43,4 +46,3 @@ export function buildP03BackendMetrics(facts: readonly P01MoneyChainFact[]): Bac
 export function buildP03BackendRevenueScenario(): BackendRevenueScenario | null {
   return null;
 }
-

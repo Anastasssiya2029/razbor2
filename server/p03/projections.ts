@@ -25,7 +25,10 @@ import {
   type P03RuleVersions,
   type P03SelectedScenarioProjection,
 } from "./types";
-import { P03_PROMPT_VERSION } from "@/server/7k/prompts/p03.v1.4";
+import {
+  P03_PROMPT_SHA256,
+  P03_PROMPT_VERSION,
+} from "@/server/7k/prompts/p03.v1.5";
 
 export const P03_RULE_VERSIONS: P03RuleVersions = {
   selectorContract: "money-now-selector-contract.v1.1",
@@ -33,6 +36,7 @@ export const P03_RULE_VERSIONS: P03RuleVersions = {
   prescriptionMethodology: "money-now.v2.3",
   prescriptionRules: "money-now-prescription-rules.v1",
   factExtraction: "money-now-fact-extraction.v1",
+  promptSha256: P03_PROMPT_SHA256,
 };
 
 const SCENARIO_BY_ID = Object.fromEntries(
@@ -242,4 +246,3 @@ export async function prepareP03Input(source: P03Source): Promise<P03PreparedInp
     deterministicInputHash: inputHash,
   };
 }
-

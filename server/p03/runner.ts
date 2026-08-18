@@ -1,5 +1,5 @@
 import type { AiProviderUsage } from "@/server/ai/openrouter-json";
-import { P03_PROMPT_VERSION } from "@/server/7k/prompts/p03.v1.4";
+import { P03_PROMPT_VERSION } from "@/server/7k/prompts/p03.v1.5";
 import { createConfiguredP03Provider } from "./provider";
 import type { P03SelectedPreparedInput } from "./projections";
 import { buildP03SystemPrompt } from "./request";
@@ -124,7 +124,7 @@ export async function runP03MoneyNowPrescription(
     } catch (error) {
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;
-        correction = "Предыдущий ответ не был JSON. Верни только JSON по schema 1.4.";
+        correction = "Предыдущий ответ не был JSON. Верни только JSON по schema 1.5.";
         continue;
       }
       throw executionError("P03_MALFORMED_JSON", "P-03 returned malformed JSON", error);
@@ -150,7 +150,7 @@ export async function runP03MoneyNowPrescription(
       if (error instanceof P03SchemaValidationError) {
         if (technicalRetryCount === 0) {
           technicalRetryCount += 1;
-          correction = correctionFor("Нарушена JSON Schema 1.4", error.issues);
+          correction = correctionFor("Нарушена JSON Schema 1.5", error.issues);
           continue;
         }
         throw executionError("P03_SCHEMA_VALIDATION_FAILED", "P-03 output schema validation failed", error);
@@ -217,4 +217,3 @@ function metadataFor(
     usage,
   };
 }
-

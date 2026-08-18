@@ -63,6 +63,29 @@ export const MONEY_NOW_PRESCRIPTION_CAUSE_CODES = Object.freeze(
   Object.keys(MONEY_NOW_PRESCRIPTION_REGISTRY.causeCodes) as MoneyNowPrescriptionCauseCode[],
 );
 
+function selectableCauseCodes(): MoneyNowPrescriptionCauseCode[] {
+  const codes = MONEY_NOW_SCENARIO_IDS.flatMap((scenarioId) => {
+    const rule = MONEY_NOW_PRESCRIPTION_REGISTRY.scenarioRules[scenarioId];
+    return [
+      ...rule.allowedPrimaryCauses,
+      ...rule.allowedContributingCauses,
+      ...Object.keys(MONEY_NOW_PRESCRIPTION_REGISTRY.scenarioCauseInterventions[scenarioId]),
+    ] as MoneyNowPrescriptionCauseCode[];
+  });
+  return [...new Set(codes)].sort((left, right) => left.localeCompare(right, "en"));
+}
+
+export const MONEY_NOW_SELECTABLE_CAUSE_CODES = Object.freeze(
+  selectableCauseCodes(),
+);
+
+/** Definitions retained by the methodology but unavailable to P-03. */
+export const MONEY_NOW_RESERVED_CAUSE_CODES = Object.freeze(
+  MONEY_NOW_PRESCRIPTION_CAUSE_CODES.filter(
+    (code) => !MONEY_NOW_SELECTABLE_CAUSE_CODES.includes(code),
+  ),
+);
+
 function selectableInterventionCodes(): MoneyNowInterventionCode[] {
   const codes = MONEY_NOW_SCENARIO_IDS.flatMap((scenarioId) =>
     Object.values(MONEY_NOW_PRESCRIPTION_REGISTRY.scenarioCauseInterventions[scenarioId])
@@ -95,6 +118,8 @@ export const MONEY_NOW_HISTORY_MATCH_TAGS = Object.freeze(
 
 export type MoneyNowPrescriptionIntegrity = {
   causeCount: number;
+  selectableCauseCount: number;
+  reservedCauseCodes: MoneyNowPrescriptionCauseCode[];
   selectableInterventionCount: number;
   interventionDefinitionCount: number;
   reservedInterventionCodes: MoneyNowInterventionCode[];
@@ -162,6 +187,14 @@ export function assertMoneyNowPrescriptionRegistryIntegrity(): MoneyNowPrescript
   if (MONEY_NOW_PRESCRIPTION_CAUSE_CODES.length !== 15) {
     throw new Error(`Expected 15 cause codes, got ${MONEY_NOW_PRESCRIPTION_CAUSE_CODES.length}`);
   }
+  if (
+    MONEY_NOW_RESERVED_CAUSE_CODES.length !== 1 ||
+    MONEY_NOW_RESERVED_CAUSE_CODES[0] !== "CAPACITY_BOTTLENECK"
+  ) {
+    throw new Error(
+      `Expected CAPACITY_BOTTLENECK as the only reserved cause, got ${MONEY_NOW_RESERVED_CAUSE_CODES.join(", ")}`,
+    );
+  }
   if (MONEY_NOW_SELECTABLE_INTERVENTION_CODES.length !== 21) {
     throw new Error(`Expected 21 selectable intervention codes, got ${MONEY_NOW_SELECTABLE_INTERVENTION_CODES.length}`);
   }
@@ -170,6 +203,8 @@ export function assertMoneyNowPrescriptionRegistryIntegrity(): MoneyNowPrescript
   }
   return {
     causeCount: MONEY_NOW_PRESCRIPTION_CAUSE_CODES.length,
+    selectableCauseCount: MONEY_NOW_SELECTABLE_CAUSE_CODES.length,
+    reservedCauseCodes: [...MONEY_NOW_RESERVED_CAUSE_CODES],
     selectableInterventionCount: MONEY_NOW_SELECTABLE_INTERVENTION_CODES.length,
     interventionDefinitionCount: interventionCodes.size,
     reservedInterventionCodes: [...MONEY_NOW_RESERVED_INTERVENTION_CODES],

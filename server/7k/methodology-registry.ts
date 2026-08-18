@@ -10,7 +10,7 @@ import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.1";
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
 import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
-import { P03_PROMPT_VERSION } from "./prompts/p03.v1.4";
+import { P03_PROMPT_SHA256, P03_PROMPT_VERSION } from "./prompts/p03.v1.5";
 import {
   MONEY_NOW_PRESCRIPTION_INTEGRITY,
   MONEY_NOW_PRESCRIPTION_METHODOLOGY_VERSION,
@@ -80,7 +80,8 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
     },
     p03: {
       promptVersion: P03_PROMPT_VERSION,
-      outputSchemaVersion: "1.4" as const,
+      promptSha256: P03_PROMPT_SHA256,
+      outputSchemaVersion: "1.5" as const,
       input: {
         p01PromptVersion: P01_PROMPT_VERSION,
         p01OutputSchemaVersion: "1.4" as const,
