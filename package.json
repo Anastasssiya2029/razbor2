@@ -10,7 +10,8 @@
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
     "build": "bash scripts/build-verified.sh",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run test:contract && npm run build && node --test tests/rendered-html.test.mjs",
+    "test:contract": "node --import tsx --test tests/diagnostic-input.test.ts",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
@@ -36,11 +37,12 @@
     "eslint-config-next": "16.2.6",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
+    "tsx": "4.22.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },
   "type": "module",
-  "displayName": "\u0422\u0432\u043e\u044f \u0411\u0438\u0437\u043d\u0435\u0441-\u0421\u0438\u0441\u0442\u0435\u043c\u0430"
+  "displayName": "Твоя Бизнес-Система"
 }

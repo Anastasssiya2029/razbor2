@@ -13,6 +13,7 @@ import {
   type ResolvedSystemElement,
   type SystemElementId,
 } from "@/lib/business-analysis";
+import type { ClientsCountPeriod, DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 
 type FieldProps = {
   label: string;
@@ -1075,6 +1076,18 @@ function Brand() {
 type SubmittedDiagnostic = {
   values: Record<string, string>;
   deadline: string;
+  input: DiagnosticInputV1_2;
+  diagnosticId: string;
+  analysisRunId: string;
+};
+
+type CreateDiagnosticResponse = {
+  diagnosticId: string;
+  analysisRunId: string;
+  status: "scoring";
+  input: DiagnosticInputV1_2;
+  issues?: Array<{ message?: string }>;
+  message?: string;
 };
 
 function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalysisResult {
@@ -1102,6 +1115,10 @@ export default function Home() {
   const [analysisSlide, setAnalysisSlide] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
   const [deadline, setDeadline] = useState("6 месяцев");
+  const [clientsCountPeriod, setClientsCountPeriod] = useState<ClientsCountPeriod>("month");
+  const [desiredSystemHoursApplicable, setDesiredSystemHoursApplicable] = useState(false);
+  const [isSubmittingDiagnostic, setIsSubmittingDiagnostic] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [loadingTarget, setLoadingTarget] = useState<"analysis" | "plan" | null>(null);
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
@@ -1123,13 +1140,47 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const openAnalysis = () => {
-    const diagnostic = { values: { ...values }, deadline };
-    setSubmittedDiagnostic(diagnostic);
-    setAnalysisResult(buildPrototypeAnalysis(diagnostic));
-    setLoadingTarget("analysis");
-    setAnalysisSlide(0);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const openAnalysis = async () => {
+    setSubmissionError(null);
+    setIsSubmittingDiagnostic(true);
+    const rawValues = { ...values };
+
+    try {
+      const response = await fetch("/api/diagnostics", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sourceSchemaVersion: "diagnostic-flat-form.v1.2",
+          rawAnswers: {
+            values: rawValues,
+            deadline,
+            clientsCountPeriod,
+            desiredSystemWeeklyHoursApplicable: desiredSystemHoursApplicable,
+          },
+        }),
+      });
+      const result = (await response.json()) as CreateDiagnosticResponse;
+      if (!response.ok) {
+        throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось сохранить диагностику.");
+      }
+
+      const diagnostic: SubmittedDiagnostic = {
+        values: rawValues,
+        deadline,
+        input: result.input,
+        diagnosticId: result.diagnosticId,
+        analysisRunId: result.analysisRunId,
+      };
+      setSubmittedDiagnostic(diagnostic);
+      setAnalysisResult(buildPrototypeAnalysis(diagnostic));
+      setLoadingTarget("analysis");
+      setAnalysisSlide(0);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить диагностику.");
+    } finally {
+      setIsSubmittingDiagnostic(false);
+    }
   };
 
   const openTransitionPlan = () => {
@@ -1233,6 +1284,25 @@ export default function Home() {
                   <div className="current-fields">
                     <Field label="Доход в месяц" name="currentIncome" values={values} setValues={setValues} />
                     <Field label="Количество клиентов" name="clientsCount" values={values} setValues={setValues} />
+                    <fieldset className="choice-fieldset clients-period-fieldset">
+                      <legend>Количество указано</legend>
+                      <div className="clients-period-options">
+                        {[
+                          { value: "month" as const, label: "За месяц" },
+                          { value: "launch" as const, label: "За запуск" },
+                        ].map((option) => (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className={clientsCountPeriod === option.value ? "selected" : ""}
+                            aria-pressed={clientsCountPeriod === option.value}
+                            onClick={() => setClientsCountPeriod(option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
                     <Field label="Время на проект в неделю" name="weeklyTime" values={values} setValues={setValues} />
                   </div>
                   <div className="products-box">
@@ -1268,7 +1338,22 @@ export default function Home() {
                 </fieldset>
                 <div className="goal-bottom-grid">
                   <Field label="Что хотите делегировать" name="delegate" values={values} setValues={setValues} />
-                  <Field label="Время на проект (система есть)" name="systemTime" values={values} setValues={setValues} />
+                  <div className="conditional-time-field">
+                    <label className="time-goal-toggle">
+                      <input
+                        type="checkbox"
+                        checked={desiredSystemHoursApplicable}
+                        onChange={(event) => setDesiredSystemHoursApplicable(event.target.checked)}
+                      />
+                      <span>
+                        <strong>Свобода времени входит в цель</strong>
+                        <small>Отметьте, если хотите сократить личное участие или выйти из операционки.</small>
+                      </span>
+                    </label>
+                    {desiredSystemHoursApplicable && (
+                      <Field label="Время на проект (система есть)" name="systemTime" values={values} setValues={setValues} />
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -1329,10 +1414,16 @@ export default function Home() {
                 <button type="button" className="secondary-button" onClick={() => goToTab(0)}>
                   Исправить
                 </button>
-                <button type="button" className="primary-button compact" onClick={openAnalysis}>
-                  Да, всё верно <ArrowIcon />
+                <button
+                  type="button"
+                  className="primary-button compact"
+                  onClick={openAnalysis}
+                  disabled={isSubmittingDiagnostic}
+                >
+                  {isSubmittingDiagnostic ? "Сохраняю ответы…" : "Да, всё верно"} {!isSubmittingDiagnostic && <ArrowIcon />}
                 </button>
               </div>
+              {submissionError && <p className="diagnostic-submit-error" role="alert">{submissionError}</p>}
             </div>
           )}
         </div>
