@@ -1,0 +1,34 @@
+import { P02Error, runP02Stage } from "@/server/p02";
+
+type RouteContext = { params: Promise<{ analysisRunId: string }> };
+
+export async function POST(_request: Request, context: RouteContext) {
+  const { analysisRunId } = await context.params;
+  try {
+    const executed = await runP02Stage(analysisRunId);
+    if (executed.status === "analysis_failed") {
+      return Response.json({
+        analysisRunId,
+        status: executed.status,
+        failureCode: executed.result.failureCode,
+        failureMessage: executed.result.failureMessage,
+        idempotentReplay: executed.idempotentReplay,
+      }, { status: 422 });
+    }
+    return Response.json({
+      analysisRunId,
+      status: executed.status,
+      idempotentReplay: executed.idempotentReplay,
+      result: executed.result.result,
+      readyFor: "deterministic-task-resolver",
+      taskResolverStarted: false,
+    });
+  } catch (error) {
+    if (error instanceof P02Error) {
+      const status = error.code === "P02_ANALYSIS_RUN_NOT_FOUND" ? 404 : error.kind === "technical" ? 500 : 409;
+      return Response.json({ error: error.code, message: error.message, details: error.details }, { status });
+    }
+    return Response.json({ error: "P02_TECHNICAL_ERROR", message: "Transition Strategist failed." }, { status: 500 });
+  }
+}
+

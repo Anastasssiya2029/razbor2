@@ -2,8 +2,8 @@ import type {
   P01Provider,
   P01ProviderRequest,
   P01ProviderResponse,
-  P01ProviderUsage,
 } from "./types";
+import { completeOpenRouterJson } from "@/server/ai/openrouter-json";
 
 export type P01ProviderEnvironment = Record<string, string | undefined>;
 
@@ -17,26 +17,6 @@ export class P01ProviderConfigurationError extends Error {
 }
 
 type FetchLike = typeof fetch;
-
-function numberOrNull(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function extractText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (item && typeof item === "object" && "text" in item) {
-          return typeof item.text === "string" ? item.text : "";
-        }
-        return "";
-      })
-      .join("");
-  }
-  return "";
-}
 
 export class OpenRouterP01Provider implements P01Provider {
   readonly provider = "openrouter";
@@ -67,51 +47,18 @@ export class OpenRouterP01Provider implements P01Provider {
   }
 
   async complete(request: P01ProviderRequest): Promise<P01ProviderResponse> {
-    const headers: Record<string, string> = {
-      authorization: `Bearer ${this.apiKey}`,
-      "content-type": "application/json",
-      "x-title": this.appTitle,
-    };
-    if (this.appUrl) headers["http-referer"] = this.appUrl;
-
-    const response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: this.model,
-        temperature: 0,
-        messages: [{ role: "system", content: request.systemPrompt }],
-        response_format: this.structuredOutput
-          ? {
-              type: "json_schema",
-              json_schema: {
-                name: "p01_evidence_scorer_v1_3",
-                strict: true,
-                schema: request.outputSchema,
-              },
-            }
-          : { type: "json_object" },
-      }),
+    return completeOpenRouterJson({
+      apiKey: this.apiKey,
+      model: this.model,
+      baseUrl: this.baseUrl,
+      appUrl: this.appUrl,
+      appTitle: this.appTitle,
+      structuredOutput: this.structuredOutput,
+      schemaName: "p01_evidence_scorer_v1_3",
+      outputSchema: request.outputSchema,
+      systemPrompt: request.systemPrompt,
+      fetchImpl: this.fetchImpl,
     });
-    const rawResponse: unknown = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error(`OpenRouter request failed with HTTP ${response.status}`);
-    }
-    const body = rawResponse as {
-      choices?: Array<{ message?: { content?: unknown } }>;
-      usage?: Record<string, unknown>;
-    };
-    const text = extractText(body.choices?.[0]?.message?.content);
-    if (!text) throw new Error("OpenRouter returned an empty P-01 response");
-
-    const usageSource = body.usage ?? {};
-    const usage: P01ProviderUsage = {
-      inputTokens: numberOrNull(usageSource.prompt_tokens ?? usageSource.input_tokens),
-      outputTokens: numberOrNull(usageSource.completion_tokens ?? usageSource.output_tokens),
-      totalTokens: numberOrNull(usageSource.total_tokens),
-      costUsd: numberOrNull(usageSource.cost),
-    };
-    return { text, rawResponse, usage };
   }
 }
 
@@ -138,4 +85,3 @@ export function createConfiguredP01Provider(
     fetchImpl: options.fetchImpl,
   });
 }
-

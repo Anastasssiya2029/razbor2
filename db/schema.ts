@@ -139,3 +139,54 @@ export const targetArchetypeResults = sqliteTable(
     index("target_archetype_results_input_hash_idx").on(table.deterministicInputHash),
   ],
 );
+
+export const p02AnalysisResults = sqliteTable(
+  "p02_analysis_results",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01AnalysisResultId: text("p01_analysis_result_id")
+      .notNull()
+      .references(() => p01AnalysisResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    targetArchetypeResultId: text("target_archetype_result_id")
+      .notNull()
+      .references(() => targetArchetypeResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01ResultHash: text("p01_result_hash").notNull(),
+    targetResultHash: text("target_result_hash").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    outputSchemaVersion: text("output_schema_version").notNull(),
+    ruleVersionsJson: text("rule_versions_json").notNull(),
+    inputHash: text("input_hash").notNull(),
+    strategyContextJson: text("strategy_context_json").notNull(),
+    targetConfigJson: text("target_config_json").notNull(),
+    resultJson: text("result_json"),
+    providerRawResponseJson: text("provider_raw_response_json"),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    startedAt: text("started_at").notNull(),
+    finishedAt: text("finished_at").notNull(),
+    latencyMs: integer("latency_ms").notNull(),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalTokens: integer("total_tokens"),
+    costUsd: real("cost_usd"),
+    retryCount: integer("retry_count").notNull(),
+    technicalRetryCount: integer("technical_retry_count").notNull(),
+    reevaluationRetryCount: integer("reevaluation_retry_count").notNull(),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("p02_analysis_results_run_unique").on(table.analysisRunId),
+    index("p02_analysis_results_p01_idx").on(table.p01AnalysisResultId),
+    index("p02_analysis_results_target_idx").on(table.targetArchetypeResultId),
+    index("p02_analysis_results_input_hash_idx").on(table.inputHash),
+  ],
+);

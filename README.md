@@ -128,6 +128,31 @@ Runtime configuration:
 Provider raw responses and usage metadata are stored only in the server-side
 `p01_analysis_results` table and are never returned by the P-01 API route.
 
+## P-02 Transition Strategist v1.3
+
+`POST /api/analysis-runs/:analysisRunId/p02` is accepted only while the run is
+`strategizing`. The server builds an allowlisted strategy context from the
+persisted validated P-01 v1.3 result and a separate allowlisted Target
+Configuration projection from persisted Stage 4. Raw diagnostic answers,
+Money Now signals/history, the selected Money Now scenario, Business Archetype,
+Matrix 70 task text and provider raw responses are not injected into P-02.
+
+The output is checked against schema `1.3` and backend semantic invariants. A
+valid result moves the run to `resolving_tasks`; this status only means that the
+strategy is ready for the future deterministic Task Resolver. The resolver,
+Money Now selector, P-03, P-04 and final report are not started here.
+
+P-02 runtime configuration is independent from P-01:
+
+- `P02_AI_PROVIDER=openrouter` (supported adapter; default);
+- `OPENROUTER_API_KEY` (shared server-only transport key);
+- `P02_AI_MODEL` (required; no model is hardcoded);
+- `P02_STRUCTURED_OUTPUT=false` only when JSON Schema output is unavailable;
+- `P02_APP_URL` and `P02_APP_TITLE` are optional attribution headers.
+
+Validated output, versioned input hashes, usage, retries and server-only raw
+provider response are stored in the additive `p02_analysis_results` table.
+
 ## Learn More
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)

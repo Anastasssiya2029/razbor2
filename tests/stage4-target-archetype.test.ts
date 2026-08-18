@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
-import { SEVEN_K_ELEMENT_IDS, type SevenKElementId, type SevenKScores } from "../server/7k/types";
+import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "../server/7k/types";
 import { computeTargetAndArchetype } from "../server/stage4/compute";
 import { Stage4Error } from "../server/stage4/errors";
 import { runTargetAndArchetypeStage } from "../server/stage4/runner";

@@ -29,6 +29,11 @@ export async function POST(_request: Request, context: RouteContext) {
         resourceVersions: executed.result.resourceVersions,
       },
       readyFor: "P-02",
+      nextStep: {
+        method: "POST",
+        href: `/api/analysis-runs/${analysisRunId}/p02`,
+        module: "P-02.v1.3",
+      },
     });
   } catch (error) {
     if (error instanceof Stage4Error) {
@@ -44,4 +49,3 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 }
-

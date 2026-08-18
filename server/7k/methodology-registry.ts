@@ -7,6 +7,12 @@ import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "./config/money-now-histo
 import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.1";
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.3";
+import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
+import {
+  CONSTRAINT_RULES_RESOURCE_VERSION,
+  DEPENDENCY_RULES_RESOURCE_VERSION,
+  LEVEL_CAPABILITIES_RESOURCE_VERSION,
+} from "./config/p02-strategy-rules.v2.1";
 import {
   TRANSITIONS_70_INTEGRITY,
   TRANSITIONS_70_RESOURCE,
@@ -39,6 +45,22 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
         evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
         targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
         moneyNowHistoryMap: MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION,
+      },
+    },
+    p02: {
+      promptVersion: P02_PROMPT_VERSION,
+      outputSchemaVersion: "1.3" as const,
+      input: {
+        p01PromptVersion: P01_PROMPT_VERSION,
+        p01OutputSchemaVersion: "1.3" as const,
+        targetRules: TARGET_RULES_RESOURCE_VERSION,
+      },
+      resources: {
+        elements: ELEMENTS_RESOURCE_VERSION,
+        levelCapabilities: LEVEL_CAPABILITIES_RESOURCE_VERSION,
+        constraintRules: CONSTRAINT_RULES_RESOURCE_VERSION,
+        dependencyRules: DEPENDENCY_RULES_RESOURCE_VERSION,
+        targetRules: TARGET_RULES_RESOURCE_VERSION,
       },
     },
   },
@@ -77,4 +99,8 @@ export function getTargetArchetypeResourceVersions() {
         .p01OutputSchemaVersion,
     ...SEVEN_K_METHODOLOGY_REGISTRY.deterministicStages.targetArchetype.resources,
   };
+}
+
+export function getP02ResourceVersions() {
+  return { ...SEVEN_K_METHODOLOGY_REGISTRY.aiModules.p02.resources };
 }
