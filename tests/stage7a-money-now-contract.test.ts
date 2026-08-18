@@ -54,7 +54,7 @@ test("model fit defaults to fit and has no target-model ranking input", () => {
   assert.doesNotMatch(contractSource, /targetModel|modelFamily|rankingWeight/u);
 });
 
-test("P-02 projection excludes moneyNowFacts from P-01 v1.4", () => {
+test("P-02 projection excludes moneyNowFacts from hardened P-01 v1.4.1", () => {
   const source = readFileSync("server/p02/projections.ts", "utf8");
   const projection = source.match(/const strategyContext: P01StrategyContext = \{([\s\S]*?)\n  \};/u)?.[1] ?? "";
   assert.match(projection, /evidenceLedger/u);
@@ -62,13 +62,13 @@ test("P-02 projection excludes moneyNowFacts from P-01 v1.4", () => {
   assert.doesNotMatch(projection, /moneyNowFacts|moneyNowSignals|moneyNowHistory/u);
 });
 
-test("Stage 4, P-02 and Task Resolver pin P-01 v1.4 and keep their own algorithms unchanged", () => {
+test("Stage 4, P-02 and Task Resolver pin P-01 v1.4.1 and keep their own algorithms unchanged", () => {
   const stage4 = readFileSync("server/stage4/compute.ts", "utf8");
   const p02 = readFileSync("server/p02/projections.ts", "utf8");
   const resolver = readFileSync("server/task-resolver/preflight.ts", "utf8");
-  assert.match(stage4, /P-01\.v1\.4/u);
-  assert.match(p02, /P-01\.v1\.4/u);
-  assert.match(resolver, /P-01\.v1\.4/u);
+  assert.match(stage4, /P-01\.v1\.4\.1/u);
+  assert.match(p02, /P-01\.v1\.4\.1/u);
+  assert.match(resolver, /P-01\.v1\.4\.1/u);
   assert.match(stage4, /calculateTargetConfiguration/u);
   assert.match(p02, /products_method is forbidden/u);
   assert.doesNotMatch(`${stage4}\n${p02}\n${resolver}`, /current7k\.products_method|element_id:\s*"products_method"/u);

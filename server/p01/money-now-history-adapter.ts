@@ -1,6 +1,6 @@
 import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
 import { MONEY_NOW_HISTORY_MAP } from "@/server/7k/config/money-now-history-map.v2.2";
-import type { P01MoneyNowHistoryItem, P01ResultV1_4 } from "./types";
+import type { P01MoneyNowHistoryItem, P01ResultV1_4_1 } from "./types";
 
 export type MoneyNowHistoryScenarioSnapshot = P01MoneyNowHistoryItem & {
   scenario_id: (typeof MONEY_NOW_SCENARIO_IDS)[number];
@@ -20,7 +20,7 @@ export type MoneyNowHistoryGuardInputV1 = {
  * evidence reference remains distinguishable.
  */
 export function buildMoneyNowHistoryGuardInput(
-  history: P01ResultV1_4["moneyNowHistory"],
+  history: P01ResultV1_4_1["moneyNowHistory"],
 ): MoneyNowHistoryGuardInputV1 {
   return {
     scenarios: Object.fromEntries(

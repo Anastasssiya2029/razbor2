@@ -6,7 +6,7 @@ import type {
   MoneyNowFactConfidence,
   MoneyNowFactState,
   MoneyNowMaterialConditionCode,
-} from "@/server/7k/config/money-now-selector-contract.v1";
+} from "@/server/7k/config/money-now-fact-extraction.v1";
 import type { SevenKElementId } from "@/server/7k/types";
 
 export const P01_OUTPUT_SCHEMA_VERSION = "1.4" as const;
@@ -145,8 +145,8 @@ export type P01MoneyNowFact = {
 
 export type P01MoneyNowFacts = Record<MoneyNowFactCode, P01MoneyNowFact>;
 
-export type P01ResultV1_4 = {
-  promptVersion: "P-01.v1.4";
+export type P01ResultV1_4_1 = {
+  promptVersion: "P-01.v1.4.1";
   schemaVersion: typeof P01_OUTPUT_SCHEMA_VERSION;
   analysisStatus: P01AnalysisStatus;
   evidenceLedger: P01Evidence[];
@@ -179,9 +179,14 @@ export type P01ResultV1_4 = {
   }>;
 };
 
+/** Read-only shape for already persisted historical P-01 v1.4 snapshots. */
+export type P01ResultV1_4 = Omit<P01ResultV1_4_1, "promptVersion"> & {
+  promptVersion: "P-01.v1.4";
+};
+
 /** Read-only shape for already persisted historical P-01 v1.3 snapshots. */
 export type P01ResultV1_3 = Omit<
-  P01ResultV1_4,
+  P01ResultV1_4_1,
   "promptVersion" | "schemaVersion" | "moneyNowFacts"
 > & {
   promptVersion: "P-01.v1.3";
@@ -193,8 +198,7 @@ export type P01RuleVersions = {
   evidenceRouting: "evidence-routing.v3.0";
   targetModelDictionary: "target-model-dictionary.v2.1";
   moneyNowHistoryMap: "money-now-history-map.v2.2";
-  moneyNowFactsDictionary: "money-now-selector-contract.v1";
-  moneyNowProofMap: "money-now-proof-map.v1";
+  moneyNowFactExtraction: "money-now-fact-extraction.v1";
 };
 
 export type P01ProviderUsage = {
@@ -225,7 +229,7 @@ export interface P01Provider {
 export type P01RunMetadata = {
   provider: string;
   model: string;
-  promptVersion: "P-01.v1.4";
+  promptVersion: "P-01.v1.4.1";
   outputSchemaVersion: typeof P01_OUTPUT_SCHEMA_VERSION;
   ruleVersions: P01RuleVersions;
   inputHash: string;
@@ -241,13 +245,13 @@ export type P01RunMetadata = {
 export type P01RunOutcome =
   | {
       kind: "success";
-      result: P01ResultV1_4;
+      result: P01ResultV1_4_1;
       metadata: P01RunMetadata;
       providerRawResponse: unknown;
     }
   | {
       kind: "blocked";
-      result: P01ResultV1_4;
+      result: P01ResultV1_4_1;
       failureCode: "P01_BLOCKED_INSUFFICIENT_DATA" | "P01_BLOCKED_INCONSISTENCY";
       failureMessage: string;
       metadata: P01RunMetadata;

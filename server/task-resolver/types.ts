@@ -1,5 +1,5 @@
 import type { SevenKElementId, SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_4 } from "@/server/p01/types";
+import type { P01ResultV1_4_1 } from "@/server/p01/types";
 import type { StoredP02Result } from "@/server/p02/stage-types";
 import type { P02ResultV1_3 } from "@/server/p02/types";
 import type { StoredTargetArchetypeResult } from "@/server/stage4/types";
@@ -53,7 +53,7 @@ export type TaskResolverSource = {
     promptVersion: string | null;
     outputSchemaVersion: string | null;
     inputHash: string | null;
-    result: P01ResultV1_4 | null;
+    result: P01ResultV1_4_1 | null;
     failureCode: string | null;
   };
   targetStage: Pick<

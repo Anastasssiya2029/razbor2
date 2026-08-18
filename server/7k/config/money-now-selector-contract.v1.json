@@ -1,5 +1,5 @@
 {
-  "version": "money-now-selector-contract.v1",
+  "version": "money-now-selector-contract.v1.1",
   "businessMethodologyVersion": "money-now.v2.2",
   "factStateEnum": [
     "confirmed_true",
@@ -301,19 +301,48 @@
     "MN16": "requires_additional_delivery"
   },
   "capacityFitRules": {
-    "requires_additional_delivery": {
-      "HAS_UNUSED_CAPACITY=confirmed_true": "fit",
-      "CURRENT_OVERLOAD=confirmed_true": "no_fit",
-      "HAS_UNUSED_CAPACITY=confirmed_false": "no_fit",
-      "otherwise": "risk"
-    },
-    "uses_existing_flow": {
-      "CURRENT_OVERLOAD=confirmed_true": "risk",
-      "otherwise": "fit"
-    },
-    "capacity_neutral": {
-      "otherwise": "fit"
-    }
+    "requires_additional_delivery": [
+      {
+        "when": {
+          "CURRENT_OVERLOAD": "confirmed_true"
+        },
+        "result": "no_fit"
+      },
+      {
+        "when": {
+          "HAS_UNUSED_CAPACITY": "confirmed_true"
+        },
+        "result": "fit"
+      },
+      {
+        "when": {
+          "HAS_UNUSED_CAPACITY": "confirmed_false"
+        },
+        "result": "no_fit"
+      },
+      {
+        "otherwise": true,
+        "result": "risk"
+      }
+    ],
+    "uses_existing_flow": [
+      {
+        "when": {
+          "CURRENT_OVERLOAD": "confirmed_true"
+        },
+        "result": "risk"
+      },
+      {
+        "otherwise": true,
+        "result": "fit"
+      }
+    ],
+    "capacity_neutral": [
+      {
+        "otherwise": true,
+        "result": "fit"
+      }
+    ]
   },
   "modelFitRule": "Money Now is H1 and independent from target strategy. model_fit defaults to fit; target model/owner role do not change ranking in v1 unless an explicit future versioned incompatibility rule is added.",
   "historyStatusEnum": [
@@ -430,6 +459,67 @@
       "CHANNEL_CONTEXT",
       "SALES_TECHNOLOGY"
     ]
+  },
+  "materialConditionFactCodes": {
+    "AUDIENCE": [
+      "AUDIENCE_FIT_CONFIRMED",
+      "PRIORITY_SEGMENT_IDENTIFIED",
+      "WARM_NETWORK_TARGET_ACCESS",
+      "PARTNER_TARGET_ACCESS",
+      "FORMER_CLIENT_NEED_RELEVANT_NOW",
+      "WARM_LEAD_RECONTACT_COMPATIBLE"
+    ],
+    "PRODUCT": [
+      "CONCRETE_PRODUCT_OFFER_EXISTS",
+      "PRODUCT_CLARITY_CONFIRMED",
+      "FULLER_RESULT_PATH_EXISTS",
+      "NEXT_PRODUCT_OR_ADDITIONAL_TASK_EXISTS"
+    ],
+    "QUALIFICATION": [
+      "AUDIENCE_FIT_CONFIRMED",
+      "WARM_LEAD_RECONTACT_COMPATIBLE",
+      "NEXT_STEP_LEAK_CONFIRMED"
+    ],
+    "SALES_TECHNOLOGY": [
+      "NEXT_STEP_LEAK_CONFIRMED",
+      "PAYMENT_LEAK_CONFIRMED",
+      "VALUE_COMMUNICATION_CONFIRMED"
+    ],
+    "SEQUENCE": [
+      "NEXT_STEP_LEAK_CONFIRMED",
+      "FULL_WORKING_PATH_CONFIRMED",
+      "CURRENT_MECHANISM_REPEATABLE"
+    ],
+    "CAPACITY": [
+      "HAS_UNUSED_CAPACITY",
+      "CURRENT_OVERLOAD"
+    ],
+    "CHANNEL_CONTEXT": [
+      "HAS_SOCIAL_AUDIENCE",
+      "HAS_WARM_NETWORK",
+      "HAS_PARTNERS",
+      "PARTNER_TARGET_ACCESS",
+      "BEST_PERIOD_MECHANISM_IDENTIFIED",
+      "BEST_PERIOD_REPRODUCIBLE_NOW",
+      "PROVEN_CHANNEL_PAYMENTS_CONFIRMED",
+      "PROVEN_CHANNEL_CURRENTLY_INACTIVE",
+      "PROVEN_CHANNEL_REACTIVATABLE_NOW",
+      "PROVEN_EVENT_PAYMENTS_CONFIRMED",
+      "PROVEN_EVENT_REPRODUCIBLE_NOW"
+    ],
+    "OFFER": [
+      "CONCRETE_PRODUCT_OFFER_EXISTS",
+      "PRODUCT_CLARITY_CONFIRMED"
+    ],
+    "PRICE": [
+      "PRICE_LIMITS_ECONOMICS_CONFIRMED",
+      "VALUE_COMMUNICATION_CONFIRMED"
+    ],
+    "TEAM": [
+      "HAS_UNUSED_CAPACITY",
+      "CURRENT_OVERLOAD"
+    ],
+    "OTHER_PREREQUISITE": []
   },
   "materialConditionSupportingCodes": [
     "SEQUENCE"

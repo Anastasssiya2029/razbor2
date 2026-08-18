@@ -11,7 +11,7 @@ import {
   type TransitionTask,
 } from "../server/7k/transition-resolver";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId, type SevenKScores } from "../server/7k/types";
-import type { P01ResultV1_4 } from "../server/p01/types";
+import type { P01ResultV1_4_1 } from "../server/p01/types";
 import type { StoredP02Result } from "../server/p02/stage-types";
 import type { P01StrategyContext, P02ResultV1_3, TargetConfigProjection } from "../server/p02/types";
 import { sha256 } from "../server/stage4/hash";
@@ -84,7 +84,7 @@ function planInput(sequence: P02ResultV1_3["elementSequence"]): TaskResolverPlan
   return { elementSequence: sequence, businessValidation: BUSINESS_VALIDATION, currentScores: CURRENT, targetScores: TARGET };
 }
 
-function p01Result(): P01ResultV1_4 {
+function p01Result(): P01ResultV1_4_1 {
   const current7k = Object.fromEntries(SEVEN_K_ELEMENT_IDS.map((elementId) => [elementId, {
     score: CURRENT[elementId],
     confidence: "medium",
@@ -98,9 +98,9 @@ function p01Result(): P01ResultV1_4 {
     contradiction: null,
     historical_asset: null,
     missing_evidence: [],
-  }])) as unknown as P01ResultV1_4["current7k"];
+  }])) as unknown as P01ResultV1_4_1["current7k"];
   return {
-    promptVersion: "P-01.v1.4", schemaVersion: "1.4",
+    promptVersion: "P-01.v1.4.1", schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger: [{ id: "E01", source_field: "project.clients", fact: "Есть фактические разговоры.", evidence_type: "metric_result", time_scope: "current", valence: "neutral", elements: ["audience"], derived_from: [] }],
     current7k,
@@ -119,7 +119,7 @@ function p01Result(): P01ResultV1_4 {
     moneyChainFacts: [{ stage: "next_step", summary: "Базовый сигнал", value: 0, denominator: null, conversionPct: null, period: "месяц", evidence_ids: ["E01"] }],
     moneyNowSignals: [],
     moneyNowFacts: unknownMoneyNowFacts(),
-    moneyNowHistory: {} as P01ResultV1_4["moneyNowHistory"],
+    moneyNowHistory: {} as P01ResultV1_4_1["moneyNowHistory"],
     targetIntent: {
       rawBusinessModel: "Пакет",
       normalizedModelFamily: "package_1to1",
@@ -228,7 +228,7 @@ async function sourceWith(sequence = [milestone(1, "audience", 2, 5)]): Promise<
   };
   const resourceVersions: TargetArchetypeResourceVersions = {
     stageVersion: "target-archetype-stage.v1",
-    p01PromptVersion: "P-01.v1.4",
+    p01PromptVersion: "P-01.v1.4.1",
     p01OutputSchemaVersion: "1.4",
     elements: "elements.v1",
     targetRules: "target-rules.v2.1",
@@ -238,7 +238,7 @@ async function sourceWith(sequence = [milestone(1, "audience", 2, 5)]): Promise<
     analysisRunId: "run-1",
     diagnosticId: "diag-1",
     runStatus: "resolving_tasks",
-    p01: { id: "p01-1", promptVersion: "P-01.v1.4", outputSchemaVersion: "1.4", inputHash: "p01-input", result: p01, failureCode: null },
+    p01: { id: "p01-1", promptVersion: "P-01.v1.4.1", outputSchemaVersion: "1.4", inputHash: "p01-input", result: p01, failureCode: null },
     targetStage: { id: "stage4-1", p01AnalysisResultId: "p01-1", p01InputHash: "p01-input", p01ResultHash: p01Hash, currentScores: CURRENT, target, resourceVersions, deterministicInputHash: "stage4-input", failureCode: null, failureMessage: null },
     p02: storedP02,
   };

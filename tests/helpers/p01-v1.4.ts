@@ -1,7 +1,7 @@
 import {
   MONEY_NOW_FACT_CODES,
   type MoneyNowFactCode,
-} from "../../server/7k/config/money-now-selector-contract.v1";
+} from "../../server/7k/config/money-now-fact-extraction.v1";
 import type {
   P01MoneyNowFact,
   P01MoneyNowFacts,
@@ -23,4 +23,3 @@ export function unknownMoneyNowFacts(
     ]),
   ) as P01MoneyNowFacts;
 }
-

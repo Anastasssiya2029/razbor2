@@ -1,7 +1,7 @@
 import type { DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 import { EVIDENCE_ROUTING, EVIDENCE_ROUTING_GLOBAL_CONTEXT } from "@/server/7k/config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP } from "@/server/7k/config/money-now-history-map.v2.2";
-import { MONEY_NOW_FACTS_DICTIONARY } from "@/server/7k/config/money-now-selector-contract.v1";
+import { MONEY_NOW_FACT_EXTRACTION_DICTIONARY } from "@/server/7k/config/money-now-fact-extraction.v1";
 import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY } from "@/server/7k/config/target-model-dictionary.v2.1";
 import { P01_SYSTEM_PROMPT_TEMPLATE } from "@/server/7k/prompts/p01.v1.4";
@@ -26,8 +26,8 @@ export function buildP01SystemPrompt(
   prompt = replaceRequired(prompt, "{{MONEY_NOW_HISTORY_MAP_JSON}}", MONEY_NOW_HISTORY_MAP);
   prompt = replaceRequired(
     prompt,
-    "{{MONEY_NOW_FACTS_DICTIONARY_JSON}}",
-    MONEY_NOW_FACTS_DICTIONARY,
+    "{{MONEY_NOW_FACT_EXTRACTION_JSON}}",
+    MONEY_NOW_FACT_EXTRACTION_DICTIONARY,
   );
   prompt = replaceRequired(prompt, "{{DIAGNOSTIC_INPUT_JSON}}", input);
 

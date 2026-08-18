@@ -1,10 +1,7 @@
 import { assertDiagnosticInputForAi, type DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "@/server/7k/config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "@/server/7k/config/money-now-history-map.v2.2";
-import {
-  MONEY_NOW_PROOF_MAP_VERSION,
-  MONEY_NOW_SELECTOR_CONTRACT_VERSION,
-} from "@/server/7k/config/money-now-selector-contract.v1";
+import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "@/server/7k/config/money-now-fact-extraction.v1";
 import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.1";
 import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
@@ -61,8 +58,7 @@ const P01_RULE_VERSIONS = {
   evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
   targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
   moneyNowHistoryMap: MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION,
-  moneyNowFactsDictionary: MONEY_NOW_SELECTOR_CONTRACT_VERSION,
-  moneyNowProofMap: MONEY_NOW_PROOF_MAP_VERSION,
+  moneyNowFactExtraction: MONEY_NOW_FACT_EXTRACTION_VERSION,
 } as const;
 
 function stableJson(value: unknown): string {
@@ -99,9 +95,33 @@ function addUsage(total: P01ProviderUsage, next: P01ProviderUsage): void {
 }
 
 function issuesCorrection(kind: string, issues: readonly P01ValidationIssue[]): string {
+  const targeted: string[] = [];
+  if (
+    issues.some((issue) =>
+      [
+        "money_now_false_without_evidence",
+        "money_now_false_without_negative_evidence",
+      ].includes(issue.code),
+    )
+  ) {
+    targeted.push(
+      "Для каждого confirmed_false используй evidence с valence=negative и допустимым по evidencePolicy time_scope. Если отсутствие подтверждается числом 0, создай отдельный metric_result evidence item с valence=negative. Если такого evidence нет — поставь unknown.",
+    );
+  }
+  if (issues.some((issue) => issue.code === "money_now_fact_without_policy_evidence")) {
+    targeted.push(
+      "Исправь time_scope по evidencePolicy: current_required допускает только current; current_or_historical_repeatable — current/historical_repeatable; historical_allowed — current/historical_repeatable/historical_only; hypothesis не подтверждает true/false.",
+    );
+  }
+  if (issues.some((issue) => issue.code === "new_condition_code_evidence_mismatch")) {
+    targeted.push(
+      "Свяжи condition_code с тем же current evidence ID у соответствующего confirmed_true moneyNowFact; не подменяй PRODUCT evidence фактом CAPACITY и наоборот.",
+    );
+  }
   return [
     `${kind}:`,
     ...issues.slice(0, 20).map((issue) => `- ${issue.path}: ${issue.code}: ${issue.message}`),
+    ...targeted.map((message) => `- TARGETED_FIX: ${message}`),
     "Верни весь JSON заново строго по исходной schema v1.4; не меняй факты без необходимости исправить указанное противоречие.",
   ].join("\n");
 }
