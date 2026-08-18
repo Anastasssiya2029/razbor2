@@ -70,7 +70,7 @@ export async function runP02Stage(
   const repository = options.repository ?? createD1P02Repository();
   const source = await repository.loadSource(analysisRunId);
   if (!source) throw new P02Error("P02_ANALYSIS_RUN_NOT_FOUND", "Analysis run was not found.", "validation");
-  if (source.runStatus !== "strategizing" && source.runStatus !== "resolving_tasks") {
+  if (!["strategizing", "resolving_tasks", "analysis_failed"].includes(source.runStatus)) {
     throw new P02Error("P02_NOT_READY", `Analysis run status=${source.runStatus}; expected strategizing.`, "validation");
   }
 
@@ -181,4 +181,3 @@ export async function runP02Stage(
     return { analysisRunId, status: "analysis_failed", idempotentReplay: persisted.replay, result: persisted.result };
   }
 }
-
