@@ -52,7 +52,7 @@ function stage4FromRow(row: P02TargetRow | null): P02UpstreamSource["targetStage
   };
 }
 
-function stored(row: typeof p02AnalysisResults.$inferSelect): StoredP02Result {
+export function storedP02ResultFromRow(row: typeof p02AnalysisResults.$inferSelect): StoredP02Result {
   return {
     id: row.id,
     diagnosticId: row.diagnosticId,
@@ -136,7 +136,7 @@ export function createD1P02Repository(): P02Repository {
     async loadResult(analysisRunId) {
       const db = await getDb();
       const rows = await db.select().from(p02AnalysisResults).where(eq(p02AnalysisResults.analysisRunId, analysisRunId)).limit(1);
-      return rows[0] ? stored(rows[0]) : null;
+      return rows[0] ? storedP02ResultFromRow(rows[0]) : null;
     },
     async createResult(result) {
       const db = await getDb();

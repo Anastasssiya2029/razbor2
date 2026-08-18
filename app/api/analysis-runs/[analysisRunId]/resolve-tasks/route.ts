@@ -1,11 +1,11 @@
-import { P02Error, runP02Stage } from "@/server/p02";
+import { runTaskResolverStage, TaskResolverError } from "@/server/task-resolver";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
 
 export async function POST(_request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
-    const executed = await runP02Stage(analysisRunId);
+    const executed = await runTaskResolverStage(analysisRunId);
     if (executed.status === "analysis_failed") {
       return Response.json({
         analysisRunId,
@@ -19,20 +19,19 @@ export async function POST(_request: Request, context: RouteContext) {
       analysisRunId,
       status: executed.status,
       idempotentReplay: executed.idempotentReplay,
-      result: executed.result.result,
-      readyFor: "deterministic-task-resolver",
-      taskResolverStarted: false,
-      nextStep: {
-        method: "POST",
-        href: `/api/analysis-runs/${analysisRunId}/resolve-tasks`,
-        module: "task-resolver-stage.v1",
-      },
+      result: executed.result.plan,
+      readyFor: "deterministic-money-now-selector",
+      moneyNowSelectorStarted: false,
     });
   } catch (error) {
-    if (error instanceof P02Error) {
-      const status = error.code === "P02_ANALYSIS_RUN_NOT_FOUND" ? 404 : error.kind === "technical" ? 500 : 409;
+    if (error instanceof TaskResolverError) {
+      const status = error.code === "TASK_RESOLVER_ANALYSIS_RUN_NOT_FOUND"
+        ? 404
+        : error.kind === "technical"
+          ? 500
+          : 409;
       return Response.json({ error: error.code, message: error.message, details: error.details }, { status });
     }
-    return Response.json({ error: "P02_TECHNICAL_ERROR", message: "Transition Strategist failed." }, { status: 500 });
+    return Response.json({ error: "TASK_RESOLVER_TECHNICAL_ERROR", message: "Deterministic Task Resolver failed." }, { status: 500 });
   }
 }

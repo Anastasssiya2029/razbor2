@@ -190,3 +190,47 @@ export const p02AnalysisResults = sqliteTable(
     index("p02_analysis_results_input_hash_idx").on(table.inputHash),
   ],
 );
+
+export const resolvedTransitionPlans = sqliteTable(
+  "resolved_transition_plans",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01AnalysisResultId: text("p01_analysis_result_id").references(() => p01AnalysisResults.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
+    targetArchetypeResultId: text("target_archetype_result_id").references(() => targetArchetypeResults.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
+    p02AnalysisResultId: text("p02_analysis_result_id").references(() => p02AnalysisResults.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
+    p02ResultHash: text("p02_result_hash"),
+    targetResultHash: text("target_result_hash"),
+    stageVersion: text("stage_version").notNull(),
+    transitionRegistryVersion: text("transition_registry_version").notNull(),
+    deterministicInputHash: text("deterministic_input_hash").notNull(),
+    planJson: text("plan_json"),
+    startedAt: text("started_at").notNull(),
+    completedAt: text("completed_at").notNull(),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("resolved_transition_plans_run_unique").on(table.analysisRunId),
+    index("resolved_transition_plans_p01_idx").on(table.p01AnalysisResultId),
+    index("resolved_transition_plans_target_idx").on(table.targetArchetypeResultId),
+    index("resolved_transition_plans_p02_idx").on(table.p02AnalysisResultId),
+    index("resolved_transition_plans_input_hash_idx").on(table.deterministicInputHash),
+  ],
+);

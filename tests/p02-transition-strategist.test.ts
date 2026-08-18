@@ -86,7 +86,7 @@ function output(): P02ResultV1_3 {
     perceivedVsEvidenced: { client_hypothesis: "Нужна реклама", evidenced_bottleneck: "Есть встречи, но нет оплат", relation: "differs", explanation: "Факты показывают разрыв после интереса", evidence_ids: ["E04"] },
     previousAttemptsAnalysis: { attempts_summary: ["Тест рекламы дал встречи без оплат"], repeated_break_pattern: null, why_not_stable: "Оплата не появилась", route_difference: "Сначала проверить ясность продукта", confidence: "medium", evidence_ids: ["E04"] },
     candidateAudit: [
-      { element_id: "product_method", hypothesis: "Неясен продукт", supporting_evidence_ids: ["E03"], counterevidence_ids: [], dependency_position: "До продаж", target_necessity: "Нужен пакет", decision: "selected", rejection_reason: null, tie_break_step: 0 },
+      { element_id: "product_method", hypothesis: "Неясен продукт", supporting_evidence_ids: ["E03"], counterevidence_ids: [], dependency_position: "До продаж", target_necessity: "Нужен пакет", decision: "selected", rejection_reason: null, tie_break_step: null },
       { element_id: "sales_technology", hypothesis: "Слабая продажа", supporting_evidence_ids: ["E04"], counterevidence_ids: [], dependency_position: "После продукта", target_necessity: "Нужна технология", decision: "rejected", rejection_reason: "Сначала определить продукт", tie_break_step: 1 },
     ],
     bundle: {
@@ -114,7 +114,7 @@ class QueueProvider implements P02Provider {
 function withPriority(base: P02ResultV1_3, id: SevenKElementId, current: number, target: number): P02ResultV1_3 {
   const next = structuredClone(base); next.bundle.priority_element = id; next.bundle.build_elements = [];
   next.bundle.maintain_elements = SEVEN_K_ELEMENT_IDS.filter((item) => item !== id); next.bundle.later_elements = [];
-  next.candidateAudit = [{ element_id: id, hypothesis: "Кандидат", supporting_evidence_ids: ["E01"], counterevidence_ids: [], dependency_position: "Причинный узел", target_necessity: "Нужен цели", decision: "selected", rejection_reason: null, tie_break_step: 0 }];
+  next.candidateAudit = [{ element_id: id, hypothesis: "Кандидат", supporting_evidence_ids: ["E01"], counterevidence_ids: [], dependency_position: "Причинный узел", target_necessity: "Нужен цели", decision: "selected", rejection_reason: null, tie_break_step: null }];
   next.elementSequence = [{ order: 1, element_id: id, role: "priority", from_score: current, to_score: target, why_now: "Проверяем", prerequisite_elements: [], unlocks: ["Сигнал"], evidence_ids: ["E01"] }];
   return next;
 }
@@ -141,6 +141,9 @@ test("19. unknown ID and legacy products_method are rejected", () => { const val
 test("20. explicit desiredRoleSummary conflict returns TARGET_CONFIG_INCONSISTENCY", () => { const input = prepared(); assert.throws(() => assertDesiredRoleConsistency("Передать продажи менеджеру", input.targetConfig), (error: unknown) => error instanceof P02Error && error.code === "TARGET_CONFIG_INCONSISTENCY"); });
 test("21. transport failure gets at most one technical retry", async () => { const provider = new QueueProvider([new Error("network"), output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.technicalRetryCount, 1); });
 test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.businessValidation.checkpoint_after_order = 2; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
+test("selected candidate has null tie-break step and rejection reason", () => { const selected = output().candidateAudit.find((candidate) => candidate.decision === "selected"); assert.equal(selected?.tie_break_step, null); assert.equal(selected?.rejection_reason, null); assert.doesNotThrow(() => validateP02Invariants(output(), prepared())); });
+test("rejected candidate without tie-break step is rejected", () => { const value = output(); const rejected = value.candidateAudit.find((candidate) => candidate.decision === "rejected")!; rejected.tie_break_step = null; assert.throws(() => validateP02Invariants(value, prepared()), P02InvariantError); });
+test("selected candidate with a tie-break step is rejected", () => { const value = output(); const selected = value.candidateAudit.find((candidate) => candidate.decision === "selected")!; selected.tie_break_step = 0; assert.throws(() => validateP02Invariants(value, prepared()), P02InvariantError); });
 
 class MemoryRepository implements P02Repository {
   stored: StoredP02Result | null = null;

@@ -77,6 +77,17 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
         archetypes: ARCHETYPES_RESOURCE_VERSION,
       },
     },
+    taskResolver: {
+      stageVersion: "task-resolver-stage.v1" as const,
+      input: {
+        p02PromptVersion: P02_PROMPT_VERSION,
+        p02OutputSchemaVersion: "1.3" as const,
+        targetRules: TARGET_RULES_RESOURCE_VERSION,
+      },
+      resources: {
+        transitions: TRANSITIONS_RESOURCE_VERSION,
+      },
+    },
   },
 } as const;
 

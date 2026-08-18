@@ -156,8 +156,13 @@ export function validateP02Invariants(
     if (selected.length !== 1) add(issues, "/candidateAudit", "candidate_selected_count", "Candidate audit must have exactly one selected candidate.");
     if (selected[0] && selected[0].element_id !== priority) add(issues, "/candidateAudit", "candidate_priority_mismatch", "Selected candidate must equal priority element.");
     result.candidateAudit.forEach((candidate, index) => {
-      if (!Number.isInteger(candidate.tie_break_step) || candidate.tie_break_step! < 0 || candidate.tie_break_step! > 7) add(issues, `/candidateAudit/${index}/tie_break_step`, "tie_break_step_required", "tie_break_step must be 0–7.");
-      if (candidate.decision === "rejected" && !candidate.rejection_reason?.trim()) add(issues, `/candidateAudit/${index}/rejection_reason`, "rejection_reason_required", "Rejected candidate needs a reason.");
+      if (candidate.decision === "selected") {
+        if (candidate.tie_break_step !== null) add(issues, `/candidateAudit/${index}/tie_break_step`, "selected_tie_break_step_forbidden", "Selected candidate must have tie_break_step=null.");
+        if (candidate.rejection_reason !== null) add(issues, `/candidateAudit/${index}/rejection_reason`, "selected_rejection_reason_forbidden", "Selected candidate must have rejection_reason=null.");
+      } else {
+        if (!Number.isInteger(candidate.tie_break_step) || candidate.tie_break_step! < 0 || candidate.tie_break_step! > 7) add(issues, `/candidateAudit/${index}/tie_break_step`, "tie_break_step_required", "Rejected candidate tie_break_step must be 0–7.");
+        if (!candidate.rejection_reason?.trim()) add(issues, `/candidateAudit/${index}/rejection_reason`, "rejection_reason_required", "Rejected candidate needs a reason.");
+      }
     });
   }
 
