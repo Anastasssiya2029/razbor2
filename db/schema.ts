@@ -102,3 +102,40 @@ export const p01AnalysisResults = sqliteTable(
     index("p01_analysis_results_input_hash_idx").on(table.inputHash),
   ],
 );
+
+export const targetArchetypeResults = sqliteTable(
+  "target_archetype_results",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01AnalysisResultId: text("p01_analysis_result_id").references(() => p01AnalysisResults.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
+    p01InputHash: text("p01_input_hash"),
+    p01ResultHash: text("p01_result_hash"),
+    currentScoresJson: text("current_scores_json"),
+    targetInputJson: text("target_input_json"),
+    targetResultJson: text("target_result_json"),
+    archetypeResultJson: text("archetype_result_json"),
+    resourceVersionsJson: text("resource_versions_json").notNull(),
+    deterministicInputHash: text("deterministic_input_hash").notNull(),
+    startedAt: text("started_at").notNull(),
+    completedAt: text("completed_at").notNull(),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("target_archetype_results_run_unique").on(table.analysisRunId),
+    index("target_archetype_results_diagnostic_idx").on(table.diagnosticId),
+    index("target_archetype_results_p01_idx").on(table.p01AnalysisResultId),
+    index("target_archetype_results_input_hash_idx").on(table.deterministicInputHash),
+  ],
+);

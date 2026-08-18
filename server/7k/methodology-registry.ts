@@ -42,6 +42,20 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
       },
     },
   },
+  deterministicStages: {
+    targetArchetype: {
+      stageVersion: "target-archetype-stage.v1" as const,
+      input: {
+        p01PromptVersion: P01_PROMPT_VERSION,
+        p01OutputSchemaVersion: "1.3" as const,
+      },
+      resources: {
+        elements: ELEMENTS_RESOURCE_VERSION,
+        targetRules: TARGET_RULES_RESOURCE_VERSION,
+        archetypes: ARCHETYPES_RESOURCE_VERSION,
+      },
+    },
+  },
 } as const;
 
 export function getSevenKResourceVersions(): SevenKResourceVersions {
@@ -50,4 +64,17 @@ export function getSevenKResourceVersions(): SevenKResourceVersions {
 
 export function getP01ResourceVersions() {
   return { ...SEVEN_K_METHODOLOGY_REGISTRY.aiModules.p01.resources };
+}
+
+export function getTargetArchetypeResourceVersions() {
+  return {
+    stageVersion:
+      SEVEN_K_METHODOLOGY_REGISTRY.deterministicStages.targetArchetype.stageVersion,
+    p01PromptVersion:
+      SEVEN_K_METHODOLOGY_REGISTRY.deterministicStages.targetArchetype.input.p01PromptVersion,
+    p01OutputSchemaVersion:
+      SEVEN_K_METHODOLOGY_REGISTRY.deterministicStages.targetArchetype.input
+        .p01OutputSchemaVersion,
+    ...SEVEN_K_METHODOLOGY_REGISTRY.deterministicStages.targetArchetype.resources,
+  };
 }

@@ -108,8 +108,13 @@ Submitting `POST /api/diagnostics` stores the immutable raw answers and the
 normalized `DiagnosticInput v1.2`, then creates an analysis run in `queued`.
 The response exposes the server-side `POST /api/analysis-runs/:analysisRunId/p01`
 next step. That endpoint runs only P-01 v1.3 and moves a successful run to
-`targeting`; it does not execute target, archetype, Money Now selection, P-02,
-P-03 or P-04.
+`targeting`; it does not execute Money Now selection, P-02, P-03 or P-04.
+
+The returned next step, `POST /api/analysis-runs/:analysisRunId/target-archetype`,
+loads the persisted validated P-01 result and deterministically reuses the
+stage-2 Target Configuration and Business Archetype calculators. A successful
+run moves from `targeting` to `strategizing`, meaning only that it is ready for
+P-02. P-02 is not started automatically.
 
 Runtime configuration:
 

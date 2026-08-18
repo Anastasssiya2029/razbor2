@@ -38,6 +38,11 @@ export async function POST(_request: Request, context: RouteContext) {
       analysisRunId,
       status: "targeting",
       result: stored[0]?.resultJson ? JSON.parse(stored[0].resultJson) : null,
+      nextStep: {
+        method: "POST",
+        href: `/api/analysis-runs/${analysisRunId}/target-archetype`,
+        module: "target-archetype-stage.v1",
+      },
     });
   }
   if (run.status !== "queued") {
@@ -68,6 +73,10 @@ export async function POST(_request: Request, context: RouteContext) {
     analysisRunId,
     status: executed.status,
     result: executed.outcome?.result ?? null,
+    nextStep: {
+      method: "POST",
+      href: `/api/analysis-runs/${analysisRunId}/target-archetype`,
+      module: "target-archetype-stage.v1",
+    },
   });
 }
-
