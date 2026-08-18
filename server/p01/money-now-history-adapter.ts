@@ -1,42 +1,46 @@
 import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
 import { MONEY_NOW_HISTORY_MAP } from "@/server/7k/config/money-now-history-map.v2.2";
-import type {
-  MoneyNowPreviousAttempt,
-  MoneyNowScenarioFacts,
-} from "@/server/7k/money-now-selector";
-import type { P01ResultV1_3 } from "./types";
+import type { P01MoneyNowHistoryItem, P01ResultV1_4 } from "./types";
 
-export type MoneyNowHistoryGuardInput = {
-  previousAttempts: MoneyNowPreviousAttempt[];
-  scenarioFacts: Partial<Record<(typeof MONEY_NOW_SCENARIO_IDS)[number], MoneyNowScenarioFacts>>;
+export type MoneyNowHistoryScenarioSnapshot = P01MoneyNowHistoryItem & {
+  scenario_id: (typeof MONEY_NOW_SCENARIO_IDS)[number];
+  history_key: string;
+};
+
+export type MoneyNowHistoryGuardInputV1 = {
+  scenarios: Record<
+    (typeof MONEY_NOW_SCENARIO_IDS)[number],
+    MoneyNowHistoryScenarioSnapshot
+  >;
 };
 
 /**
- * Produces deterministic history-guard facts for Stage 2 without running or
- * selecting a Money Now scenario. `not_reported` creates no previous attempt.
+ * Lossless adapter for the future deterministic Stage 7 history guard.
+ * It deliberately does not create selector input: every P-01 status and
+ * evidence reference remains distinguishable.
  */
 export function buildMoneyNowHistoryGuardInput(
-  history: P01ResultV1_3["moneyNowHistory"],
-): MoneyNowHistoryGuardInput {
-  const previousAttempts: MoneyNowPreviousAttempt[] = [];
-  const scenarioFacts: MoneyNowHistoryGuardInput["scenarioFacts"] = {};
-
-  for (const scenarioId of MONEY_NOW_SCENARIO_IDS) {
-    const item = history[scenarioId];
-    if (item.history_status !== "not_reported") {
-      previousAttempts.push({
-        historyKey: MONEY_NOW_HISTORY_MAP.scenarios[scenarioId].historyKey,
-        sustainableResult: item.history_status === "worked_sustained",
-      });
-    }
-    scenarioFacts[scenarioId] = {
-      proofLevel: 0,
-      newMaterialCondition:
-        item.new_material_condition === "yes"
-          ? item.summary ?? item.condition_codes.join(", ")
-          : null,
-    };
-  }
-  return { previousAttempts, scenarioFacts };
+  history: P01ResultV1_4["moneyNowHistory"],
+): MoneyNowHistoryGuardInputV1 {
+  return {
+    scenarios: Object.fromEntries(
+      MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [
+        scenarioId,
+        {
+          scenario_id: scenarioId,
+          history_key: MONEY_NOW_HISTORY_MAP.scenarios[scenarioId].historyKey,
+          history_status: history[scenarioId].history_status,
+          new_material_condition: history[scenarioId].new_material_condition,
+          condition_codes: [...history[scenarioId].condition_codes],
+          summary: history[scenarioId].summary,
+          evidence_ids: [...history[scenarioId].evidence_ids],
+          new_condition_evidence_ids: [
+            ...history[scenarioId].new_condition_evidence_ids,
+          ],
+          confidence: history[scenarioId].confidence,
+        },
+      ]),
+    ) as MoneyNowHistoryGuardInputV1["scenarios"],
+  };
 }
 

@@ -145,10 +145,10 @@ function deriveDesiredOwnerRole(modifiers: readonly TargetModifierCode[]): {
 }
 
 function assertP01Ready(source: Stage4Source): void {
-  if (source.p01PromptVersion !== "P-01.v1.3" || source.p01OutputSchemaVersion !== "1.3") {
+  if (source.p01PromptVersion !== "P-01.v1.4" || source.p01OutputSchemaVersion !== "1.4") {
     throw new Stage4Error(
       "STAGE4_UNSUPPORTED_P01_VERSION",
-      "Stage 4 supports only persisted P-01.v1.3 / output schema 1.3.",
+      "Stage 4 supports only persisted P-01.v1.4 / output schema 1.4.",
       "upstream_blocked",
       {
         promptVersion: source.p01PromptVersion,

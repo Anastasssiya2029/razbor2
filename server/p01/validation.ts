@@ -1,11 +1,16 @@
 import Ajv2020, { type ErrorObject } from "ajv/dist/2020.js";
-import p01OutputSchema from "@/schemas/p01-evidence-scorer.output.v1.3.schema.json";
+import p01OutputSchema from "@/schemas/p01-evidence-scorer.output.v1.4.schema.json";
+import {
+  MONEY_NOW_FACT_CODES,
+  MONEY_NOW_MATERIAL_CONDITION_PRIMARY_CODES,
+  type MoneyNowFactCode,
+} from "@/server/7k/config/money-now-selector-contract.v1";
 import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
 import { MODEL_FAMILIES, BASE_MODEL_FAMILIES } from "@/server/7k/config/target-rules.v2.1";
 import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
 import { TARGET_RULE_CODE_SET } from "@/server/7k/config/target-model-dictionary.v2.1";
 import { SEVEN_K_ELEMENT_IDS } from "@/server/7k/types";
-import type { P01ResultV1_3 } from "./types";
+import type { P01ResultV1_4 } from "./types";
 
 export type P01ValidationIssue = {
   path: string;
@@ -18,7 +23,7 @@ export class P01SchemaValidationError extends Error {
   readonly issues: P01ValidationIssue[];
 
   constructor(issues: P01ValidationIssue[]) {
-    super("P-01 output does not satisfy schema v1.3");
+    super("P-01 output does not satisfy schema v1.4");
     this.name = "P01SchemaValidationError";
     this.issues = issues;
   }
@@ -54,11 +59,11 @@ function schemaIssue(error: ErrorObject): P01ValidationIssue {
   };
 }
 
-export function validateP01Schema(value: unknown): P01ResultV1_3 {
+export function validateP01Schema(value: unknown): P01ResultV1_4 {
   if (!validateSchema(value)) {
     throw new P01SchemaValidationError((validateSchema.errors ?? []).map(schemaIssue));
   }
-  return value as P01ResultV1_3;
+  return value as P01ResultV1_4;
 }
 
 function findForbiddenLegacyId(value: unknown, path = ""): P01ValidationIssue[] {
@@ -91,7 +96,7 @@ function addDanglingEvidenceIssues(
   });
 }
 
-function allEvidenceReferences(result: P01ResultV1_3): Array<{ path: string; ids: string[] }> {
+function allEvidenceReferences(result: P01ResultV1_4): Array<{ path: string; ids: string[] }> {
   const references: Array<{ path: string; ids: string[] }> = [];
   for (const elementId of SEVEN_K_ELEMENT_IDS) {
     const score = result.current7k[elementId];
@@ -109,6 +114,12 @@ function allEvidenceReferences(result: P01ResultV1_3): Array<{ path: string; ids
   result.moneyNowSignals.forEach((signal, index) =>
     references.push({ path: `/moneyNowSignals/${index}/evidence_ids`, ids: signal.evidence_ids }),
   );
+  MONEY_NOW_FACT_CODES.forEach((factCode) =>
+    references.push({
+      path: `/moneyNowFacts/${factCode}/evidence_ids`,
+      ids: result.moneyNowFacts[factCode].evidence_ids,
+    }),
+  );
   MONEY_NOW_SCENARIO_IDS.forEach((scenarioId) => {
     const history = result.moneyNowHistory[scenarioId];
     references.push(
@@ -122,7 +133,21 @@ function allEvidenceReferences(result: P01ResultV1_3): Array<{ path: string; ids
   return references;
 }
 
-export function validateP01Invariants(result: P01ResultV1_3): P01ResultV1_3 {
+const REPRODUCIBILITY_FACTS_REQUIRING_CURRENT_EVIDENCE = new Set<MoneyNowFactCode>([
+  "BEST_PERIOD_REPRODUCIBLE_NOW",
+  "PROVEN_CHANNEL_REACTIVATABLE_NOW",
+  "PROVEN_EVENT_REPRODUCIBLE_NOW",
+  "CURRENT_MECHANISM_REPEATABLE",
+]);
+
+function isDirectNegativeOrNumericEvidence(
+  evidence: P01ResultV1_4["evidenceLedger"][number],
+): boolean {
+  if (evidence.time_scope === "hypothesis") return false;
+  return evidence.valence === "negative" || evidence.evidence_type === "metric_result";
+}
+
+export function validateP01Invariants(result: P01ResultV1_4): P01ResultV1_4 {
   const issues = findForbiddenLegacyId(result);
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));
   if (evidenceById.size !== result.evidenceLedger.length) {
@@ -166,6 +191,76 @@ export function validateP01Invariants(result: P01ResultV1_3): P01ResultV1_3 {
     addDanglingEvidenceIssues(issues, ids, evidenceIds, path),
   );
 
+  for (const factCode of MONEY_NOW_FACT_CODES) {
+    const fact = result.moneyNowFacts[factCode];
+    const factEvidence = fact.evidence_ids
+      .map((id) => evidenceById.get(id))
+      .filter((evidence): evidence is P01ResultV1_4["evidenceLedger"][number] =>
+        evidence !== undefined,
+      );
+    const path = `/moneyNowFacts/${factCode}`;
+
+    if (fact.state === "confirmed_true" && fact.evidence_ids.length === 0) {
+      issues.push({
+        path: `${path}/evidence_ids`,
+        code: "money_now_true_without_evidence",
+        message: "confirmed_true требует минимум одно evidence.",
+      });
+    }
+    if (fact.state === "confirmed_false") {
+      if (fact.evidence_ids.length === 0) {
+        issues.push({
+          path: `${path}/evidence_ids`,
+          code: "money_now_false_without_evidence",
+          message: "confirmed_false требует прямое отрицательное или числовое evidence.",
+        });
+      } else if (!factEvidence.some(isDirectNegativeOrNumericEvidence)) {
+        issues.push({
+          path: `${path}/evidence_ids`,
+          code: "money_now_false_without_direct_evidence",
+          message: "confirmed_false нельзя выводить из отсутствия упоминания или hypothesis.",
+        });
+      }
+    }
+    if (
+      fact.state !== "unknown" &&
+      factEvidence.length > 0 &&
+      factEvidence.every((evidence) => evidence.time_scope === "hypothesis")
+    ) {
+      issues.push({
+        path: `${path}/evidence_ids`,
+        code: "money_now_fact_hypothesis_only",
+        message: "Atomic prerequisite нельзя подтверждать только hypothesis evidence.",
+      });
+    }
+    if (
+      fact.state === "confirmed_true" &&
+      REPRODUCIBILITY_FACTS_REQUIRING_CURRENT_EVIDENCE.has(factCode) &&
+      !factEvidence.some((evidence) => evidence.time_scope === "current")
+    ) {
+      issues.push({
+        path: `${path}/evidence_ids`,
+        code: "money_now_reproducibility_without_current_evidence",
+        message: "Воспроизводимость сейчас требует current evidence доступных условий.",
+      });
+    }
+    if (
+      factCode === "PRICE_LIMITS_ECONOMICS_CONFIRMED" &&
+      fact.state === "confirmed_true" &&
+      !factEvidence.some(
+        (evidence) =>
+          evidence.evidence_type === "metric_result" &&
+          evidence.time_scope === "current",
+      )
+    ) {
+      issues.push({
+        path: `${path}/evidence_ids`,
+        code: "money_now_price_without_internal_economics",
+        message: "Ограничение цены подтверждается current internal economics, а не рыночной нормой.",
+      });
+    }
+  }
+
   const target = result.targetIntent;
   if (target.normalizedModelFamily !== null && !MODEL_SET.has(target.normalizedModelFamily)) {
     issues.push({ path: "/targetIntent/normalizedModelFamily", code: "unknown_model_family", message: "Неизвестная model_family." });
@@ -194,6 +289,14 @@ export function validateP01Invariants(result: P01ResultV1_3): P01ResultV1_3 {
           issues.push({ path: `/moneyNowHistory/${scenarioId}/new_condition_evidence_ids/${index}`, code: "new_condition_not_current", message: "Новое существенное условие должно ссылаться на current evidence." });
         }
       });
+      const allowedPrimaryCodes = MONEY_NOW_MATERIAL_CONDITION_PRIMARY_CODES[scenarioId];
+      if (!history.condition_codes.some((code) => allowedPrimaryCodes.includes(code))) {
+        issues.push({
+          path: `/moneyNowHistory/${scenarioId}/condition_codes`,
+          code: "new_condition_without_scenario_primary_code",
+          message: "Новое условие требует scenario-compatible primary code; SEQUENCE/OTHER_PREREQUISITE alone недостаточны.",
+        });
+      }
     }
     if (history.history_status === "not_reported") {
       if (history.new_material_condition !== "not_applicable") {
@@ -209,7 +312,7 @@ export function validateP01Invariants(result: P01ResultV1_3): P01ResultV1_3 {
   return result;
 }
 
-export function p01SanityErrors(result: P01ResultV1_3): P01ValidationIssue[] {
+export function p01SanityErrors(result: P01ResultV1_4): P01ValidationIssue[] {
   return result.sanityChecks
     .filter((check) => check.severity === "error")
     .map((check, index) => ({
@@ -220,4 +323,3 @@ export function p01SanityErrors(result: P01ResultV1_3): P01ValidationIssue[] {
 }
 
 export const P01_OUTPUT_SCHEMA = p01OutputSchema as Record<string, unknown>;
-

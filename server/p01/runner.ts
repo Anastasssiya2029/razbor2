@@ -1,9 +1,13 @@
 import { assertDiagnosticInputForAi, type DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "@/server/7k/config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "@/server/7k/config/money-now-history-map.v2.2";
+import {
+  MONEY_NOW_PROOF_MAP_VERSION,
+  MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+} from "@/server/7k/config/money-now-selector-contract.v1";
 import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.1";
-import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.3";
+import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
 import { createConfiguredP01Provider } from "./provider";
 import { buildP01SystemPrompt } from "./request";
 import type {
@@ -57,6 +61,8 @@ const P01_RULE_VERSIONS = {
   evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
   targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
   moneyNowHistoryMap: MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION,
+  moneyNowFactsDictionary: MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+  moneyNowProofMap: MONEY_NOW_PROOF_MAP_VERSION,
 } as const;
 
 function stableJson(value: unknown): string {
@@ -96,7 +102,7 @@ function issuesCorrection(kind: string, issues: readonly P01ValidationIssue[]): 
   return [
     `${kind}:`,
     ...issues.slice(0, 20).map((issue) => `- ${issue.path}: ${issue.code}: ${issue.message}`),
-    "Верни весь JSON заново строго по исходной schema v1.3; не меняй факты без необходимости исправить указанное противоречие.",
+    "Верни весь JSON заново строго по исходной schema v1.4; не меняй факты без необходимости исправить указанное противоречие.",
   ].join("\n");
 }
 
@@ -172,7 +178,7 @@ export async function runP01EvidenceScorer(
     } catch (error) {
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;
-        correction = "Предыдущий ответ не был валидным JSON. Верни только JSON по schema v1.3 без Markdown и code fences.";
+        correction = "Предыдущий ответ не был валидным JSON. Верни только JSON по schema v1.4 без Markdown и code fences.";
         continue;
       }
       throw executionError("P01_MALFORMED_JSON", error, "P-01 returned malformed JSON", latestRaw);
@@ -297,4 +303,3 @@ function createMetadata(options: {
     usage: options.usage,
   };
 }
-

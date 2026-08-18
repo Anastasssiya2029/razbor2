@@ -1,0 +1,445 @@
+{
+  "version": "money-now-selector-contract.v1",
+  "businessMethodologyVersion": "money-now.v2.2",
+  "factStateEnum": [
+    "confirmed_true",
+    "confirmed_false",
+    "unknown"
+  ],
+  "factConfidenceEnum": [
+    "high",
+    "medium",
+    "low"
+  ],
+  "proofLevelMapping": {
+    "high": 3,
+    "medium": 2,
+    "low": 1
+  },
+  "scenarioProofLevelRule": "minimum proof level among all required confirmed_true prerequisites",
+  "eligibilityRule": "all required prerequisites must be confirmed_true; unknown or confirmed_false means not eligible",
+  "facts": [
+    {
+      "code": "HAS_CURRENT_CLIENTS",
+      "definition": "Есть действующие платящие клиенты сейчас."
+    },
+    {
+      "code": "HAS_FORMER_CLIENTS",
+      "definition": "Есть бывшие клиенты, с которыми работа завершена."
+    },
+    {
+      "code": "HAS_WARM_LEADS",
+      "definition": "Есть люди с уже возникшим интересом/незакрытыми диалогами без оплаты."
+    },
+    {
+      "code": "HAS_SOCIAL_AUDIENCE",
+      "definition": "Есть собственная текущая аудитория/база подписчиков, к которой есть прямой доступ."
+    },
+    {
+      "code": "HAS_WARM_NETWORK",
+      "definition": "Есть тёплые профессиональные контакты/коллеги/знакомые, к которым можно обратиться напрямую."
+    },
+    {
+      "code": "HAS_PARTNERS",
+      "definition": "Есть партнёры/сообщества/организации, через которые возможен доступ к аудитории."
+    },
+    {
+      "code": "HAS_UNUSED_CAPACITY",
+      "definition": "Есть подтверждённая физическая ёмкость принять дополнительный объём работы."
+    },
+    {
+      "code": "CURRENT_OVERLOAD",
+      "definition": "Есть подтверждённая перегрузка владельца/команды; дополнительный объём сейчас не помещается."
+    },
+    {
+      "code": "CURRENT_RESULT_CONFIRMED",
+      "definition": "Есть подтверждённый текущий результат клиентов, а не только обещание/описание продукта."
+    },
+    {
+      "code": "CLIENT_SATISFACTION_CONFIRMED",
+      "definition": "Есть факты удовлетворённости/благодарности клиентов вместе с подтверждённым результатом."
+    },
+    {
+      "code": "LOGICAL_CONTINUATION_EXISTS",
+      "definition": "После текущего продукта объективно существует следующий логичный этап/период работы."
+    },
+    {
+      "code": "CONTINUATION_OBJECTIVELY_NEEDED",
+      "definition": "Продолжение нужно клиенту для следующего результата, а не создаётся только ради допродажи."
+    },
+    {
+      "code": "NEXT_PRODUCT_OR_ADDITIONAL_TASK_EXISTS",
+      "definition": "Есть релевантный следующий продукт/дополнительная задача, которую можно предложить текущему клиенту."
+    },
+    {
+      "code": "ONE_OFF_CLIENT_WORK_EXISTS",
+      "definition": "Текущая модель содержит разовые услуги/консультации, которые клиенты покупают по одной."
+    },
+    {
+      "code": "REPEATED_WORK_PATTERN_EXISTS",
+      "definition": "В реальной работе повторяется серия встреч/действий, а не один самостоятельный разовый результат."
+    },
+    {
+      "code": "FULLER_RESULT_PATH_EXISTS",
+      "definition": "Есть объективный путь к более полному результату, который оправдывает пакет/абонемент."
+    },
+    {
+      "code": "FORMER_CLIENT_NEED_RELEVANT_NOW",
+      "definition": "Есть доказательства, что результат/следующий этап может быть актуален бывшим клиентам сейчас."
+    },
+    {
+      "code": "WARM_LEAD_RECONTACT_COMPATIBLE",
+      "definition": "Известная причина отказа/паузы совместима с повторным контактом и новым/уточнённым предложением."
+    },
+    {
+      "code": "REFERRAL_APPROPRIATE",
+      "definition": "Есть клиенты, у которых уместно просить знакомство/рекомендацию благодаря полученному результату."
+    },
+    {
+      "code": "WARM_NETWORK_TARGET_ACCESS",
+      "definition": "В тёплой сети реально есть доступ к людям целевого сегмента или к тем, кто может с ними познакомить."
+    },
+    {
+      "code": "PRIORITY_SEGMENT_IDENTIFIED",
+      "definition": "Для текущей аудитории выбран конкретный приоритетный сегмент, которому делается предложение."
+    },
+    {
+      "code": "CONCRETE_PRODUCT_OFFER_EXISTS",
+      "definition": "Есть конкретный продукт/предложение с понятным следующим шагом, которое можно предложить сейчас."
+    },
+    {
+      "code": "DIRECT_OFFER_UNDERUSED",
+      "definition": "Есть аудитория/актив, но прямое релевантное предложение используется редко или не используется."
+    },
+    {
+      "code": "PARTNER_TARGET_ACCESS",
+      "definition": "Партнёр/сообщество действительно имеет доступ к нужной ЦА."
+    },
+    {
+      "code": "BEST_PERIOD_PAYMENTS_CONFIRMED",
+      "definition": "В лучшем периоде были подтверждённые оплаты/выручка."
+    },
+    {
+      "code": "BEST_PERIOD_MECHANISM_IDENTIFIED",
+      "definition": "Понятно, какой конкретный механизм/действия создавали оплаты в лучшем периоде."
+    },
+    {
+      "code": "BEST_PERIOD_REPRODUCIBLE_NOW",
+      "definition": "Есть доказательства, что ключевые условия лучшего периода можно воспроизвести сейчас."
+    },
+    {
+      "code": "PROVEN_CHANNEL_PAYMENTS_CONFIRMED",
+      "definition": "Конкретный канал раньше приводил именно оплаты, а не только внимание/лиды."
+    },
+    {
+      "code": "PROVEN_CHANNEL_CURRENTLY_INACTIVE",
+      "definition": "Доказанный канал сейчас остановлен/не используется."
+    },
+    {
+      "code": "PROVEN_CHANNEL_REACTIVATABLE_NOW",
+      "definition": "Канал доступен и ключевые условия позволяют его снова использовать сейчас."
+    },
+    {
+      "code": "PROVEN_EVENT_PAYMENTS_CONFIRMED",
+      "definition": "Конкретное мероприятие/эфир/вебинар/разбор раньше приводил оплаты."
+    },
+    {
+      "code": "PROVEN_EVENT_REPRODUCIBLE_NOW",
+      "definition": "Формат мероприятия и необходимые условия можно воспроизвести сейчас."
+    },
+    {
+      "code": "INTEREST_EXISTS",
+      "definition": "Есть подтверждённый интерес/обращения/ответы до следующего коммерческого шага."
+    },
+    {
+      "code": "NEXT_STEP_LEAK_CONFIRMED",
+      "definition": "Есть конкретный подтверждённый разрыв между интересом и следующим шагом."
+    },
+    {
+      "code": "AUDIENCE_FIT_CONFIRMED",
+      "definition": "Есть доказательства, что люди на рассматриваемом участке действительно относятся к целевой аудитории."
+    },
+    {
+      "code": "PRODUCT_CLARITY_CONFIRMED",
+      "definition": "Для рассматриваемого потока понятно, какой продукт/результат предлагается и кому."
+    },
+    {
+      "code": "MEETINGS_OR_OFFERS_EXIST",
+      "definition": "Есть продающие встречи и/или конкретные предложения, достаточные для наблюдения payment leak."
+    },
+    {
+      "code": "PAYMENT_LEAK_CONFIRMED",
+      "definition": "Есть подтверждённый разрыв между встречей/предложением и оплатой."
+    },
+    {
+      "code": "DEMAND_CONFIRMED",
+      "definition": "Есть фактические покупки/устойчивый спрос на текущий результат."
+    },
+    {
+      "code": "PRICE_LIMITS_ECONOMICS_CONFIRMED",
+      "definition": "По внутренней экономике клиента подтверждено, что текущая цена/формат ограничивает выручку при доступной ёмкости; без рыночных средних."
+    },
+    {
+      "code": "VALUE_COMMUNICATION_CONFIRMED",
+      "definition": "Эксперт способен ясно объяснить ценность/результат и цена не блокируется непониманием предложения."
+    },
+    {
+      "code": "FULL_WORKING_PATH_CONFIRMED",
+      "definition": "Есть доказанный путь от источника/интереса до оплаты."
+    },
+    {
+      "code": "CURRENT_MECHANISM_REPEATABLE",
+      "definition": "Рабочий путь можно повторить чаще без смены ключевой механики."
+    },
+    {
+      "code": "PAID_TRAFFIC_PROVEN",
+      "definition": "Платный канал уже доказал оплаты и его экономика/использование известны."
+    }
+  ],
+  "scenarioRequiredFacts": {
+    "MN01": [
+      "HAS_CURRENT_CLIENTS",
+      "LOGICAL_CONTINUATION_EXISTS",
+      "CURRENT_RESULT_CONFIRMED",
+      "CONTINUATION_OBJECTIVELY_NEEDED"
+    ],
+    "MN02": [
+      "HAS_CURRENT_CLIENTS",
+      "NEXT_PRODUCT_OR_ADDITIONAL_TASK_EXISTS",
+      "CURRENT_RESULT_CONFIRMED"
+    ],
+    "MN03": [
+      "ONE_OFF_CLIENT_WORK_EXISTS",
+      "REPEATED_WORK_PATTERN_EXISTS",
+      "FULLER_RESULT_PATH_EXISTS"
+    ],
+    "MN04": [
+      "HAS_FORMER_CLIENTS",
+      "FORMER_CLIENT_NEED_RELEVANT_NOW",
+      "CONCRETE_PRODUCT_OFFER_EXISTS"
+    ],
+    "MN05": [
+      "HAS_WARM_LEADS",
+      "WARM_LEAD_RECONTACT_COMPATIBLE",
+      "CONCRETE_PRODUCT_OFFER_EXISTS"
+    ],
+    "MN06": [
+      "CLIENT_SATISFACTION_CONFIRMED",
+      "CURRENT_RESULT_CONFIRMED",
+      "REFERRAL_APPROPRIATE"
+    ],
+    "MN07": [
+      "HAS_WARM_NETWORK",
+      "WARM_NETWORK_TARGET_ACCESS",
+      "CONCRETE_PRODUCT_OFFER_EXISTS"
+    ],
+    "MN08": [
+      "HAS_SOCIAL_AUDIENCE",
+      "PRIORITY_SEGMENT_IDENTIFIED",
+      "CONCRETE_PRODUCT_OFFER_EXISTS",
+      "DIRECT_OFFER_UNDERUSED"
+    ],
+    "MN09": [
+      "HAS_PARTNERS",
+      "PARTNER_TARGET_ACCESS",
+      "CONCRETE_PRODUCT_OFFER_EXISTS"
+    ],
+    "MN10": [
+      "BEST_PERIOD_PAYMENTS_CONFIRMED",
+      "BEST_PERIOD_MECHANISM_IDENTIFIED",
+      "BEST_PERIOD_REPRODUCIBLE_NOW"
+    ],
+    "MN11": [
+      "PROVEN_CHANNEL_PAYMENTS_CONFIRMED",
+      "PROVEN_CHANNEL_CURRENTLY_INACTIVE",
+      "PROVEN_CHANNEL_REACTIVATABLE_NOW"
+    ],
+    "MN12": [
+      "PROVEN_EVENT_PAYMENTS_CONFIRMED",
+      "PROVEN_EVENT_REPRODUCIBLE_NOW"
+    ],
+    "MN13": [
+      "INTEREST_EXISTS",
+      "NEXT_STEP_LEAK_CONFIRMED",
+      "AUDIENCE_FIT_CONFIRMED",
+      "PRODUCT_CLARITY_CONFIRMED"
+    ],
+    "MN14": [
+      "MEETINGS_OR_OFFERS_EXIST",
+      "PAYMENT_LEAK_CONFIRMED",
+      "AUDIENCE_FIT_CONFIRMED",
+      "PRODUCT_CLARITY_CONFIRMED"
+    ],
+    "MN15": [
+      "DEMAND_CONFIRMED",
+      "CURRENT_RESULT_CONFIRMED",
+      "PRICE_LIMITS_ECONOMICS_CONFIRMED",
+      "VALUE_COMMUNICATION_CONFIRMED"
+    ],
+    "MN16": [
+      "HAS_UNUSED_CAPACITY",
+      "FULL_WORKING_PATH_CONFIRMED",
+      "CURRENT_MECHANISM_REPEATABLE"
+    ]
+  },
+  "capacityModes": {
+    "MN01": "requires_additional_delivery",
+    "MN02": "requires_additional_delivery",
+    "MN03": "requires_additional_delivery",
+    "MN04": "requires_additional_delivery",
+    "MN05": "requires_additional_delivery",
+    "MN06": "requires_additional_delivery",
+    "MN07": "requires_additional_delivery",
+    "MN08": "requires_additional_delivery",
+    "MN09": "requires_additional_delivery",
+    "MN10": "requires_additional_delivery",
+    "MN11": "requires_additional_delivery",
+    "MN12": "requires_additional_delivery",
+    "MN13": "uses_existing_flow",
+    "MN14": "uses_existing_flow",
+    "MN15": "capacity_neutral",
+    "MN16": "requires_additional_delivery"
+  },
+  "capacityFitRules": {
+    "requires_additional_delivery": {
+      "HAS_UNUSED_CAPACITY=confirmed_true": "fit",
+      "CURRENT_OVERLOAD=confirmed_true": "no_fit",
+      "HAS_UNUSED_CAPACITY=confirmed_false": "no_fit",
+      "otherwise": "risk"
+    },
+    "uses_existing_flow": {
+      "CURRENT_OVERLOAD=confirmed_true": "risk",
+      "otherwise": "fit"
+    },
+    "capacity_neutral": {
+      "otherwise": "fit"
+    }
+  },
+  "modelFitRule": "Money Now is H1 and independent from target strategy. model_fit defaults to fit; target model/owner role do not change ranking in v1 unless an explicit future versioned incompatibility rule is added.",
+  "historyStatusEnum": [
+    "not_reported",
+    "worked_sustained",
+    "worked_temporarily",
+    "tried_no_sustained_result",
+    "unclear"
+  ],
+  "newMaterialConditionEnum": [
+    "yes",
+    "no",
+    "unknown",
+    "not_applicable"
+  ],
+  "materialConditionPrimaryCodesByScenario": {
+    "MN01": [
+      "PRODUCT",
+      "OFFER",
+      "CAPACITY"
+    ],
+    "MN02": [
+      "PRODUCT",
+      "OFFER",
+      "PRICE",
+      "AUDIENCE"
+    ],
+    "MN03": [
+      "PRODUCT",
+      "OFFER",
+      "PRICE"
+    ],
+    "MN04": [
+      "AUDIENCE",
+      "PRODUCT",
+      "OFFER",
+      "CHANNEL_CONTEXT"
+    ],
+    "MN05": [
+      "AUDIENCE",
+      "QUALIFICATION",
+      "PRODUCT",
+      "OFFER",
+      "SALES_TECHNOLOGY"
+    ],
+    "MN06": [
+      "PRODUCT",
+      "AUDIENCE",
+      "OFFER"
+    ],
+    "MN07": [
+      "AUDIENCE",
+      "OFFER",
+      "CHANNEL_CONTEXT"
+    ],
+    "MN08": [
+      "AUDIENCE",
+      "PRODUCT",
+      "OFFER",
+      "SALES_TECHNOLOGY"
+    ],
+    "MN09": [
+      "AUDIENCE",
+      "OFFER",
+      "CHANNEL_CONTEXT"
+    ],
+    "MN10": [
+      "AUDIENCE",
+      "PRODUCT",
+      "OFFER",
+      "CHANNEL_CONTEXT",
+      "SALES_TECHNOLOGY",
+      "CAPACITY"
+    ],
+    "MN11": [
+      "AUDIENCE",
+      "PRODUCT",
+      "OFFER",
+      "CHANNEL_CONTEXT",
+      "SALES_TECHNOLOGY"
+    ],
+    "MN12": [
+      "AUDIENCE",
+      "PRODUCT",
+      "OFFER",
+      "CHANNEL_CONTEXT",
+      "SALES_TECHNOLOGY"
+    ],
+    "MN13": [
+      "AUDIENCE",
+      "QUALIFICATION",
+      "PRODUCT",
+      "OFFER",
+      "SALES_TECHNOLOGY"
+    ],
+    "MN14": [
+      "AUDIENCE",
+      "QUALIFICATION",
+      "PRODUCT",
+      "OFFER",
+      "SALES_TECHNOLOGY",
+      "PRICE"
+    ],
+    "MN15": [
+      "PRODUCT",
+      "OFFER",
+      "PRICE",
+      "SALES_TECHNOLOGY",
+      "AUDIENCE"
+    ],
+    "MN16": [
+      "CAPACITY",
+      "TEAM",
+      "CHANNEL_CONTEXT",
+      "SALES_TECHNOLOGY"
+    ]
+  },
+  "materialConditionSupportingCodes": [
+    "SEQUENCE"
+  ],
+  "materialConditionRule": "new_material_condition=yes may pass history guard only when at least one scenario-compatible PRIMARY condition code has current evidence; SEQUENCE alone is insufficient; OTHER_PREREQUISITE alone is insufficient.",
+  "noEligibleStageStatus": "no_eligible_scenario",
+  "notes": [
+    "not_reported means no data, not 'not tried'",
+    "worked_temporarily/tried_no_sustained_result/unclear must stay distinct",
+    "stable scenario ID remains only the final technical tie-breaker",
+    "P-02 priority and Task Resolver never influence Money Now selection"
+  ]
+}

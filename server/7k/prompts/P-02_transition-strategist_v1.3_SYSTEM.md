@@ -33,7 +33,7 @@ Current scores и target configuration уже рассчитаны и валид
 
 Все входы source of truth. Не пересчитывай их.
 
-`P01_STRATEGY_CONTEXT` — server-built проекция только из persisted validated P-01 v1.3. Она содержит:
+`P01_STRATEGY_CONTEXT` — server-built проекция только из persisted validated P-01 v1.4. Она содержит:
 - `evidenceLedger`;
 - `current7k`;
 - `businessMap`;
@@ -41,7 +41,7 @@ Current scores и target configuration уже рассчитаны и валид
 - `desiredRoleSummary`;
 - `desiredSystemWeeklyHours`.
 
-Она НЕ содержит raw DiagnosticInput, Money Now signals/history и не должна содержать выбранный MN-сценарий.
+Она НЕ содержит raw DiagnosticInput, Money Now signals/facts/history и не должна содержать выбранный MN-сценарий.
 
 `TARGET_CONFIG` — persisted deterministic result этапа Target Configuration. Для target necessity используй именно его очищенные поля:
 - `requiredMinimum`;
@@ -227,7 +227,7 @@ R7 = no → кандидат исключается.
 
 Ты не меняешь score/gap/required_minimum.
 
-Current scores берутся только из persisted P-01 v1.3.
+Current scores берутся только из persisted P-01 v1.4.
 Target configuration берётся только из persisted deterministic Target stage.
 Архетип НЕ является входом для стратегического выбора и не должен влиять на priority/root cause.
 

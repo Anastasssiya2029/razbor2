@@ -4,9 +4,13 @@ import { MONEY_NOW_RESOURCE_VERSION } from "./config/money-now.v2.2";
 import { TARGET_RULES_RESOURCE_VERSION } from "./config/target-rules.v2.1";
 import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "./config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "./config/money-now-history-map.v2.2";
+import {
+  MONEY_NOW_PROOF_MAP_VERSION,
+  MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+} from "./config/money-now-selector-contract.v1";
 import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.1";
-import { P01_PROMPT_VERSION } from "./prompts/p01.v1.3";
+import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
 import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
 import {
   CONSTRAINT_RULES_RESOURCE_VERSION,
@@ -39,12 +43,14 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
   aiModules: {
     p01: {
       promptVersion: P01_PROMPT_VERSION,
-      outputSchemaVersion: "1.3",
+      outputSchemaVersion: "1.4",
       resources: {
         scoringRules: SCORING_RULES_RESOURCE_VERSION,
         evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
         targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
         moneyNowHistoryMap: MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION,
+        moneyNowFactsDictionary: MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+        moneyNowProofMap: MONEY_NOW_PROOF_MAP_VERSION,
       },
     },
     p02: {
@@ -52,7 +58,7 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
       outputSchemaVersion: "1.3" as const,
       input: {
         p01PromptVersion: P01_PROMPT_VERSION,
-        p01OutputSchemaVersion: "1.3" as const,
+        p01OutputSchemaVersion: "1.4" as const,
         targetRules: TARGET_RULES_RESOURCE_VERSION,
       },
       resources: {
@@ -69,7 +75,7 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
       stageVersion: "target-archetype-stage.v1" as const,
       input: {
         p01PromptVersion: P01_PROMPT_VERSION,
-        p01OutputSchemaVersion: "1.3" as const,
+        p01OutputSchemaVersion: "1.4" as const,
       },
       resources: {
         elements: ELEMENTS_RESOURCE_VERSION,

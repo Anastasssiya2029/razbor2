@@ -10,6 +10,7 @@ export * from "./config/evidence-routing.v3.0";
 export * from "./config/elements.v1";
 export * from "./config/money-now.v2.2";
 export * from "./config/money-now-history-map.v2.2";
+export * from "./config/money-now-selector-contract.v1";
 export * from "./config/scoring-rules.v2.0";
 export * from "./config/target-rules.v2.1";
 export * from "./config/target-model-dictionary.v2.1";

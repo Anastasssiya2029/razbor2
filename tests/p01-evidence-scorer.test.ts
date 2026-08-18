@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
 import { SCORING_RULES } from "../server/7k/config/scoring-rules.v2.0";
@@ -16,7 +17,7 @@ import type {
   P01Provider,
   P01ProviderRequest,
   P01ProviderResponse,
-  P01ResultV1_3,
+  P01ResultV1_4,
 } from "../server/p01/types";
 import {
   P01InvariantError,
@@ -75,7 +76,7 @@ function diagnosticInput(overrides: Partial<DiagnosticInputV1_2> = {}): Diagnost
   };
 }
 
-function validP01Fixture(): P01ResultV1_3 {
+function validP01Fixture(): P01ResultV1_4 {
   const evidence = {
     id: "E01",
     source_field: "current.products",
@@ -104,7 +105,7 @@ function validP01Fixture(): P01ResultV1_3 {
         missing_evidence: ["Повторяемый измеримый результат"],
       },
     ]),
-  ) as P01ResultV1_3["current7k"];
+  ) as P01ResultV1_4["current7k"];
   const history = Object.fromEntries(
     MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [
       scenarioId,
@@ -118,11 +119,10 @@ function validP01Fixture(): P01ResultV1_3 {
         confidence: "low",
       },
     ]),
-  ) as P01ResultV1_3["moneyNowHistory"];
+  ) as P01ResultV1_4["moneyNowHistory"];
 
   return {
-    promptVersion: "P-01.v1.3",
-    schemaVersion: "1.3",
+    promptVersion: "P-01.v1.4", schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger: [evidence],
     current7k,
@@ -145,6 +145,7 @@ function validP01Fixture(): P01ResultV1_3 {
     },
     moneyChainFacts: [],
     moneyNowSignals: [],
+    moneyNowFacts: unknownMoneyNowFacts(),
     moneyNowHistory: history,
     targetIntent: {
       rawBusinessModel: "Пакетная индивидуальная работа",
@@ -201,8 +202,8 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
     "server/7k/config/evidence-routing.v3.0.ts",
     "server/7k/config/target-model-dictionary.v2.1.ts",
     "server/7k/config/money-now-history-map.v2.2.ts",
-    "server/7k/prompts/p01.v1.3.ts",
-    "schemas/p01-evidence-scorer.output.v1.3.schema.json",
+    "server/7k/prompts/p01.v1.4.ts",
+    "schemas/p01-evidence-scorer.output.v1.4.schema.json",
     "app/api/analysis-runs/[analysisRunId]/p01/route.ts",
   ];
   const source = files.map((file) => readFileSync(file, "utf8")).join("\n");
@@ -221,20 +222,22 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
   assert.ok("products_method" in legacy.current7k, "raw legacy object must not be mutated");
 });
 
-test("P-01 methodology registry pins all v1.3 resource versions and 77 scoring levels", () => {
+test("P-01 methodology registry pins all v1.4 resource versions and 77 scoring levels", () => {
   assert.deepEqual(getP01ResourceVersions(), {
     scoringRules: "scoring-rules.v2.0",
     evidenceRouting: "evidence-routing.v3.0",
     targetModelDictionary: "target-model-dictionary.v2.1",
     moneyNowHistoryMap: "money-now-history-map.v2.2",
+    moneyNowFactsDictionary: "money-now-selector-contract.v1",
+    moneyNowProofMap: "money-now-proof-map.v1",
   });
-  assert.equal(SEVEN_K_METHODOLOGY_REGISTRY.aiModules.p01.promptVersion, "P-01.v1.3");
+  assert.equal(SEVEN_K_METHODOLOGY_REGISTRY.aiModules.p01.promptVersion, "P-01.v1.4");
   const levels = ELEMENTS.flatMap((elementId) => SCORING_RULES.elements[elementId].levels);
   assert.equal(levels.length, 77);
   assert.equal(new Set(levels.map((level) => level.ruleId)).size, 77);
 });
 
-test("valid P-01 v1.3 fixture passes JSON Schema and semantic invariants", () => {
+test("valid P-01 v1.4 fixture passes JSON Schema and semantic invariants", () => {
   const fixture = validP01Fixture();
   assert.equal(validateP01Invariants(validateP01Schema(fixture)), fixture);
 });
@@ -307,7 +310,7 @@ test("new_material_condition=yes requires non-empty current evidence", () => {
   );
 });
 
-test("P-01 history maps into Stage 2 history guard without selecting a scenario", () => {
+test("P-01 history adapter preserves exact statuses without selecting a scenario", () => {
   const fixture = validP01Fixture();
   fixture.moneyNowHistory.MN05 = {
     history_status: "tried_no_sustained_result",
@@ -320,11 +323,183 @@ test("P-01 history maps into Stage 2 history guard without selecting a scenario"
   };
   validateP01Invariants(fixture);
   const guard = buildMoneyNowHistoryGuardInput(fixture.moneyNowHistory);
-  assert.deepEqual(guard.previousAttempts, [
-    { historyKey: "follow_up_warm_leads", sustainableResult: false },
-  ]);
-  assert.equal(guard.scenarioFacts.MN05?.newMaterialCondition, null);
+  assert.equal(guard.scenarios.MN05.history_status, "tried_no_sustained_result");
+  assert.equal(guard.scenarios.MN05.new_material_condition, "unknown");
+  assert.equal(guard.scenarios.MN05.history_key, "follow_up_warm_leads");
+  assert.equal(guard.scenarios.MN01.history_status, "not_reported");
   assert.equal("selectedScenarioId" in guard, false);
+});
+
+test("P-01 schema v1.4 rejects any missing atomic Money Now fact", () => {
+  const fixture = structuredClone(validP01Fixture()) as unknown as {
+    moneyNowFacts: Record<string, unknown>;
+  };
+  delete fixture.moneyNowFacts.HAS_WARM_LEADS;
+  assert.throws(() => validateP01Schema(fixture), P01SchemaValidationError);
+});
+
+test("confirmed_true requires evidence and omitted information stays unknown", () => {
+  const missingEvidence = validP01Fixture();
+  missingEvidence.moneyNowFacts.HAS_WARM_LEADS = {
+    state: "confirmed_true",
+    confidence: "medium",
+    summary: "Есть тёплые лиды.",
+    evidence_ids: [],
+  };
+  assert.throws(
+    () => validateP01Invariants(missingEvidence),
+    hasInvariantCode("money_now_true_without_evidence"),
+  );
+
+  const omitted = validP01Fixture();
+  assert.equal(omitted.moneyNowFacts.HAS_WARM_LEADS.state, "unknown");
+  assert.deepEqual(omitted.moneyNowFacts.HAS_WARM_LEADS.evidence_ids, []);
+});
+
+test("confirmed_false requires direct negative or numeric evidence", () => {
+  const fixture = validP01Fixture();
+  fixture.moneyNowFacts.HAS_WARM_LEADS = {
+    state: "confirmed_false",
+    confidence: "medium",
+    summary: "Вывод сделан только по положительному описанию продукта.",
+    evidence_ids: ["E01"],
+  };
+  assert.throws(
+    () => validateP01Invariants(fixture),
+    hasInvariantCode("money_now_false_without_direct_evidence"),
+  );
+});
+
+test("asset presence does not imply scenario-specific compatibility or need", () => {
+  const fixture = validP01Fixture();
+  fixture.moneyNowFacts.HAS_WARM_LEADS = {
+    state: "confirmed_true",
+    confidence: "medium",
+    summary: "Есть открытые диалоги.",
+    evidence_ids: ["E01"],
+  };
+  fixture.moneyNowFacts.HAS_CURRENT_CLIENTS = {
+    state: "confirmed_true",
+    confidence: "medium",
+    summary: "Есть текущие клиенты.",
+    evidence_ids: ["E01"],
+  };
+  assert.equal(fixture.moneyNowFacts.WARM_LEAD_RECONTACT_COMPATIBLE.state, "unknown");
+  assert.equal(fixture.moneyNowFacts.CONTINUATION_OBJECTIVELY_NEEDED.state, "unknown");
+  assert.equal(validateP01Invariants(validateP01Schema(fixture)), fixture);
+});
+
+test("MN15 price limitation requires current internal economics, not a market-average assertion", () => {
+  const fixture = validP01Fixture();
+  fixture.moneyNowFacts.PRICE_LIMITS_ECONOMICS_CONFIRMED = {
+    state: "confirmed_true",
+    confidence: "medium",
+    summary: "Цена якобы ниже средней по рынку.",
+    evidence_ids: ["E01"],
+  };
+  assert.throws(
+    () => validateP01Invariants(fixture),
+    hasInvariantCode("money_now_price_without_internal_economics"),
+  );
+});
+
+test("reproducibility now cannot be confirmed from historical-only evidence", () => {
+  const fixture = validP01Fixture();
+  fixture.evidenceLedger.push({
+    id: "E02",
+    source_field: "experience.bestPeriod",
+    fact: "Исторический канал когда-то приносил оплаты.",
+    evidence_type: "metric_result",
+    time_scope: "historical_only",
+    valence: "positive",
+    elements: ["funnel"],
+    derived_from: [],
+  });
+  fixture.moneyNowFacts.BEST_PERIOD_REPRODUCIBLE_NOW = {
+    state: "confirmed_true",
+    confidence: "medium",
+    summary: "Исторический механизм объявлен доступным сейчас.",
+    evidence_ids: ["E02"],
+  };
+  assert.throws(
+    () => validateP01Invariants(fixture),
+    hasInvariantCode("money_now_reproducibility_without_current_evidence"),
+  );
+});
+
+test("history adapter preserves every history status without collapsing not_reported", () => {
+  const fixture = validP01Fixture();
+  const statuses = [
+    "not_reported",
+    "worked_sustained",
+    "worked_temporarily",
+    "tried_no_sustained_result",
+    "unclear",
+  ] as const;
+  statuses.forEach((history_status, index) => {
+    const scenarioId = MONEY_NOW_SCENARIO_IDS[index];
+    fixture.moneyNowHistory[scenarioId] = {
+      history_status,
+      new_material_condition: history_status === "not_reported" ? "not_applicable" : "unknown",
+      condition_codes: [],
+      summary: history_status === "not_reported" ? null : history_status,
+      evidence_ids: history_status === "not_reported" ? [] : ["E01"],
+      new_condition_evidence_ids: [],
+      confidence: "medium",
+    };
+  });
+  validateP01Invariants(fixture);
+  const guard = buildMoneyNowHistoryGuardInput(fixture.moneyNowHistory);
+  statuses.forEach((status, index) => {
+    assert.equal(guard.scenarios[MONEY_NOW_SCENARIO_IDS[index]].history_status, status);
+  });
+  assert.equal(guard.scenarios.MN01.history_status, "not_reported");
+});
+
+test("not_reported cannot carry attempt evidence or a material-condition decision", () => {
+  const fixture = validP01Fixture();
+  fixture.moneyNowHistory.MN01 = {
+    ...fixture.moneyNowHistory.MN01,
+    new_material_condition: "unknown",
+    evidence_ids: ["E01"],
+  };
+  assert.throws(
+    () => validateP01Invariants(fixture),
+    (error: unknown) =>
+      error instanceof P01InvariantError &&
+      error.issues.some((issue) =>
+        ["not_reported_is_not_not_tried", "not_reported_with_attempt_evidence"].includes(issue.code),
+      ),
+  );
+});
+
+test("new material condition rejects SEQUENCE alone and accepts scenario-compatible primary evidence", () => {
+  const sequenceOnly = validP01Fixture();
+  sequenceOnly.moneyNowHistory.MN05 = {
+    history_status: "tried_no_sustained_result",
+    new_material_condition: "yes",
+    condition_codes: ["SEQUENCE"],
+    summary: "Изменилась только последовательность.",
+    evidence_ids: ["E01"],
+    new_condition_evidence_ids: ["E01"],
+    confidence: "medium",
+  };
+  assert.throws(
+    () => validateP01Invariants(sequenceOnly),
+    hasInvariantCode("new_condition_without_scenario_primary_code"),
+  );
+
+  const compatible = validP01Fixture();
+  compatible.moneyNowHistory.MN05 = {
+    history_status: "tried_no_sustained_result",
+    new_material_condition: "yes",
+    condition_codes: ["OFFER"],
+    summary: "Появился доказанный новый оффер.",
+    evidence_ids: ["E01"],
+    new_condition_evidence_ids: ["E01"],
+    confidence: "medium",
+  };
+  assert.equal(validateP01Invariants(compatible), compatible);
 });
 
 test("prompt injection inside DiagnosticInput remains serialized diagnostic data", () => {
@@ -425,7 +600,7 @@ test("blocked_by_insufficient_data is stored as a blocked outcome without retry"
 test("lifecycle creates a validated submission directly as queued and exposes only the P-01 next step", () => {
   const route = readFileSync("app/api/diagnostics/route.ts", "utf8");
   assert.match(route, /normalizeDiagnosticSubmission\(payload\)[\s\S]*status: "queued"/u);
-  assert.match(route, /module: "P-01\.v1\.3"/u);
+  assert.match(route, /module: "P-01\.v1\.4"/u);
   assert.doesNotMatch(route, /P-02|P-03|P-04/u);
 });
 

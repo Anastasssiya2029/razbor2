@@ -77,8 +77,8 @@ export async function prepareTaskResolverInput(source: TaskResolverSource): Prom
   if (!p01.id || !p01.result || p01.failureCode) {
     throw new TaskResolverError("TASK_RESOLVER_P01_MISSING", "Persisted validated P-01 is required for current score verification.", "upstream_blocked");
   }
-  if (p01.promptVersion !== "P-01.v1.3" || p01.outputSchemaVersion !== "1.3") {
-    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_P01_VERSION", "Task Resolver requires P-01.v1.3/schema 1.3.", "upstream_blocked");
+  if (p01.promptVersion !== "P-01.v1.4" || p01.outputSchemaVersion !== "1.4") {
+    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_P01_VERSION", "Task Resolver requires P-01.v1.4/schema 1.4.", "upstream_blocked");
   }
   if (stage4.resourceVersions.targetRules !== "target-rules.v2.1" || stage4.target.resourceVersion !== "target-rules.v2.1") {
     throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_TARGET_VERSION", "Task Resolver requires target-rules.v2.1.", "upstream_blocked");

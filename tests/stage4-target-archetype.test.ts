@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "../server/7k/types";
@@ -12,7 +13,7 @@ import type {
   StoredTargetArchetypeResult,
   TargetArchetypeRepository,
 } from "../server/stage4/types";
-import type { P01ResultV1_3 } from "../server/p01/types";
+import type { P01ResultV1_4 } from "../server/p01/types";
 
 function diagnosticInput(): DiagnosticInputV1_2 {
   return {
@@ -73,7 +74,7 @@ function p01Fixture(
     blog: 3,
     team: 2,
   },
-): P01ResultV1_3 {
+): P01ResultV1_4 {
   const evidenceLedger = SEVEN_K_ELEMENT_IDS.map((elementId, index) => ({
     id: `E${String(index + 1).padStart(2, "0")}`,
     source_field: `project.${elementId}`,
@@ -105,7 +106,7 @@ function p01Fixture(
         missing_evidence: [],
       },
     ]),
-  ) as P01ResultV1_3["current7k"];
+  ) as P01ResultV1_4["current7k"];
   const history = Object.fromEntries(
     MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [
       scenarioId,
@@ -119,10 +120,9 @@ function p01Fixture(
         confidence: "low",
       },
     ]),
-  ) as P01ResultV1_3["moneyNowHistory"];
+  ) as P01ResultV1_4["moneyNowHistory"];
   return {
-    promptVersion: "P-01.v1.3",
-    schemaVersion: "1.3",
+    promptVersion: "P-01.v1.4", schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger,
     current7k,
@@ -145,6 +145,7 @@ function p01Fixture(
     },
     moneyChainFacts: [],
     moneyNowSignals: [],
+    moneyNowFacts: unknownMoneyNowFacts(),
     moneyNowHistory: history,
     targetIntent: {
       rawBusinessModel: "Пакетная работа",
@@ -168,8 +169,8 @@ function source(p01 = p01Fixture()): Stage4Source {
     runStatus: "targeting",
     normalizedInput: diagnosticInput(),
     p01AnalysisResultId: "p01-1",
-    p01PromptVersion: "P-01.v1.3",
-    p01OutputSchemaVersion: "1.3",
+    p01PromptVersion: "P-01.v1.4",
+    p01OutputSchemaVersion: "1.4",
     p01InputHash: "p01-input-hash",
     p01Result: p01,
     p01FailureCode: null,
@@ -315,7 +316,7 @@ test("unknown model family and a single missing current score block the stage", 
   };
   unknownModel.targetIntent.normalizedModelFamily = "unknown_model";
   const unknownSource = source();
-  unknownSource.p01Result = unknownModel as unknown as P01ResultV1_3;
+  unknownSource.p01Result = unknownModel as unknown as P01ResultV1_4;
   assert.throws(
     () => computeTargetAndArchetype(unknownSource),
     (error: unknown) => error instanceof Stage4Error && error.code === "STAGE4_P01_INVALID",
@@ -395,7 +396,7 @@ test("legacy products_method cannot substitute canonical current score", () => {
   current7k.products_method = current7k.product_method;
   delete current7k.product_method;
   const invalidSource = source();
-  invalidSource.p01Result = malformed as unknown as P01ResultV1_3;
+  invalidSource.p01Result = malformed as unknown as P01ResultV1_4;
   assert.throws(
     () => computeTargetAndArchetype(invalidSource),
     (error: unknown) => error instanceof Stage4Error && error.code === "STAGE4_P01_INVALID",

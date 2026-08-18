@@ -6,14 +6,14 @@ import type {
 } from "@/server/7k";
 import type { DesiredOwnerRole } from "@/server/7k/config/target-rules.v2.1";
 import type { SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_3 } from "@/server/p01/types";
+import type { P01ResultV1_4 } from "@/server/p01/types";
 
 export const TARGET_ARCHETYPE_STAGE_VERSION = "target-archetype-stage.v1" as const;
 
 export type TargetArchetypeResourceVersions = {
   stageVersion: typeof TARGET_ARCHETYPE_STAGE_VERSION;
-  p01PromptVersion: "P-01.v1.3";
-  p01OutputSchemaVersion: "1.3";
+  p01PromptVersion: "P-01.v1.4";
+  p01OutputSchemaVersion: "1.4";
   elements: "elements.v1";
   targetRules: "target-rules.v2.1";
   archetypes: "archetypes.v1";
@@ -28,7 +28,7 @@ export type Stage4Source = {
   p01PromptVersion: string | null;
   p01OutputSchemaVersion: string | null;
   p01InputHash: string | null;
-  p01Result: P01ResultV1_3 | null;
+  p01Result: P01ResultV1_4 | null;
   p01FailureCode: string | null;
   p01FailureMessage: string | null;
 };
@@ -94,4 +94,3 @@ export interface TargetArchetypeRepository {
     },
   ): Promise<void>;
 }
-
