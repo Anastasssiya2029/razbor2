@@ -425,8 +425,7 @@ button {
   margin-top: 5px;
 }
 
-.deadline-options button,
-.personality-fieldset button {
+.deadline-options button {
   color: #75627c;
   background: linear-gradient(180deg, rgba(252, 249, 253, 0.94), rgba(248, 246, 251, 0.78));
   border: 1px solid #eee9f1;
@@ -442,9 +441,7 @@ button {
 }
 
 .deadline-options button:hover,
-.personality-fieldset button:hover,
-.deadline-options button.selected,
-.personality-fieldset button.selected {
+.deadline-options button.selected {
   color: #5c2695;
   background: #fdf9ff;
   border-color: rgba(109, 47, 182, 0.58);
@@ -455,9 +452,9 @@ button {
 
 .goal-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 0.96fr 1.02fr;
-  gap: 38px;
-  margin-top: 19px;
+  grid-template-columns: 1.22fr 1fr;
+  gap: 44px;
+  margin-top: 22px;
 }
 
 .primary-button,
@@ -513,14 +510,14 @@ button {
 }
 
 .project-section {
-  padding: 14px 23px 21px;
+  padding: 18px 23px 27px;
 }
 
 .project-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 25px;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .project-column {
@@ -539,31 +536,6 @@ button {
 
 .project-assets-column .field textarea {
   min-height: 82px;
-}
-
-.personality-fieldset {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.personality-fieldset button {
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-}
-
-.personality-icon {
-  width: 25px;
-  height: 25px;
-  fill: none;
-  stroke: var(--plum);
-  stroke-width: 1.35;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .experience-section {
@@ -2606,11 +2578,6 @@ button {
 
   .deadline-options {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .personality-fieldset {
-    grid-template-columns: 1fr;
-    gap: 8px;
   }
 
   .experience-grid {

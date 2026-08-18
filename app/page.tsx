@@ -1031,33 +1031,6 @@ function AnalysisSection({
   );
 }
 
-function PersonalityIcon({ type }: { type: "introvert" | "ambivert" | "extrovert" }) {
-  if (type === "extrovert") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="personality-icon">
-        <path d="m12 2.8 2.5 5.1 5.6.8-4.1 4 1 5.6-5-2.6-5 2.6 1-5.6-4.1-4 5.6-.8L12 2.8Z" />
-      </svg>
-    );
-  }
-
-  if (type === "ambivert") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="personality-icon">
-        <circle cx="8" cy="8" r="3" />
-        <circle cx="16" cy="8" r="3" />
-        <path d="M2.8 20v-1.8A5.2 5.2 0 0 1 8 13h1M21.2 20v-1.8A5.2 5.2 0 0 0 16 13h-1M7 20v-1.2A5.8 5.8 0 0 1 12.8 13h0a5.8 5.8 0 0 1 5.8 5.8V20" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="personality-icon">
-      <circle cx="12" cy="7" r="4" />
-      <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
-    </svg>
-  );
-}
-
 function Field({
   label,
   name,
@@ -1102,7 +1075,6 @@ function Brand() {
 type SubmittedDiagnostic = {
   values: Record<string, string>;
   deadline: string;
-  personality: string;
 };
 
 function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalysisResult {
@@ -1130,7 +1102,6 @@ export default function Home() {
   const [analysisSlide, setAnalysisSlide] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
   const [deadline, setDeadline] = useState("6 месяцев");
-  const [personality, setPersonality] = useState("Амбиверт");
   const [loadingTarget, setLoadingTarget] = useState<"analysis" | "plan" | null>(null);
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
@@ -1153,7 +1124,7 @@ export default function Home() {
   };
 
   const openAnalysis = () => {
-    const diagnostic = { values: { ...values }, deadline, personality };
+    const diagnostic = { values: { ...values }, deadline };
     setSubmittedDiagnostic(diagnostic);
     setAnalysisResult(buildPrototypeAnalysis(diagnostic));
     setLoadingTarget("analysis");
@@ -1297,7 +1268,6 @@ export default function Home() {
                 </fieldset>
                 <div className="goal-bottom-grid">
                   <Field label="Что хотите делегировать" name="delegate" values={values} setValues={setValues} />
-                  <Field label="Время на проект (рост)" name="growthTime" values={values} setValues={setValues} />
                   <Field label="Время на проект (система есть)" name="systemTime" values={values} setValues={setValues} />
                 </div>
               </section>
@@ -1326,24 +1296,6 @@ export default function Home() {
                     <Field label="Уникальность" name="uniqueness" multiline rows={3} values={values} setValues={setValues} />
                   </div>
                 </div>
-                <fieldset className="choice-fieldset personality-fieldset">
-                  <legend className="sr-only">Тип личности</legend>
-                  {["Интроверт", "Амбиверт", "Экстраверт"].map((option, index) => {
-                    const iconTypes = ["introvert", "ambivert", "extrovert"] as const;
-                    return (
-                      <button
-                        type="button"
-                        key={option}
-                        className={personality === option ? "selected" : ""}
-                        aria-pressed={personality === option}
-                        onClick={() => setPersonality(option)}
-                      >
-                        <PersonalityIcon type={iconTypes[index]} />
-                        {option}
-                      </button>
-                    );
-                  })}
-                </fieldset>
               </section>
 
               <button type="button" className="primary-button" onClick={() => goToTab(2)}>
