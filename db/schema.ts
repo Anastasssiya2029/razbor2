@@ -234,3 +234,48 @@ export const resolvedTransitionPlans = sqliteTable(
     index("resolved_transition_plans_input_hash_idx").on(table.deterministicInputHash),
   ],
 );
+
+export const moneyNowSelections = sqliteTable(
+  "money_now_selections",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01AnalysisResultId: text("p01_analysis_result_id").references(() => p01AnalysisResults.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
+    p01ResultHash: text("p01_result_hash"),
+    taskResolverPlanId: text("task_resolver_plan_id").references(() => resolvedTransitionPlans.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
+    taskResolverPlanHash: text("task_resolver_plan_hash"),
+    stageVersion: text("stage_version").notNull(),
+    selectorContractVersion: text("selector_contract_version").notNull(),
+    selectorContractJsonSha256: text("selector_contract_json_sha256").notNull(),
+    selectorContractTsSha256: text("selector_contract_ts_sha256").notNull(),
+    businessMethodologyVersion: text("business_methodology_version").notNull(),
+    factExtractionVersion: text("fact_extraction_version").notNull(),
+    selectorInputHash: text("selector_input_hash"),
+    deterministicInputHash: text("deterministic_input_hash").notNull(),
+    selectorInputJson: text("selector_input_json"),
+    candidateTraceJson: text("candidate_trace_json"),
+    selectionJson: text("selection_json"),
+    startedAt: text("started_at").notNull(),
+    completedAt: text("completed_at").notNull(),
+    failureJson: text("failure_json"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("money_now_selections_run_unique").on(table.analysisRunId),
+    index("money_now_selections_p01_idx").on(table.p01AnalysisResultId),
+    index("money_now_selections_task_plan_idx").on(table.taskResolverPlanId),
+    index("money_now_selections_input_hash_idx").on(table.deterministicInputHash),
+  ],
+);

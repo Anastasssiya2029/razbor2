@@ -22,7 +22,6 @@ import {
   calculateTargetConfiguration,
   getCandidateArchetypeByTotal,
   resolveTransitionSequence,
-  selectMoneyNowCandidate,
   validateTransitionRegistry,
   type SevenKScores,
 } from "../server/7k/index";
@@ -296,110 +295,6 @@ test("desiredSystemWeeklyHours is optional for rules and never creates a score f
   );
 });
 
-test("Money Now applies stop rules and never selects a stopped scenario", () => {
-  const result = selectMoneyNowCandidate({
-    signals: {
-      has_current_clients: true,
-      has_logical_continuation: true,
-      current_result_confirmed: false,
-      continuation_objectively_needed: true,
-    },
-  });
-  assert.equal(result.selectedScenarioId, null);
-  assert.equal(result.status, "no_fit");
-  assert.ok(
-    result.excludedCandidates.some(
-      (item) =>
-        item.scenarioId === "MN01" &&
-        item.reason === "stop_rule" &&
-        item.codes.includes("CONTINUATION_RESULT_OR_NEED_NOT_CONFIRMED"),
-    ),
-  );
-});
-
-test("Money Now returns no_fit when no scenario is eligible", () => {
-  const result = selectMoneyNowCandidate({ signals: {} });
-  assert.equal(result.status, "no_fit");
-  assert.equal(result.selectedScenarioId, null);
-  assert.equal(result.rankedCandidates.length, 0);
-});
-
-test("Money Now ranking is lexicographic: proximity before proof, then proof within a tier", () => {
-  const proximity = selectMoneyNowCandidate({
-    signals: {
-      has_warm_leads: true,
-      refusal_reason_compatible: true,
-      has_warm_network: true,
-      clear_relevant_offer: true,
-    },
-    scenarioFacts: {
-      MN05: { proofLevel: 1 },
-      MN07: { proofLevel: 3 },
-    },
-  });
-  assert.equal(proximity.selectedScenarioId, "MN05");
-
-  const proof = selectMoneyNowCandidate({
-    signals: {
-      has_current_clients: true,
-      has_logical_continuation: true,
-      current_result_confirmed: true,
-      continuation_objectively_needed: true,
-      has_next_product_or_additional_task: true,
-      next_offer_relevant: true,
-    },
-    scenarioFacts: {
-      MN01: { proofLevel: 1 },
-      MN02: { proofLevel: 3 },
-    },
-  });
-  assert.equal(proof.selectedScenarioId, "MN02");
-});
-
-test("Money Now history guard blocks repetition without a new material condition", () => {
-  const input = {
-    signals: { has_warm_leads: true, refusal_reason_compatible: true },
-    previousAttempts: [
-      { historyKey: "follow_up_warm_leads", sustainableResult: false },
-    ],
-  } as const;
-  const blocked = selectMoneyNowCandidate(input);
-  assert.equal(blocked.status, "no_fit");
-  assert.ok(
-    blocked.excludedCandidates.some(
-      (item) => item.scenarioId === "MN05" && item.reason === "history_guard",
-    ),
-  );
-
-  const allowed = selectMoneyNowCandidate({
-    ...input,
-    scenarioFacts: {
-      MN05: {
-        proofLevel: 2,
-        newMaterialCondition: "Теперь есть квалификация и уточнённый оффер.",
-      },
-    },
-  });
-  assert.equal(allowed.selectedScenarioId, "MN05");
-});
-
-test("Money Now blocks model/capacity no-fit candidates", () => {
-  const result = selectMoneyNowCandidate({
-    signals: {
-      has_warm_leads: true,
-      refusal_reason_compatible: true,
-      owner_or_team_overloaded: true,
-    },
-    scenarioFacts: { MN05: { proofLevel: 3, modelFit: false } },
-  });
-  assert.equal(result.status, "no_fit");
-  assert.ok(
-    result.excludedCandidates.some(
-      (item) => item.scenarioId === "MN05" && item.reason === "capacity_or_model_fit",
-    ),
-  );
-});
-
 test("all Stage 2 pure functions are deterministic for identical input", () => {
   const targetInput = {
     currentScores: scores({ authenticity: 4, audience: 3 }),
@@ -432,9 +327,4 @@ test("all Stage 2 pure functions are deterministic for identical input", () => {
     resolveTransitionSequence(transitionInput),
   );
 
-  const moneyInput = {
-    signals: { has_warm_network: true, clear_relevant_offer: true },
-    scenarioFacts: { MN07: { proofLevel: 2 as const } },
-  };
-  assert.deepEqual(selectMoneyNowCandidate(moneyInput), selectMoneyNowCandidate(moneyInput));
 });

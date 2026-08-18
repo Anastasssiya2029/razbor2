@@ -20,7 +20,7 @@ export async function POST(_request: Request, context: RouteContext) {
       status: executed.status,
       idempotentReplay: executed.idempotentReplay,
       result: executed.result.plan,
-      readyFor: "deterministic-money-now-selector",
+      readyFor: "POST /api/analysis-runs/{analysisRunId}/select-money-now",
       moneyNowSelectorStarted: false,
     });
   } catch (error) {

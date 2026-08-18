@@ -5,6 +5,7 @@ import { TARGET_RULES_RESOURCE_VERSION } from "./config/target-rules.v2.1";
 import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "./config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "./config/money-now-history-map.v2.2";
 import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "./config/money-now-fact-extraction.v1";
+import { MONEY_NOW_SELECTOR_CONTRACT_VERSION } from "./config/money-now-selector-contract.v1";
 import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.1";
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
@@ -19,6 +20,11 @@ import {
   TRANSITIONS_70_RESOURCE,
   TRANSITIONS_RESOURCE_VERSION,
 } from "./transition-resolver";
+import {
+  MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256,
+  MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256,
+  MONEY_NOW_SELECTOR_STAGE_VERSION,
+} from "../money-now-selector/types";
 
 export const SEVEN_K_RESOURCE_VERSIONS = {
   elements: ELEMENTS_RESOURCE_VERSION,
@@ -88,6 +94,21 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
       },
       resources: {
         transitions: TRANSITIONS_RESOURCE_VERSION,
+      },
+    },
+    moneyNowSelector: {
+      stageVersion: MONEY_NOW_SELECTOR_STAGE_VERSION,
+      input: {
+        p01PromptVersion: P01_PROMPT_VERSION,
+        p01OutputSchemaVersion: "1.4" as const,
+        taskResolverStageVersion: "task-resolver-stage.v1" as const,
+      },
+      resources: {
+        selectorContract: MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+        selectorContractJsonSha256: MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256,
+        selectorContractTsSha256: MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256,
+        businessMethodology: MONEY_NOW_RESOURCE_VERSION,
+        factExtraction: MONEY_NOW_FACT_EXTRACTION_VERSION,
       },
     },
   },
