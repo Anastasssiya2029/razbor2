@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       db.insert(analysisRuns).values({
         id: analysisRunId,
         diagnosticId,
-        status: "scoring",
+        status: "queued",
         schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
         methodologyVersion: METHODOLOGY_VERSION,
         promptVersionsJson: "{}",
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       {
         diagnosticId,
         analysisRunId,
-        status: "scoring",
+        status: "queued",
         schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
         methodologyVersion: METHODOLOGY_VERSION,
         input: normalized.input,

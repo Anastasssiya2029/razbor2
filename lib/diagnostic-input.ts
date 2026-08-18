@@ -5,6 +5,8 @@ export const METHODOLOGY_VERSION = "7k.v1.2" as const;
 export const FLAT_FORM_SCHEMA_VERSION = "diagnostic-flat-form.v1.2" as const;
 
 export const ANALYSIS_STATUSES = [
+  "draft",
+  "queued",
   "scoring",
   "targeting",
   "strategizing",
@@ -12,7 +14,7 @@ export const ANALYSIS_STATUSES = [
   "resolving_tasks",
   "writing_report",
   "ready",
-  "failed",
+  "analysis_failed",
 ] as const;
 
 export type AnalysisStatus = (typeof ANALYSIS_STATUSES)[number];

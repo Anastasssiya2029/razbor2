@@ -1084,7 +1084,7 @@ type SubmittedDiagnostic = {
 type CreateDiagnosticResponse = {
   diagnosticId: string;
   analysisRunId: string;
-  status: "scoring";
+  status: "queued";
   input: DiagnosticInputV1_2;
   issues?: Array<{ message?: string }>;
   message?: string;

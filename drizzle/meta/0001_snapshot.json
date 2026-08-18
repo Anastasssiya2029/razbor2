@@ -1,0 +1,314 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "b7cc7b40-b224-4b1d-ad6f-26fbc418b0fa",
+  "prevId": "2ecb119f-680d-42ad-b5d2-891f2f9ca0b5",
+  "tables": {
+    "analysis_results": {
+      "name": "analysis_results",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "diagnostic_id": {
+          "name": "diagnostic_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "analysis_run_id": {
+          "name": "analysis_run_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "methodology_version": {
+          "name": "methodology_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result_json": {
+          "name": "result_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "analysis_results_run_unique": {
+          "name": "analysis_results_run_unique",
+          "columns": [
+            "analysis_run_id"
+          ],
+          "isUnique": true
+        },
+        "analysis_results_diagnostic_idx": {
+          "name": "analysis_results_diagnostic_idx",
+          "columns": [
+            "diagnostic_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "analysis_results_diagnostic_id_diagnostics_id_fk": {
+          "name": "analysis_results_diagnostic_id_diagnostics_id_fk",
+          "tableFrom": "analysis_results",
+          "tableTo": "diagnostics",
+          "columnsFrom": [
+            "diagnostic_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "analysis_results_analysis_run_id_analysis_runs_id_fk": {
+          "name": "analysis_results_analysis_run_id_analysis_runs_id_fk",
+          "tableFrom": "analysis_results",
+          "tableTo": "analysis_runs",
+          "columnsFrom": [
+            "analysis_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "analysis_runs": {
+      "name": "analysis_runs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "diagnostic_id": {
+          "name": "diagnostic_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'queued'"
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "methodology_version": {
+          "name": "methodology_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prompt_versions_json": {
+          "name": "prompt_versions_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "model_metadata_json": {
+          "name": "model_metadata_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "analysis_runs_diagnostic_idx": {
+          "name": "analysis_runs_diagnostic_idx",
+          "columns": [
+            "diagnostic_id"
+          ],
+          "isUnique": false
+        },
+        "analysis_runs_status_idx": {
+          "name": "analysis_runs_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "analysis_runs_diagnostic_id_diagnostics_id_fk": {
+          "name": "analysis_runs_diagnostic_id_diagnostics_id_fk",
+          "tableFrom": "analysis_runs",
+          "tableTo": "diagnostics",
+          "columnsFrom": [
+            "diagnostic_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "analysis_runs_status_check": {
+          "name": "analysis_runs_status_check",
+          "value": "\"analysis_runs\".\"status\" in ('draft','queued','scoring','targeting','strategizing','money_now','resolving_tasks','writing_report','ready','analysis_failed')"
+        }
+      }
+    },
+    "diagnostics": {
+      "name": "diagnostics",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_schema_version": {
+          "name": "source_schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "methodology_version": {
+          "name": "methodology_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "raw_answers_json": {
+          "name": "raw_answers_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "normalized_input_json": {
+          "name": "normalized_input_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "diagnostics_created_at_idx": {
+          "name": "diagnostics_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

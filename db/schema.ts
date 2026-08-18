@@ -22,7 +22,7 @@ export const analysisRuns = sqliteTable(
     diagnosticId: text("diagnostic_id")
       .notNull()
       .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
-    status: text("status").notNull().default("scoring"),
+    status: text("status").notNull().default("queued"),
     schemaVersion: text("schema_version").notNull(),
     methodologyVersion: text("methodology_version").notNull(),
     promptVersionsJson: text("prompt_versions_json").notNull().default("{}"),
@@ -37,7 +37,7 @@ export const analysisRuns = sqliteTable(
     index("analysis_runs_status_idx").on(table.status),
     check(
       "analysis_runs_status_check",
-      sql`${table.status} in ('scoring','targeting','strategizing','money_now','resolving_tasks','writing_report','ready','failed')`,
+      sql`${table.status} in ('draft','queued','scoring','targeting','strategizing','money_now','resolving_tasks','writing_report','ready','analysis_failed')`,
     ),
   ],
 );

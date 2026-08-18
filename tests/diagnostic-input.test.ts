@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   ANALYSIS_STATUSES,
@@ -50,7 +51,8 @@ function normalizeFlat(overrides: Record<string, unknown> = {}) {
 }
 
 test("normalizes the flat form to the exact DiagnosticInput v1.2 shape", () => {
-  const { input } = normalizeFlat();
+  const normalized = normalizeFlat();
+  const { input } = normalized;
 
   assert.equal(input.schemaVersion, "1.2");
   assert.equal(input.current.monthlyRevenueRub, 50_000);
@@ -61,11 +63,21 @@ test("normalizes the flat form to the exact DiagnosticInput v1.2 shape", () => {
   assert.equal(input.target.monthlyRevenueRub, 300_000);
   assert.equal(input.target.deadlineMonths, 6);
   assert.equal(input.target.desiredSystemWeeklyHours, null);
+  assert.equal(Object.hasOwn(input.target, "desiredSystemWeeklyHours"), true);
+  assert.match(JSON.stringify(input), /"desiredSystemWeeklyHours":null/u);
   assert.equal(input.experience.struggles, flatAnswers.struggles);
   assert.equal(input.experience.bestPeriod, flatAnswers.bestPeriod);
   assert.equal(input.experience.failures, flatAnswers.failures);
   assert.equal("personality" in input.project, false);
   assert.equal("growthWeeklyHours" in input.target, false);
+  assert.equal(
+    (normalized.rawPayload as { rawAnswers: { values: Record<string, unknown> } }).rawAnswers.values.personality,
+    "introvert",
+  );
+  assert.equal(
+    (normalized.rawPayload as { rawAnswers: { values: Record<string, unknown> } }).rawAnswers.values.growthTime,
+    "10",
+  );
 });
 
 test("keeps desiredSystemWeeklyHours only when time freedom is explicitly applicable", () => {
@@ -172,6 +184,8 @@ test("legacy nested records are adapted without mutating or rewriting raw answer
 
 test("declares only the approved analysis lifecycle statuses", () => {
   assert.deepEqual(ANALYSIS_STATUSES, [
+    "draft",
+    "queued",
     "scoring",
     "targeting",
     "strategizing",
@@ -179,7 +193,7 @@ test("declares only the approved analysis lifecycle statuses", () => {
     "resolving_tasks",
     "writing_report",
     "ready",
-    "failed",
+    "analysis_failed",
   ]);
 });
 
@@ -193,4 +207,15 @@ test("Data Dictionary mapping contains 24 manager-facing fields and no removed f
     DIAGNOSTIC_FORM_FIELDS.find((field) => field.sourceKey === "systemTime")?.conditional,
     "time_freedom_goal",
   );
+});
+
+test("status migration preserves old runs and renames failed to analysis_failed", () => {
+  const migration = readFileSync(
+    new URL("../drizzle/0001_demonic_thunderbolt_ross.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(migration, /WHEN "status" = 'failed' THEN 'analysis_failed'/u);
+  assert.match(migration, /'draft','queued','scoring'/u);
+  assert.doesNotMatch(migration, /,'failed'\)/u);
 });
