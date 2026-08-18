@@ -9,6 +9,7 @@ export * from "./config/archetypes.v1";
 export * from "./config/evidence-routing.v3.0";
 export * from "./config/elements.v1";
 export * from "./config/money-now.v2.2";
+export * from "./config/money-now-prescription-rules.v1";
 export * from "./config/money-now-history-map.v2.2";
 export * from "./config/money-now-selector-contract.v1";
 export * from "./config/money-now-fact-extraction.v1";

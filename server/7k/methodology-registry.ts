@@ -10,6 +10,12 @@ import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.1";
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
 import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
+import { P03_PROMPT_VERSION } from "./prompts/p03.v1.4";
+import {
+  MONEY_NOW_PRESCRIPTION_INTEGRITY,
+  MONEY_NOW_PRESCRIPTION_METHODOLOGY_VERSION,
+  MONEY_NOW_PRESCRIPTION_RULES_VERSION,
+} from "./config/money-now-prescription-rules.v1";
 import {
   CONSTRAINT_RULES_RESOURCE_VERSION,
   DEPENDENCY_RULES_RESOURCE_VERSION,
@@ -42,6 +48,7 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
   transitionsSource: TRANSITIONS_70_RESOURCE.source,
   integrity: {
     transitions: TRANSITIONS_70_INTEGRITY,
+    moneyNowPrescription: MONEY_NOW_PRESCRIPTION_INTEGRITY,
   },
   aiModules: {
     p01: {
@@ -69,6 +76,21 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
         constraintRules: CONSTRAINT_RULES_RESOURCE_VERSION,
         dependencyRules: DEPENDENCY_RULES_RESOURCE_VERSION,
         targetRules: TARGET_RULES_RESOURCE_VERSION,
+      },
+    },
+    p03: {
+      promptVersion: P03_PROMPT_VERSION,
+      outputSchemaVersion: "1.4" as const,
+      input: {
+        p01PromptVersion: P01_PROMPT_VERSION,
+        p01OutputSchemaVersion: "1.4" as const,
+        selectorContract: MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+        selectorMethodology: MONEY_NOW_RESOURCE_VERSION,
+      },
+      resources: {
+        prescriptionMethodology: MONEY_NOW_PRESCRIPTION_METHODOLOGY_VERSION,
+        prescriptionRules: MONEY_NOW_PRESCRIPTION_RULES_VERSION,
+        factExtraction: MONEY_NOW_FACT_EXTRACTION_VERSION,
       },
     },
   },

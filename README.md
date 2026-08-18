@@ -107,7 +107,7 @@ The timeout defaults can be overridden for a controlled canary with `SITES_INSTA
 Submitting `POST /api/diagnostics` stores the immutable raw answers and the
 normalized `DiagnosticInput v1.2`, then creates an analysis run in `queued`.
 The response exposes the server-side `POST /api/analysis-runs/:analysisRunId/p01`
-next step. That endpoint runs only P-01 v1.3 and moves a successful run to
+next step. That endpoint runs only the current P-01 contract and moves a successful run to
 `targeting`; it does not execute Money Now selection, P-02, P-03 or P-04.
 
 The returned next step, `POST /api/analysis-runs/:analysisRunId/target-archetype`,
@@ -152,6 +152,33 @@ P-02 runtime configuration is independent from P-01:
 
 Validated output, versioned input hashes, usage, retries and server-only raw
 provider response are stored in the additive `p02_analysis_results` table.
+
+## P-03 Money Now Prescription v1.4
+
+`POST /api/analysis-runs/:analysisRunId/p03` consumes only the immutable Stage 7
+selection and the persisted validated P-01 evidence result. It never receives
+alternative Money Now candidates, P-02, Target Configuration, Business
+Archetype, Task Resolver output or raw diagnostic answers.
+
+The server uses `money-now-prescription-rules.v1` as the only prescription
+registry. Causes and interventions are validated against the selected
+MN01–MN16 scenario, supporting 7K elements are derived by the backend, and all
+numeric baselines/targets come from the backend metrics projection. A valid or
+evidence-blocked result moves `money_now` to `writing_report`. When Stage 7
+returns `no_eligible_scenario`, P-03 stores a deterministic skipped result and
+does not call the AI provider. P-04 is not started automatically.
+
+Runtime configuration:
+
+- `P03_AI_PROVIDER=openrouter` (supported adapter; default);
+- `OPENROUTER_API_KEY` (shared server-only transport key);
+- `P03_AI_MODEL` (required; no model is hardcoded);
+- `P03_STRUCTURED_OUTPUT=false` only when JSON Schema output is unavailable;
+- `P03_APP_URL` and `P03_APP_TITLE` are optional attribution headers.
+
+Full P-03 output and provider raw responses stay in the server-only
+`p03_prescription_results` table. The public endpoint returns only the outcome,
+locked teaser, lifecycle status and the next-step marker for P-04.
 
 ## Learn More
 

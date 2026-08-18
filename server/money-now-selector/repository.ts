@@ -21,7 +21,9 @@ function parseNullable<T>(value: string | null): T | null {
   return value === null ? null : JSON.parse(value) as T;
 }
 
-function stored(row: typeof moneyNowSelections.$inferSelect): StoredMoneyNowSelection {
+export function storedMoneyNowSelectionFromRow(
+  row: typeof moneyNowSelections.$inferSelect,
+): StoredMoneyNowSelection {
   const snapshot = parseNullable<MoneyNowSelectionSnapshot>(row.selectionJson);
   if (snapshot && row.candidateTraceJson) {
     const separatelyStoredTrace = parseNullable<MoneyNowSelectionSnapshot["candidateTrace"]>(
@@ -132,7 +134,7 @@ export function createD1MoneyNowSelectorRepository(): MoneyNowSelectorRepository
         .from(moneyNowSelections)
         .where(eq(moneyNowSelections.analysisRunId, analysisRunId))
         .limit(1);
-      return rows[0] ? stored(rows[0]) : null;
+      return rows[0] ? storedMoneyNowSelectionFromRow(rows[0]) : null;
     },
     async createResult(result) {
       const db = await getDb();

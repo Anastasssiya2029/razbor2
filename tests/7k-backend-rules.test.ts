@@ -6,8 +6,8 @@ import {
   BASE_MODEL_PROFILES,
   CAPABILITY_FLOORS,
   MONEY_NOW_CAPACITY_MODEL_FIT_RULES,
-  MONEY_NOW_CAUSE_CODES,
-  MONEY_NOW_INTERVENTION_RULES,
+  MONEY_NOW_PRESCRIPTION_CAUSE_CODES,
+  MONEY_NOW_SELECTABLE_INTERVENTION_CODES,
   MONEY_NOW_RESOURCE_VERSION,
   MONEY_NOW_SCENARIOS,
   MONEY_NOW_STOP_RULES,
@@ -57,8 +57,8 @@ test("server registries contain every approved model, capability, modifier and M
   assert.equal(Object.keys(TARGET_MODIFIER_FLOORS).length, 16);
   assert.equal(MONEY_NOW_SCENARIOS.length, 16);
   assert.equal(new Set(MONEY_NOW_SCENARIOS.map((scenario) => scenario.id)).size, 16);
-  assert.equal(Object.keys(MONEY_NOW_CAUSE_CODES).length, 14);
-  assert.equal(Object.keys(MONEY_NOW_INTERVENTION_RULES).length, 14);
+  assert.equal(MONEY_NOW_PRESCRIPTION_CAUSE_CODES.length, 15);
+  assert.equal(MONEY_NOW_SELECTABLE_INTERVENTION_CODES.length, 21);
   assert.ok(MONEY_NOW_STOP_RULES.some((rule) => rule.id === "REPEATED_SOLUTION_WITHOUT_NEW_CONDITION"));
   assert.deepEqual(
     MONEY_NOW_CAPACITY_MODEL_FIT_RULES.map((rule) => rule.id),

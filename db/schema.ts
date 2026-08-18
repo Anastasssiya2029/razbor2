@@ -279,3 +279,62 @@ export const moneyNowSelections = sqliteTable(
     index("money_now_selections_input_hash_idx").on(table.deterministicInputHash),
   ],
 );
+
+export const p03PrescriptionResults = sqliteTable(
+  "p03_prescription_results",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    moneyNowSelectionId: text("money_now_selection_id")
+      .notNull()
+      .references(() => moneyNowSelections.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    moneyNowSelectionHash: text("money_now_selection_hash").notNull(),
+    p01AnalysisResultId: text("p01_analysis_result_id")
+      .notNull()
+      .references(() => p01AnalysisResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01ResultHash: text("p01_result_hash").notNull(),
+    stageVersion: text("stage_version").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    outputSchemaVersion: text("output_schema_version").notNull(),
+    ruleVersionsJson: text("rule_versions_json").notNull(),
+    contextHash: text("context_hash"),
+    inputHash: text("input_hash").notNull(),
+    deterministicInputHash: text("deterministic_input_hash").notNull(),
+    contextJson: text("context_json"),
+    selectedScenarioJson: text("selected_scenario_json"),
+    backendMetricsJson: text("backend_metrics_json").notNull(),
+    backendRevenueScenarioJson: text("backend_revenue_scenario_json"),
+    lockedTeaserVersion: text("locked_teaser_version").notNull(),
+    lockedTeaser: text("locked_teaser").notNull(),
+    resultJson: text("result_json"),
+    skippedOutcomeJson: text("skipped_outcome_json"),
+    providerRawResponseJson: text("provider_raw_response_json"),
+    provider: text("provider"),
+    model: text("model"),
+    startedAt: text("started_at").notNull(),
+    finishedAt: text("finished_at").notNull(),
+    latencyMs: integer("latency_ms").notNull(),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalTokens: integer("total_tokens"),
+    costUsd: real("cost_usd"),
+    retryCount: integer("retry_count").notNull(),
+    technicalRetryCount: integer("technical_retry_count").notNull(),
+    reevaluationRetryCount: integer("reevaluation_retry_count").notNull(),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("p03_prescription_results_run_unique").on(table.analysisRunId),
+    index("p03_prescription_results_selection_idx").on(table.moneyNowSelectionId),
+    index("p03_prescription_results_p01_idx").on(table.p01AnalysisResultId),
+    index("p03_prescription_results_input_hash_idx").on(table.deterministicInputHash),
+  ],
+);

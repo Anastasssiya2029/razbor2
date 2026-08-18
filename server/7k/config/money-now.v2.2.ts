@@ -1,5 +1,3 @@
-import type { SevenKElementId } from "../types";
-
 export const MONEY_NOW_RESOURCE_VERSION = "money-now.v2.2" as const;
 
 export const MONEY_NOW_SCENARIO_IDS = [
@@ -122,32 +120,6 @@ export const MONEY_NOW_CAPACITY_MODEL_FIT_RULES = [
   { id: "CAPACITY_OVERLOADED", description: "Не наращивать поток, если владелец/команда уже перегружены; сначала освободить ёмкость или изменить способ исполнения." },
   { id: "MODEL_FIT_REQUIRED", description: "Сценарий должен быть совместим с выбранной бизнес-моделью и ролью владельца." },
 ] as const;
-
-export const MONEY_NOW_CAUSE_CODES = {
-  NO_INBOUND_OPPORTUNITIES: { symptom: "Нет входящих / исходящих возможностей", diagnosis: "Никто не пишет, нет встреч, клиент не инициирует привлечение.", intervention: "Запустить ближайший доступный способ дотянуться до подходящих людей в рамках выбранного MN-сценария.", elements: ["funnel"] },
-  UNQUALIFIED_MEETINGS: { symptom: "Нецелевые встречи", diagnosis: "На встречу попадают люди без подходящей задачи/готовности или только за бесплатной консультацией.", intervention: "Внедрить квалификацию до продающей встречи: критерии, анкета или короткий квалификационный контакт.", elements: ["audience", "funnel", "sales_technology"] },
-  NO_SALES_STRUCTURE: { symptom: "Нет структуры продаж", diagnosis: "Встречи/переписки идут по ситуации, нет повторяемой логики от запроса к предложению и решению.", intervention: "Собрать и внедрить одну технологию продающей встречи/переписки.", elements: ["sales_technology"] },
-  OVERCONSULTING_FREE_VALUE: { symptom: "Консультирует вместо продажи", diagnosis: "На бесплатной встрече человек получает существенную часть решения; благодарит, но необходимость покупать снижается.", intervention: "Перестроить встречу вокруг диагностики, ценности решения и следующего шага, не закрывая задачу бесплатной консультацией.", elements: ["sales_technology"] },
-  UNCLEAR_PRODUCT_OR_OFFER: { symptom: "Непонятный продукт или оффер", diagnosis: "Клиент не понимает, что покупает, для кого продукт, какой результат и почему решение ему подходит.", intervention: "Сделать предложение конкретным: результат, формат, границы, путь и оффер.", elements: ["product_method"] },
-  VALUE_NOT_OWNED_PRICE_FEAR: { symptom: "Не присвоена ценность / страх цены", diagnosis: "Эксперт боится называть цену, заранее снижает её или прямо сомневается в праве столько брать.", intervention: "Коротко присвоить доказанную ценность и сразу проверить её рыночным действием: цена / предложение.", elements: ["authenticity", "sales_technology"] },
-  LOW_AVERAGE_CHECK_MODEL: { symptom: "Низкомонетизируемая модель", diagnosis: "Продажи есть, но разовая/мелкая модель ограничивает выручку с клиента.", intervention: "Пересобрать формат: пакет/абонемент/более полный этап или новая цена при доказанной ценности.", elements: ["product_method"] },
-  NO_REPEAT_SALES: { symptom: "Нет повторных продаж", diagnosis: "Клиенты покупают и получают результат, но продолжение или следующий продукт не встроены.", intervention: "Создать логичный следующий этап и системно предлагать его подходящим клиентам.", elements: ["product_method"] },
-  UNUSED_SOCIAL_ASSET: { symptom: "Не используется социальный актив", diagnosis: "Есть бывшие/текущие клиенты, подписчики, партнёры или профессиональные контакты, но им не делают релевантных предложений.", intervention: "Активировать конкретный тёплый актив одним релевантным предложением.", elements: ["funnel"] },
-  NO_FOLLOW_UP: { symptom: "Нет follow-up", diagnosis: "Есть интерес, «подумаю» или незакрытые предложения, но никто к ним не возвращается.", intervention: "Ввести обязательный повторный контакт и ясный следующий шаг по незакрытым решениям.", elements: ["sales_technology"] },
-  CLIENT_PATH_BREAK: { symptom: "Разрыв пути клиента", diagnosis: "Люди проявляют интерес, но теряются между касаниями и не доходят до предложения/оплаты.", intervention: "Закрыть один конкретный разрыв и сделать следующий шаг однозначным.", elements: ["funnel"] },
-  CAPACITY_BOTTLENECK: { symptom: "Нет ёмкости принять больше", diagnosis: "Спрос/продажи есть, но владелец или команда уже перегружены.", intervention: "Не наращивать поток; сначала освободить ёмкость или изменить способ исполнения.", elements: ["team", "product_method"] },
-  PROVEN_MECHANISM_INACTIVE: { symptom: "Выключен доказанный механизм", diagnosis: "Есть канал/мероприятие/связка, которые раньше давали оплаты, но сейчас не используются.", intervention: "Вернуть доказанный механизм, если текущий контекст позволяет воспроизвести его ключевые условия.", elements: ["funnel", "sales_technology"] },
-  WEAK_REFERRAL_ACTIVATION: { symptom: "Рекомендации не активируются", diagnosis: "Есть довольные клиенты и результат, но рекомендации не запрашиваются и не становятся регулярным входом.", intervention: "Запустить простой механизм рекомендаций от клиентов, которые уже получили результат.", elements: ["funnel", "product_method"] },
-} as const satisfies Record<string, { symptom: string; diagnosis: string; intervention: string; elements: readonly SevenKElementId[] }>;
-
-export type MoneyNowCauseCode = keyof typeof MONEY_NOW_CAUSE_CODES;
-
-export const MONEY_NOW_INTERVENTION_RULES = Object.fromEntries(
-  Object.entries(MONEY_NOW_CAUSE_CODES).map(([causeCode, definition]) => [
-    causeCode,
-    { intervention: definition.intervention, elements: definition.elements },
-  ]),
-) as Record<MoneyNowCauseCode, { intervention: string; elements: readonly SevenKElementId[] }>;
 
 export const MONEY_NOW_HISTORY_GUARD = {
   id: "REPEATED_SOLUTION_WITHOUT_NEW_CONDITION",

@@ -589,12 +589,12 @@ test("34. no candidates returns valid no_eligible_scenario", () => {
   assert.equal(result.selectedScenario, null);
 });
 
-test("35. no_eligible_scenario does not set analysis_failed", async () => {
+test("35. no_eligible_scenario stays valid and routes to the deterministic P-03 skip path", async () => {
   const repository = new MemoryRepository(source());
   const executed = await runMoneyNowSelectorStage("run-1", { repository, createId: () => "mn-1" });
   assert.equal(executed.status, "money_now");
   assert.equal(executed.result.snapshot?.selectionStatus, "no_eligible_scenario");
-  assert.equal(executed.nextStep, null);
+  assert.equal(executed.nextStep, "/api/analysis-runs/run-1/p03");
 });
 
 test("36. selected snapshot is immutable and is the source for future P-03", async () => {

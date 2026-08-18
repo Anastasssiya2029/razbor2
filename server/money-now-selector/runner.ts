@@ -33,7 +33,7 @@ function nextStep(
   analysisRunId: string,
   snapshot: MoneyNowSelectionSnapshot | null,
 ): string | null {
-  return snapshot?.selectionStatus === "selected"
+  return snapshot
     ? `/api/analysis-runs/${analysisRunId}/p03`
     : null;
 }
