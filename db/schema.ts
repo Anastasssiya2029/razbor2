@@ -338,3 +338,76 @@ export const p03PrescriptionResults = sqliteTable(
     index("p03_prescription_results_input_hash_idx").on(table.deterministicInputHash),
   ],
 );
+
+export const p04ReportResults = sqliteTable(
+  "p04_report_results",
+  {
+    id: text("id").primaryKey(),
+    diagnosticId: text("diagnostic_id")
+      .notNull()
+      .references(() => diagnostics.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p01AnalysisResultId: text("p01_analysis_result_id")
+      .notNull()
+      .references(() => p01AnalysisResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    targetArchetypeResultId: text("target_archetype_result_id")
+      .notNull()
+      .references(() => targetArchetypeResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p02AnalysisResultId: text("p02_analysis_result_id")
+      .notNull()
+      .references(() => p02AnalysisResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    resolvedTransitionPlanId: text("resolved_transition_plan_id")
+      .notNull()
+      .references(() => resolvedTransitionPlans.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    moneyNowSelectionId: text("money_now_selection_id")
+      .notNull()
+      .references(() => moneyNowSelections.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    p03PrescriptionResultId: text("p03_prescription_result_id")
+      .notNull()
+      .references(() => p03PrescriptionResults.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    upstreamHashesJson: text("upstream_hashes_json").notNull(),
+    stageVersion: text("stage_version").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    outputSchemaVersion: text("output_schema_version").notNull(),
+    promptSha256: text("prompt_sha256").notNull(),
+    ruleVersionsJson: text("rule_versions_json").notNull(),
+    contextJson: text("context_json").notNull(),
+    contextHash: text("context_hash").notNull(),
+    reportPolicyJson: text("report_policy_json").notNull(),
+    sourceRegistryJson: text("source_registry_json").notNull(),
+    sourceRegistryHash: text("source_registry_hash").notNull(),
+    reportGlossaryJson: text("report_glossary_json").notNull(),
+    inputHash: text("input_hash").notNull(),
+    deterministicInputHash: text("deterministic_input_hash").notNull(),
+    resultJson: text("result_json"),
+    providerRawResponseJson: text("provider_raw_response_json"),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    startedAt: text("started_at").notNull(),
+    finishedAt: text("finished_at").notNull(),
+    latencyMs: integer("latency_ms").notNull(),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalTokens: integer("total_tokens"),
+    costUsd: real("cost_usd"),
+    retryCount: integer("retry_count").notNull(),
+    technicalRetryCount: integer("technical_retry_count").notNull(),
+    reevaluationRetryCount: integer("reevaluation_retry_count").notNull(),
+    failureCode: text("failure_code"),
+    failureMessage: text("failure_message"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("p04_report_results_run_unique").on(table.analysisRunId),
+    index("p04_report_results_p01_idx").on(table.p01AnalysisResultId),
+    index("p04_report_results_target_idx").on(table.targetArchetypeResultId),
+    index("p04_report_results_p02_idx").on(table.p02AnalysisResultId),
+    index("p04_report_results_plan_idx").on(table.resolvedTransitionPlanId),
+    index("p04_report_results_selection_idx").on(table.moneyNowSelectionId),
+    index("p04_report_results_p03_idx").on(table.p03PrescriptionResultId),
+    index("p04_report_results_input_hash_idx").on(table.deterministicInputHash),
+  ],
+);

@@ -1,0 +1,218 @@
+import type { AiProviderUsage } from "@/server/ai/openrouter-json";
+import { P04_PROMPT_VERSION } from "@/server/7k/prompts/p04.v1.2";
+import { createConfiguredP04Provider } from "./provider";
+import { buildP04SystemPrompt } from "./request";
+import type { P04PreparedInput } from "./stage-types";
+import type { P04Provider, P04RunMetadata, P04RunOutcome } from "./types";
+import { P04_OUTPUT_SCHEMA_VERSION } from "./types";
+import {
+  finalizeAndValidateP04Output,
+  P04InvariantError,
+  P04SchemaValidationError,
+  P04_OUTPUT_SCHEMA,
+  type P04ValidationIssue,
+} from "./validation";
+
+export type P04FailureCode =
+  | "P04_PROVIDER_CONFIGURATION_ERROR"
+  | "P04_TRANSPORT_ERROR"
+  | "P04_MALFORMED_JSON"
+  | "P04_SCHEMA_VALIDATION_FAILED"
+  | "P04_INVARIANT_FAILED";
+
+export class P04RunExecutionError extends Error {
+  constructor(
+    readonly failureCode: P04FailureCode,
+    message: string,
+    readonly metadata: P04RunMetadata,
+    readonly providerRawResponse: unknown,
+    options: { cause?: unknown } = {},
+  ) {
+    super(message, { cause: options.cause });
+    this.name = "P04RunExecutionError";
+  }
+}
+
+export type RunP04Options = {
+  provider?: P04Provider;
+  now?: () => Date;
+};
+
+function emptyUsage(): AiProviderUsage {
+  return { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0 };
+}
+
+function addUsage(total: AiProviderUsage, next: AiProviderUsage): void {
+  const add = (left: number | null, right: number | null) =>
+    left === null && right === null ? null : (left ?? 0) + (right ?? 0);
+  total.inputTokens = add(total.inputTokens, next.inputTokens);
+  total.outputTokens = add(total.outputTokens, next.outputTokens);
+  total.totalTokens = add(total.totalTokens, next.totalTokens);
+  total.costUsd = add(total.costUsd, next.costUsd);
+}
+
+function correctionFor(title: string, issues: readonly P04ValidationIssue[]): string {
+  return [
+    `${title}:`,
+    ...issues.slice(0, 32).map((issue) => `- ${issue.path}: ${issue.code}: ${issue.message}`),
+    "Верни весь JSON заново по schema 1.2. Не меняй upstream decisions, task IDs, route identities, businessValidation, Money Now status или locked teaser. Не добавляй новые действия. Используй только SOURCE_REGISTRY.",
+  ].join("\n");
+}
+
+async function defaultProvider(): Promise<P04Provider> {
+  const { env } = await import("cloudflare:workers");
+  return createConfiguredP04Provider(env as unknown as Record<string, string | undefined>);
+}
+
+export async function runP04ReportWriter(
+  input: P04PreparedInput,
+  options: RunP04Options = {},
+): Promise<P04RunOutcome> {
+  const now = options.now ?? (() => new Date());
+  const started = now();
+  let provider: P04Provider;
+  try {
+    provider = options.provider ?? await defaultProvider();
+  } catch (error) {
+    const metadata = metadataFor(
+      "unconfigured",
+      "unconfigured",
+      input,
+      started,
+      now(),
+      0,
+      0,
+      { inputTokens: null, outputTokens: null, totalTokens: null, costUsd: null },
+    );
+    throw new P04RunExecutionError(
+      "P04_PROVIDER_CONFIGURATION_ERROR",
+      error instanceof Error ? error.message : "P-04 provider is not configured",
+      metadata,
+      null,
+      { cause: error },
+    );
+  }
+
+  let technicalRetryCount = 0;
+  let reevaluationRetryCount = 0;
+  let correction: string | null = null;
+  let latestRaw: unknown = null;
+  const usage = emptyUsage();
+
+  while (true) {
+    let response;
+    try {
+      response = await provider.complete({
+        systemPrompt: buildP04SystemPrompt(input, correction),
+        outputSchema: P04_OUTPUT_SCHEMA,
+        correction,
+      });
+      latestRaw = response.rawResponse;
+      addUsage(usage, response.usage);
+    } catch (error) {
+      if (technicalRetryCount === 0) {
+        technicalRetryCount += 1;
+        correction = null;
+        continue;
+      }
+      throw executionError("P04_TRANSPORT_ERROR", "P-04 provider transport failed", error);
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(response.text);
+    } catch (error) {
+      if (technicalRetryCount === 0) {
+        technicalRetryCount += 1;
+        correction = "Предыдущий ответ не был JSON. Верни только JSON по schema 1.2.";
+        continue;
+      }
+      throw executionError("P04_MALFORMED_JSON", "P-04 returned malformed JSON", error);
+    }
+
+    try {
+      return {
+        result: finalizeAndValidateP04Output(parsed, input),
+        metadata: metadataFor(
+          provider.provider,
+          provider.model,
+          input,
+          started,
+          now(),
+          technicalRetryCount,
+          reevaluationRetryCount,
+          usage,
+        ),
+        providerRawResponse: latestRaw,
+      };
+    } catch (error) {
+      if (error instanceof P04SchemaValidationError) {
+        if (technicalRetryCount === 0) {
+          technicalRetryCount += 1;
+          correction = correctionFor("Нарушена JSON Schema 1.2", error.issues);
+          continue;
+        }
+        throw executionError("P04_SCHEMA_VALIDATION_FAILED", "P-04 output schema validation failed", error);
+      }
+      if (error instanceof P04InvariantError) {
+        if (reevaluationRetryCount === 0) {
+          reevaluationRetryCount += 1;
+          correction = correctionFor("Нарушены backend semantic invariants", error.issues);
+          continue;
+        }
+        throw executionError("P04_INVARIANT_FAILED", "P-04 semantic invariants failed", error);
+      }
+      throw error;
+    }
+  }
+
+  function executionError(
+    code: P04FailureCode,
+    message: string,
+    cause: unknown,
+  ): P04RunExecutionError {
+    return new P04RunExecutionError(
+      code,
+      message,
+      metadataFor(
+        provider.provider,
+        provider.model,
+        input,
+        started,
+        now(),
+        technicalRetryCount,
+        reevaluationRetryCount,
+        usage,
+      ),
+      latestRaw,
+      { cause },
+    );
+  }
+}
+
+function metadataFor(
+  provider: string,
+  model: string,
+  input: P04PreparedInput,
+  started: Date,
+  finished: Date,
+  technicalRetryCount: number,
+  reevaluationRetryCount: number,
+  usage: AiProviderUsage,
+): P04RunMetadata {
+  return {
+    provider,
+    model,
+    promptVersion: P04_PROMPT_VERSION,
+    outputSchemaVersion: P04_OUTPUT_SCHEMA_VERSION,
+    ruleVersions: input.ruleVersions,
+    inputHash: input.inputHash,
+    startedAt: started.toISOString(),
+    finishedAt: finished.toISOString(),
+    latencyMs: Math.max(0, finished.getTime() - started.getTime()),
+    retryCount: technicalRetryCount + reevaluationRetryCount,
+    technicalRetryCount,
+    reevaluationRetryCount,
+    usage,
+  };
+}

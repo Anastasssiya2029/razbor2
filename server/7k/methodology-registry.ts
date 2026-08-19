@@ -11,6 +11,8 @@ import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
 import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
 import { P03_PROMPT_SHA256, P03_PROMPT_VERSION } from "./prompts/p03.v1.5";
+import { P04_PROMPT_SHA256, P04_PROMPT_VERSION } from "./prompts/p04.v1.2";
+import { REPORT_GLOSSARY_VERSION } from "./config/report-glossary.v1";
 import {
   MONEY_NOW_PRESCRIPTION_INTEGRITY,
   MONEY_NOW_PRESCRIPTION_METHODOLOGY_VERSION,
@@ -92,6 +94,31 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
         prescriptionMethodology: MONEY_NOW_PRESCRIPTION_METHODOLOGY_VERSION,
         prescriptionRules: MONEY_NOW_PRESCRIPTION_RULES_VERSION,
         factExtraction: MONEY_NOW_FACT_EXTRACTION_VERSION,
+      },
+    },
+    p04: {
+      promptVersion: P04_PROMPT_VERSION,
+      promptSha256: P04_PROMPT_SHA256,
+      outputSchemaVersion: "1.2" as const,
+      input: {
+        p01PromptVersion: P01_PROMPT_VERSION,
+        p01OutputSchemaVersion: "1.4" as const,
+        p02PromptVersion: P02_PROMPT_VERSION,
+        p02OutputSchemaVersion: "1.3" as const,
+        p03PromptVersion: P03_PROMPT_VERSION,
+        p03OutputSchemaVersion: "1.5" as const,
+        taskResolverStageVersion: "task-resolver-stage.v1" as const,
+        moneyNowSelectorStageVersion: MONEY_NOW_SELECTOR_STAGE_VERSION,
+      },
+      resources: {
+        elements: ELEMENTS_RESOURCE_VERSION,
+        targetRules: TARGET_RULES_RESOURCE_VERSION,
+        archetypes: ARCHETYPES_RESOURCE_VERSION,
+        transitions: TRANSITIONS_RESOURCE_VERSION,
+        selectorContract: MONEY_NOW_SELECTOR_CONTRACT_VERSION,
+        reportPolicy: "p04-report-policy.v1" as const,
+        sourceRegistry: "p04-source-registry.v1" as const,
+        reportGlossary: REPORT_GLOSSARY_VERSION,
       },
     },
   },

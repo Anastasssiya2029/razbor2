@@ -189,6 +189,39 @@ Full P-03 output and provider raw responses stay in the server-only
 `p03_prescription_results` table. The public endpoint returns only the outcome,
 locked teaser, lifecycle status and the next-step marker for P-04.
 
+## P-04 Report Writer v1.2
+
+`POST /api/analysis-runs/:analysisRunId/p04` is an internal/orchestrator-only
+stage endpoint accepted from `writing_report`. It builds an allowlisted
+`P04_CONTEXT`, deterministic `REPORT_POLICY` and canonical `SOURCE_REGISTRY`
+from persisted P-01, Target/Archetype, P-02, Task Resolver, Stage 7 and P-03
+snapshots. It does not receive raw diagnostic answers, provider raw responses,
+P-02 candidate audit or alternative Money Now ranking.
+
+P-04 writes narrative only. Backend validation keeps current/target scores,
+archetype, priority/build bundle, route cards, task IDs, business validation and
+the first fixed task immutable. The output supports Money Now states
+`available`, `no_eligible_scenario`, `blocked_insufficient_evidence` and
+`blocked_inconsistency`; it never copies the paid P-03 prescription into its
+own result. A valid result moves `writing_report` to `ready`, but no final public
+AnalysisResult, UI projection or PDF is assembled at this stage.
+
+Runtime configuration:
+
+- `P04_AI_PROVIDER=openrouter` (supported adapter; default);
+- `OPENROUTER_API_KEY` (shared server-only transport key);
+- `P04_AI_MODEL` (required; no model is hardcoded);
+- `P04_STRUCTURED_OUTPUT=false` only when JSON Schema output is unavailable;
+- `P04_APP_URL` and `P04_APP_TITLE` are optional attribution headers;
+- `P04_PUBLIC_EXECUTION_ENABLED=true` explicitly enables the protected HTTP
+  execution surface, which is disabled by default;
+- `P04_ORCHESTRATOR_TOKEN` must match the server-only
+  `x-p04-orchestrator-token` request header.
+
+Full output, context/policy/registry snapshots, upstream hashes and provider raw
+responses are stored only in `p04_report_results`. The HTTP response exposes
+only lifecycle status, `nextStep: null` and idempotency metadata.
+
 ## Learn More
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
