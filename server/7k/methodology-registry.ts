@@ -161,6 +161,24 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
         factExtraction: MONEY_NOW_FACT_EXTRACTION_VERSION,
       },
     },
+    finalAnalysisResult: {
+      stageVersion: "analysis-result-assembler.v1" as const,
+      outputSchemaVersion: "analysis-result.v1" as const,
+      methodologyVersion: "7k.v1.2" as const,
+      input: {
+        p01PromptVersion: P01_PROMPT_VERSION,
+        p01OutputSchemaVersion: "1.4" as const,
+        targetStageVersion: "target-archetype-stage.v1" as const,
+        p02PromptVersion: P02_PROMPT_VERSION,
+        p02OutputSchemaVersion: "1.3" as const,
+        taskResolverStageVersion: "task-resolver-stage.v1" as const,
+        moneyNowSelectorStageVersion: MONEY_NOW_SELECTOR_STAGE_VERSION,
+        p03PromptVersion: P03_PROMPT_VERSION,
+        p03OutputSchemaVersion: "1.5" as const,
+        p04PromptVersion: P04_PROMPT_VERSION,
+        p04OutputSchemaVersion: "1.2" as const,
+      },
+    },
   },
 } as const;
 
