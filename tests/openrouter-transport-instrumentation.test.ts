@@ -322,7 +322,6 @@ test("mocked error transport preserves frozen request semantics and performs one
   assert.equal(calls, 1);
   assert.deepEqual(capturedBody, {
     model: "test/model",
-    seed: 0,
     messages: [{ role: "system", content: "SYSTEM_PROMPT_SENT_TO_PROVIDER" }],
     response_format: {
       type: "json_schema",
@@ -331,6 +330,7 @@ test("mocked error transport preserves frozen request semantics and performs one
   });
   assert.equal("provider" in (capturedBody as Record<string, unknown>), false);
   assert.equal("temperature" in (capturedBody as Record<string, unknown>), false);
+  assert.equal("seed" in (capturedBody as Record<string, unknown>), false);
 
   const providerSource = readFileSync("server/p01/provider.ts", "utf8");
   assert.match(providerSource, /schemaName: "p01_evidence_scorer_v1_3"/u);
