@@ -1,5 +1,5 @@
 import { getDb } from "@/db";
-import { analysisRuns } from "@/db/schema";
+import { analysisRuns, p01AnalysisResults } from "@/db/schema";
 import {
   AnalysisPipelineError,
   analysisRunAccessErrorResponse,
@@ -7,6 +7,12 @@ import {
   runAnalysisPipeline,
 } from "@/server/analysis-runs";
 import { syncAnalysisToGoogleSheet } from "@/server/google-sheets";
+import {
+  P01InvariantError,
+  P01SchemaValidationError,
+  validateP01Invariants,
+  validateP01Schema,
+} from "@/server/p01/validation";
 import { eq } from "drizzle-orm";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
@@ -15,13 +21,38 @@ export async function GET(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
     await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
-    const rows = await (await getDb())
+    const db = await getDb();
+    const rows = await db
       .select({ status: analysisRuns.status, errorCode: analysisRuns.errorCode })
       .from(analysisRuns)
       .where(eq(analysisRuns.id, analysisRunId))
       .limit(1);
     if (!rows[0]) return Response.json({ error: "ANALYSIS_RUN_NOT_FOUND" }, { status: 404 });
-    return Response.json({ analysisRunId, ...rows[0] }, { headers: { "cache-control": "no-store" } });
+    let validationIssues: Array<{ path: string; code: string }> = [];
+    if (rows[0].status === "analysis_failed" && rows[0].errorCode?.startsWith("P01_")) {
+      const stored = await db
+        .select({ raw: p01AnalysisResults.providerRawResponseJson })
+        .from(p01AnalysisResults)
+        .where(eq(p01AnalysisResults.analysisRunId, analysisRunId))
+        .limit(1);
+      try {
+        const provider = stored[0]?.raw ? JSON.parse(stored[0].raw) as Record<string, unknown> : null;
+        const choices = provider?.choices as Array<{ message?: { content?: unknown } }> | undefined;
+        const content = choices?.[0]?.message?.content;
+        if (typeof content === "string") {
+          const parsed = validateP01Schema(JSON.parse(content));
+          validateP01Invariants(parsed);
+        }
+      } catch (error) {
+        if (error instanceof P01SchemaValidationError || error instanceof P01InvariantError) {
+          validationIssues = error.issues.slice(0, 30).map(({ path, code }) => ({ path, code }));
+        }
+      }
+    }
+    return Response.json(
+      { analysisRunId, ...rows[0], validationIssues },
+      { headers: { "cache-control": "no-store" } },
+    );
   } catch (error) {
     const accessResponse = analysisRunAccessErrorResponse(error);
     return accessResponse ?? Response.json({ error: "ANALYSIS_RUN_STATUS_FAILED" }, { status: 500 });
