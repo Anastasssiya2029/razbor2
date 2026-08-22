@@ -38,7 +38,8 @@ test("provider schema is compacted without weakening local validation", () => {
     additionalProperties: false,
   });
   const serialized = JSON.stringify(compacted);
-  assert.doesNotMatch(serialized, /\$schema|minLength|maxLength|minimum|maximum/u);
+  assert.doesNotMatch(serialized, /\$schema|uniqueItems/u);
+  assert.match(serialized, /maxLength|minimum|maximum/u);
   assert.match(serialized, /#\/\$defs\/shared_1/u);
   assert.ok(isRecordForTest(compacted.$defs));
 });

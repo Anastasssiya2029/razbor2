@@ -56,15 +56,6 @@ type FetchLike = typeof fetch;
 const PROVIDER_UNSUPPORTED_SCHEMA_KEYWORDS = new Set([
   "$schema",
   "$id",
-  "minLength",
-  "maxLength",
-  "pattern",
-  "format",
-  "minimum",
-  "maximum",
-  "multipleOf",
-  "minItems",
-  "maxItems",
   "uniqueItems",
 ]);
 

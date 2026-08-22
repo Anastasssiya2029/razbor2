@@ -1097,8 +1097,29 @@ type CreateDiagnosticResponse = {
 type RunAnalysisResponse = {
   status?: "ready";
   result?: AnalysisResultV1;
+  error?: string;
   message?: string;
 };
+
+type AnalysisRunStatusResponse = {
+  status?: string;
+  errorCode?: string | null;
+  error?: string;
+};
+
+async function readJsonObject<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
 
 function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalysisResult {
   const factualAnswers = [
@@ -1191,12 +1212,44 @@ export default function Home() {
       setAnalysisSlide(0);
       window.scrollTo({ top: 0, behavior: "smooth" });
 
-      const analysisResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
-        method: "POST",
-      });
-      const analysis = (await analysisResponse.json()) as RunAnalysisResponse;
-      if (!analysisResponse.ok || !analysis.result) {
-        throw new Error(analysis.message ?? "Не удалось завершить разбор. Ответы сохранены в кабинете.");
+      const deadlineAt = Date.now() + 15 * 60 * 1000;
+      let analysis: RunAnalysisResponse | null = null;
+      while (Date.now() < deadlineAt) {
+        try {
+          const analysisResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
+            method: "POST",
+          });
+          analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
+          if (analysisResponse.ok && analysis?.result) break;
+          if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
+            throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
+          }
+        } catch (error) {
+          if (error instanceof Error && /завершился ошибкой/u.test(error.message)) throw error;
+        }
+
+        const statusResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
+          method: "GET",
+          headers: { accept: "application/json" },
+        });
+        const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
+        if (status?.status === "analysis_failed") {
+          throw new Error(`Разбор завершился ошибкой${status.errorCode ? ` (${status.errorCode})` : ""}. Ответы сохранены в кабинете.`);
+        }
+        if (status?.status === "ready") {
+          const resultResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/result`, {
+            headers: { accept: "application/json" },
+          });
+          const ready = await readJsonObject<RunAnalysisResponse>(resultResponse);
+          if (resultResponse.ok && ready?.result) {
+            analysis = ready;
+            break;
+          }
+        }
+        await wait(3000);
+      }
+      if (!analysis?.result) {
+        throw new Error("Анализ занимает больше обычного. Ответы сохранены; результат появится в кабинете после завершения.");
       }
       setRealAnalysisResult(analysis.result);
       setCurrentStage(1);
