@@ -15,7 +15,7 @@ import {
   readSessionToken,
   sessionCookie,
 } from "../server/auth/session";
-import { SupabaseAuthError, signInWithPassword } from "../server/auth/supabase";
+import { SupabaseAuthError, signInWithPassword, updatePasswordWithRecoveryToken } from "../server/auth/supabase";
 
 test("initial access registry has one architect, two admins and two managers", () => {
   assert.deepEqual(
@@ -87,6 +87,46 @@ test("Supabase provider errors are fail-closed and do not expose upstream text",
     (error: unknown) => {
       assert.equal(error instanceof SupabaseAuthError, true);
       assert.equal((error as SupabaseAuthError).code, "INVALID_CREDENTIALS");
+      assert.equal((error as Error).message.includes("provider-secret-detail"), false);
+      return true;
+    },
+  );
+});
+
+test("Supabase password recovery updates only the password for the bearer recovery session", async () => {
+  let seenUrl = "";
+  let seenMethod = "";
+  let seenAuthorization = "";
+  let seenBody = "";
+  await updatePasswordWithRecoveryToken(
+    { SUPABASE_URL: "https://identity.example", SUPABASE_ANON_KEY: "public-anon" },
+    "recovery-access-token",
+    "new-private-password",
+    async (input, init) => {
+      seenUrl = String(input);
+      seenMethod = String(init?.method);
+      seenAuthorization = new Headers(init?.headers).get("authorization") ?? "";
+      seenBody = String(init?.body);
+      return Response.json({ id: "auth-subject" });
+    },
+  );
+  assert.equal(seenUrl, "https://identity.example/auth/v1/user");
+  assert.equal(seenMethod, "PUT");
+  assert.equal(seenAuthorization, "Bearer recovery-access-token");
+  assert.deepEqual(JSON.parse(seenBody), { password: "new-private-password" });
+});
+
+test("Supabase password recovery errors do not expose upstream text", async () => {
+  await assert.rejects(
+    updatePasswordWithRecoveryToken(
+      { SUPABASE_URL: "https://identity.example", SUPABASE_ANON_KEY: "public-anon" },
+      "expired-recovery-access-token",
+      "new-private-password",
+      async () => new Response("provider-secret-detail", { status: 401 }),
+    ),
+    (error: unknown) => {
+      assert.equal(error instanceof SupabaseAuthError, true);
+      assert.equal((error as SupabaseAuthError).code, "INVALID_RECOVERY_TOKEN");
       assert.equal((error as Error).message.includes("provider-secret-detail"), false);
       return true;
     },

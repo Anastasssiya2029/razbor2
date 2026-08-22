@@ -3,7 +3,7 @@ type FetchLike = typeof fetch;
 
 export class SupabaseAuthError extends Error {
   constructor(
-    readonly code: "AUTH_NOT_CONFIGURED" | "INVALID_CREDENTIALS" | "SIGNUP_FAILED" | "PROVIDER_UNAVAILABLE",
+    readonly code: "AUTH_NOT_CONFIGURED" | "INVALID_CREDENTIALS" | "SIGNUP_FAILED" | "INVALID_RECOVERY_TOKEN" | "PROVIDER_UNAVAILABLE",
     message: string,
   ) {
     super(message);
@@ -101,6 +101,38 @@ export function signUpWithPassword(
   fetchImpl: FetchLike = fetch,
 ): Promise<SupabaseIdentity> {
   return providerRequest(environment, "/auth/v1/signup", credentials, "SIGNUP_FAILED", fetchImpl);
+}
+
+export async function updatePasswordWithRecoveryToken(
+  environment: SupabaseAuthEnvironment,
+  accessToken: string,
+  password: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<void> {
+  const config = providerConfig(environment);
+  let response: Response;
+  try {
+    response = await fetchImpl(`${config.baseUrl}/auth/v1/user`, {
+      method: "PUT",
+      headers: {
+        apikey: config.anonKey,
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ password }),
+    });
+  } catch {
+    throw new SupabaseAuthError("PROVIDER_UNAVAILABLE", "Сервис входа временно недоступен.");
+  }
+
+  if (!response.ok) {
+    throw new SupabaseAuthError(
+      response.status >= 500 ? "PROVIDER_UNAVAILABLE" : "INVALID_RECOVERY_TOKEN",
+      response.status >= 500
+        ? "Сервис входа временно недоступен."
+        : "Ссылка восстановления недействительна или устарела.",
+    );
+  }
 }
 
 export async function loadSupabaseAuthEnvironment(): Promise<SupabaseAuthEnvironment> {

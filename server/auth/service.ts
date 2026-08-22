@@ -16,6 +16,7 @@ import {
   loadSupabaseAuthEnvironment,
   signInWithPassword,
   signUpWithPassword,
+  updatePasswordWithRecoveryToken,
 } from "./supabase";
 import type { AuthenticatedAppUser } from "./types";
 
@@ -46,6 +47,22 @@ function validateCredentials(payload: unknown): { email: string; password: strin
   return { email, password };
 }
 
+function validatePasswordReset(payload: unknown): { accessToken: string; password: string } {
+  if (!payload || typeof payload !== "object") {
+    throw new AppAuthError("INVALID_INPUT", 400, "Введите новый пароль.");
+  }
+  const record = payload as Record<string, unknown>;
+  const accessToken = typeof record.accessToken === "string" ? record.accessToken.trim() : "";
+  const password = typeof record.password === "string" ? record.password : "";
+  if (accessToken.length < 32 || accessToken.length > 8192) {
+    throw new AppAuthError("INVALID_INPUT", 400, "Ссылка восстановления недействительна или устарела.");
+  }
+  if (password.length < 6 || password.length > 128) {
+    throw new AppAuthError("INVALID_INPUT", 400, "Пароль должен содержать от 6 до 128 символов.");
+  }
+  return { accessToken, password };
+}
+
 async function issueSession(userId: string): Promise<{ token: string; expiresAt: number }> {
   const token = createSessionToken();
   const tokenHash = await hashSessionToken(token);
@@ -68,6 +85,15 @@ export async function registerInvitedAccount(payload: unknown): Promise<{ confir
   if (!invited) throw new AppAuthError("ACCESS_DENIED", 403, "Для этого email нет приглашения.");
   await signUpWithPassword(await loadSupabaseAuthEnvironment(), credentials);
   return { confirmationRequired: true };
+}
+
+export async function resetPassword(payload: unknown): Promise<void> {
+  const reset = validatePasswordReset(payload);
+  await updatePasswordWithRecoveryToken(
+    await loadSupabaseAuthEnvironment(),
+    reset.accessToken,
+    reset.password,
+  );
 }
 
 export async function getAuthenticatedUser(request: Request): Promise<AuthenticatedAppUser | null> {

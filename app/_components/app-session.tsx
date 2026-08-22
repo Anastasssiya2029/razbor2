@@ -13,6 +13,11 @@ export function useAppSession(options: { redirectToLogin?: boolean } = {}) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    const recovery = new URLSearchParams(window.location.hash.replace(/^#/u, ""));
+    if (recovery.get("type") === "recovery" && recovery.has("access_token")) {
+      window.location.replace(`/reset-password${window.location.hash}`);
+      return;
+    }
     let active = true;
     void fetch("/api/auth/session", { cache: "no-store" })
       .then(async (response) => {

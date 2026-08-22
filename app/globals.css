@@ -87,6 +87,8 @@ body {
 .auth-message,
 .team-message { margin: 15px 0 0; padding: 12px 14px; color: #5d2461; background: #fbf1fb; border-radius: 10px; font-size: 14px; }
 .auth-switch { width: 100%; margin-top: 18px; padding: 8px; color: #7b277d; background: transparent; border: 0; cursor: pointer; font-weight: 750; }
+.auth-primary-link { display: flex; justify-content: center; text-decoration: none; }
+.auth-return-link { display: block; text-align: center; text-decoration: none; }
 
 .admin-shell { min-height: 100vh; padding: 26px clamp(18px, 4vw, 56px) 60px; }
 .admin-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(113, 29, 104, .1); }
