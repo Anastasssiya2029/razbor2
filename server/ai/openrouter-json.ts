@@ -204,7 +204,10 @@ export async function completeOpenRouterJson(options: {
     headers,
     body: JSON.stringify({
       model: options.model,
-      temperature: 0,
+      // GPT-5.1 does not advertise `temperature` support through OpenRouter.
+      // A fixed seed preserves deterministic sampling without sending an
+      // unsupported parameter that makes every provider attempt fail with 400.
+      seed: 0,
       messages: [{ role: "system", content: options.systemPrompt }],
       response_format: options.structuredOutput
         ? {
