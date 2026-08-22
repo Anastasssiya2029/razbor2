@@ -2,7 +2,7 @@ import { getDb } from "@/db";
 import { analysisRuns, p01AnalysisResults, p02AnalysisResults, targetArchetypeResults } from "@/db/schema";
 import type { TargetConfigurationResult } from "@/server/7k";
 import type { SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { TargetArchetypeResourceVersions } from "@/server/stage4/types";
 import { eq, sql } from "drizzle-orm";
 import type { P02UpstreamSource } from "./projections";
@@ -128,7 +128,7 @@ export function createD1P02Repository(): P02Repository {
         p01PromptVersion: row.p01PromptVersion,
         p01OutputSchemaVersion: row.p01OutputSchemaVersion,
         p01InputHash: row.p01InputHash,
-        p01Result: parseNullable<P01ResultV1_4_1>(row.p01ResultJson),
+        p01Result: parseNullable<P01ResultV1_4_2>(row.p01ResultJson),
         p01FailureCode: row.p01FailureCode,
         targetStage: stage4FromRow(row.target),
       };

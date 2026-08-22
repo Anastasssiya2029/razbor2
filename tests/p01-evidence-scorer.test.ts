@@ -17,7 +17,7 @@ import type {
   P01Provider,
   P01ProviderRequest,
   P01ProviderResponse,
-  P01ResultV1_4_1,
+  P01ResultV1_4_2,
 } from "../server/p01/types";
 import {
   P01InvariantError,
@@ -76,7 +76,7 @@ function diagnosticInput(overrides: Partial<DiagnosticInputV1_2> = {}): Diagnost
   };
 }
 
-function validP01Fixture(): P01ResultV1_4_1 {
+function validP01Fixture(): P01ResultV1_4_2 {
   const evidence = {
     id: "E01",
     source_field: "current.products",
@@ -105,7 +105,7 @@ function validP01Fixture(): P01ResultV1_4_1 {
         missing_evidence: ["Повторяемый измеримый результат"],
       },
     ]),
-  ) as P01ResultV1_4_1["current7k"];
+  ) as P01ResultV1_4_2["current7k"];
   const history = Object.fromEntries(
     MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [
       scenarioId,
@@ -119,10 +119,10 @@ function validP01Fixture(): P01ResultV1_4_1 {
         confidence: "low",
       },
     ]),
-  ) as P01ResultV1_4_1["moneyNowHistory"];
+  ) as P01ResultV1_4_2["moneyNowHistory"];
 
   return {
-    promptVersion: "P-01.v1.4.1", schemaVersion: "1.4",
+    promptVersion: "P-01.v1.4.2", schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger: [evidence],
     current7k,
@@ -174,14 +174,14 @@ function hasInvariantCode(code: string) {
 }
 
 function addMoneyNowFactEvidence(
-  fixture: P01ResultV1_4_1,
+  fixture: P01ResultV1_4_2,
   options: {
-    factCode: keyof P01ResultV1_4_1["moneyNowFacts"];
+    factCode: keyof P01ResultV1_4_2["moneyNowFacts"];
     evidenceId: string;
-    timeScope: P01ResultV1_4_1["evidenceLedger"][number]["time_scope"];
-    valence?: P01ResultV1_4_1["evidenceLedger"][number]["valence"];
-    evidenceType?: P01ResultV1_4_1["evidenceLedger"][number]["evidence_type"];
-    state?: P01ResultV1_4_1["moneyNowFacts"][keyof P01ResultV1_4_1["moneyNowFacts"]]["state"];
+    timeScope: P01ResultV1_4_2["evidenceLedger"][number]["time_scope"];
+    valence?: P01ResultV1_4_2["evidenceLedger"][number]["valence"];
+    evidenceType?: P01ResultV1_4_2["evidenceLedger"][number]["evidence_type"];
+    state?: P01ResultV1_4_2["moneyNowFacts"][keyof P01ResultV1_4_2["moneyNowFacts"]]["state"];
   },
 ): void {
   fixture.evidenceLedger.push({
@@ -229,7 +229,7 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
   const files = [
     "server/7k/config/scoring-rules.v2.0.json",
     "server/7k/config/evidence-routing.v3.0.ts",
-    "server/7k/config/target-model-dictionary.v2.1.ts",
+    "server/7k/config/target-model-dictionary.v2.2.ts",
     "server/7k/config/money-now-history-map.v2.2.ts",
     "server/7k/prompts/p01.v1.4.ts",
     "schemas/p01-evidence-scorer.output.v1.4.schema.json",
@@ -251,15 +251,15 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
   assert.ok("products_method" in legacy.current7k, "raw legacy object must not be mutated");
 });
 
-test("P-01 methodology registry pins the v1.4.1 extraction resources and 77 scoring levels", () => {
+test("P-01 methodology registry pins the v1.4.2 extraction resources and 77 scoring levels", () => {
   assert.deepEqual(getP01ResourceVersions(), {
     scoringRules: "scoring-rules.v2.0",
     evidenceRouting: "evidence-routing.v3.0",
-    targetModelDictionary: "target-model-dictionary.v2.1",
+    targetModelDictionary: "target-model-dictionary.v2.2",
     moneyNowHistoryMap: "money-now-history-map.v2.2",
     moneyNowFactExtraction: "money-now-fact-extraction.v1",
   });
-  assert.equal(SEVEN_K_METHODOLOGY_REGISTRY.aiModules.p01.promptVersion, "P-01.v1.4.1");
+  assert.equal(SEVEN_K_METHODOLOGY_REGISTRY.aiModules.p01.promptVersion, "P-01.v1.4.2");
   const levels = ELEMENTS.flatMap((elementId) => SCORING_RULES.elements[elementId].levels);
   assert.equal(levels.length, 77);
   assert.equal(new Set(levels.map((level) => level.ruleId)).size, 77);
@@ -710,6 +710,27 @@ test("production P-01 prompt injects only the extraction dictionary", () => {
   assert.doesNotMatch(serialized, /materialConditionPrimaryCodesByScenario/u);
 });
 
+test("production P-01 prompt separates the next-level target from distant autonomy", () => {
+  const prompt = buildP01SystemPrompt(diagnosticInput());
+  const startTag = "<TARGET_MODEL_DICTIONARY>";
+  const endTag = "</TARGET_MODEL_DICTIONARY>";
+  const start = prompt.indexOf(startTag) + startTag.length;
+  const end = prompt.indexOf(endTag);
+  const dictionary = JSON.parse(prompt.slice(start, end).trim()) as {
+    nextLevelTargetPolicy: { scoredHorizon: string; laterHorizon: string };
+    delegationMaturityLadder: Array<{ level: number; code: string }>;
+  };
+
+  assert.equal(dictionary.nextLevelTargetPolicy.scoredHorizon, "horizon_2_next_level");
+  assert.equal(dictionary.nextLevelTargetPolicy.laterHorizon, "horizon_3_later_vision");
+  assert.deepEqual(
+    dictionary.delegationMaturityLadder.map(({ level }) => level),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  );
+  assert.match(prompt, /Дальнюю автономность, масштаб и будущую роль владельца сохраняй только в desiredRoleSummary/u);
+  assert.match(prompt, /не должны повышать target через capability или modifier/u);
+});
+
 test("runner retries technical/schema failures once and invariant failures once", async () => {
   const valid = validP01Fixture();
   const technical = new QueueProvider(new Error("temporary network"), valid);
@@ -812,7 +833,7 @@ test("blocked_by_insufficient_data is stored as a blocked outcome without retry"
 test("lifecycle creates a validated submission directly as queued and exposes only the P-01 next step", () => {
   const route = readFileSync("app/api/diagnostics/route.ts", "utf8");
   assert.match(route, /normalizeDiagnosticSubmission\(payload\)[\s\S]*status: "queued"/u);
-  assert.match(route, /module: "P-01\.v1\.4\.1"/u);
+  assert.match(route, /module: "P-01\.v1\.4\.2"/u);
   assert.doesNotMatch(route, /P-02|P-03|P-04/u);
 });
 

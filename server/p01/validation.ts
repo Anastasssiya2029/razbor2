@@ -10,11 +10,11 @@ import {
   MONEY_NOW_MATERIAL_CONDITION_PRIMARY_CODES,
 } from "@/server/7k/config/money-now-selector-contract.v1";
 import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
-import { MODEL_FAMILIES, BASE_MODEL_FAMILIES } from "@/server/7k/config/target-rules.v2.1";
+import { MODEL_FAMILIES, BASE_MODEL_FAMILIES } from "@/server/7k/config/target-rules.v2.2";
 import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
-import { TARGET_RULE_CODE_SET } from "@/server/7k/config/target-model-dictionary.v2.1";
+import { TARGET_RULE_CODE_SET } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { SEVEN_K_ELEMENT_IDS } from "@/server/7k/types";
-import type { P01ResultV1_4_1 } from "./types";
+import type { P01ResultV1_4_2 } from "./types";
 
 export type P01ValidationIssue = {
   path: string;
@@ -27,7 +27,7 @@ export class P01SchemaValidationError extends Error {
   readonly issues: P01ValidationIssue[];
 
   constructor(issues: P01ValidationIssue[]) {
-    super("P-01 output does not satisfy schema v1.4 / prompt P-01.v1.4.1");
+    super("P-01 output does not satisfy schema v1.4 / prompt P-01.v1.4.2");
     this.name = "P01SchemaValidationError";
     this.issues = issues;
   }
@@ -63,11 +63,11 @@ function schemaIssue(error: ErrorObject): P01ValidationIssue {
   };
 }
 
-export function validateP01Schema(value: unknown): P01ResultV1_4_1 {
+export function validateP01Schema(value: unknown): P01ResultV1_4_2 {
   if (!validateSchema(value)) {
     throw new P01SchemaValidationError((validateSchema.errors ?? []).map(schemaIssue));
   }
-  return value as P01ResultV1_4_1;
+  return value as P01ResultV1_4_2;
 }
 
 function findForbiddenLegacyId(value: unknown, path = ""): P01ValidationIssue[] {
@@ -100,7 +100,7 @@ function addDanglingEvidenceIssues(
   });
 }
 
-function allEvidenceReferences(result: P01ResultV1_4_1): Array<{ path: string; ids: string[] }> {
+function allEvidenceReferences(result: P01ResultV1_4_2): Array<{ path: string; ids: string[] }> {
   const references: Array<{ path: string; ids: string[] }> = [];
   for (const elementId of SEVEN_K_ELEMENT_IDS) {
     const score = result.current7k[elementId];
@@ -139,7 +139,7 @@ function allEvidenceReferences(result: P01ResultV1_4_1): Array<{ path: string; i
 
 function isAllowedFactEvidenceScope(
   policy: MoneyNowFactEvidencePolicy,
-  timeScope: P01ResultV1_4_1["evidenceLedger"][number]["time_scope"],
+  timeScope: P01ResultV1_4_2["evidenceLedger"][number]["time_scope"],
 ): boolean {
   if (timeScope === "hypothesis") return false;
   if (policy === "current_required") return timeScope === "current";
@@ -153,7 +153,7 @@ function isAllowedFactEvidenceScope(
   );
 }
 
-export function validateP01Invariants(result: P01ResultV1_4_1): P01ResultV1_4_1 {
+export function validateP01Invariants(result: P01ResultV1_4_2): P01ResultV1_4_2 {
   const issues = findForbiddenLegacyId(result);
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));
   if (evidenceById.size !== result.evidenceLedger.length) {
@@ -201,7 +201,7 @@ export function validateP01Invariants(result: P01ResultV1_4_1): P01ResultV1_4_1 
     const fact = result.moneyNowFacts[factCode];
     const factEvidence = fact.evidence_ids
       .map((id) => evidenceById.get(id))
-      .filter((evidence): evidence is P01ResultV1_4_1["evidenceLedger"][number] =>
+      .filter((evidence): evidence is P01ResultV1_4_2["evidenceLedger"][number] =>
         evidence !== undefined,
       );
     const path = `/moneyNowFacts/${factCode}`;
@@ -274,7 +274,7 @@ export function validateP01Invariants(result: P01ResultV1_4_1): P01ResultV1_4_1 
   });
   target.activatedCapabilities.forEach((capability, index) => {
     if (!TARGET_RULE_CODE_SET.has(capability.code)) {
-      issues.push({ path: `/targetIntent/activatedCapabilities/${index}/code`, code: "unknown_capability", message: `Capability ${capability.code} отсутствует в target-rules.v2.1.` });
+      issues.push({ path: `/targetIntent/activatedCapabilities/${index}/code`, code: "unknown_capability", message: `Capability ${capability.code} отсутствует в target-rules.v2.2.` });
     }
   });
 
@@ -386,7 +386,7 @@ export function validateP01Invariants(result: P01ResultV1_4_1): P01ResultV1_4_1 
   return result;
 }
 
-export function p01SanityErrors(result: P01ResultV1_4_1): P01ValidationIssue[] {
+export function p01SanityErrors(result: P01ResultV1_4_2): P01ValidationIssue[] {
   return result.sanityChecks
     .filter((check) => check.severity === "error")
     .map((check, index) => ({

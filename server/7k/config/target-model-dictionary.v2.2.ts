@@ -1,13 +1,15 @@
 import {
   BASE_MODEL_FAMILIES,
   CAPABILITY_FLOORS,
+  DELEGATION_MATURITY_LADDER,
   DESIRED_OWNER_ROLES,
   MODEL_FAMILIES,
+  NEXT_LEVEL_TARGET_POLICY,
   TARGET_MODIFIER_FLOORS,
-} from "./target-rules.v2.1";
+} from "./target-rules.v2.2";
 
 export const TARGET_MODEL_DICTIONARY_RESOURCE_VERSION =
-  "target-model-dictionary.v2.1" as const;
+  "target-model-dictionary.v2.2" as const;
 
 export const TARGET_MODEL_DICTIONARY = {
   version: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
@@ -27,6 +29,8 @@ export const TARGET_MODEL_DICTIONARY = {
       { code, description: definition.description },
     ]),
   ),
+  nextLevelTargetPolicy: NEXT_LEVEL_TARGET_POLICY,
+  delegationMaturityLadder: DELEGATION_MATURITY_LADDER,
   desiredOwnerRoles: DESIRED_OWNER_ROLES,
 } as const;
 

@@ -14,7 +14,7 @@ import { validateDiagnosticInput } from "@/lib/diagnostic-input";
 import type { BusinessArchetypeResult, TargetConfigurationInput, TargetConfigurationResult } from "@/server/7k";
 import type { SevenKScores } from "@/server/7k/types";
 import { storedMoneyNowSelectionFromRow } from "@/server/money-now-selector/repository";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import { storedP02ResultFromRow } from "@/server/p02/repository";
 import { storedP03ResultFromRow } from "@/server/p03/repository";
 import type { TargetArchetypeResourceVersions } from "@/server/stage4/types";
@@ -172,7 +172,7 @@ export function createD1P04Repository(): P04Repository {
           id: p01Row?.id ?? null,
           promptVersion: p01Row?.promptVersion ?? null,
           outputSchemaVersion: p01Row?.outputSchemaVersion ?? null,
-          result: parseNullable<P01ResultV1_4_1>(p01Row?.resultJson ?? null),
+          result: parseNullable<P01ResultV1_4_2>(p01Row?.resultJson ?? null),
           failureCode: p01Row?.failureCode ?? null,
         },
         targetStage: targetRows[0] ? storedTarget(targetRows[0]) : null,

@@ -1,13 +1,13 @@
 import { ARCHETYPES_RESOURCE_VERSION } from "./config/archetypes.v1";
 import { ELEMENTS_RESOURCE_VERSION } from "./config/elements.v1";
 import { MONEY_NOW_RESOURCE_VERSION } from "./config/money-now.v2.2";
-import { TARGET_RULES_RESOURCE_VERSION } from "./config/target-rules.v2.1";
+import { TARGET_RULES_RESOURCE_VERSION } from "./config/target-rules.v2.2";
 import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "./config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "./config/money-now-history-map.v2.2";
 import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "./config/money-now-fact-extraction.v1";
 import { MONEY_NOW_SELECTOR_CONTRACT_VERSION } from "./config/money-now-selector-contract.v1";
 import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
-import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.1";
+import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.2";
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
 import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
 import { P03_PROMPT_SHA256, P03_PROMPT_VERSION } from "./prompts/p03.v1.5";

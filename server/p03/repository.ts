@@ -6,7 +6,7 @@ import {
   p03PrescriptionResults,
 } from "@/db/schema";
 import { storedMoneyNowSelectionFromRow } from "@/server/money-now-selector/repository";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import { eq, sql } from "drizzle-orm";
 import type { P03Repository, P03Source, StoredP03Result } from "./stage-types";
 import type {
@@ -104,7 +104,7 @@ export function createD1P03Repository(): P03Repository {
           id: row.p01Id,
           promptVersion: row.p01PromptVersion,
           outputSchemaVersion: row.p01OutputSchemaVersion,
-          result: parseNullable<P01ResultV1_4_1>(row.p01ResultJson),
+          result: parseNullable<P01ResultV1_4_2>(row.p01ResultJson),
           failureCode: row.p01FailureCode,
         },
         moneyNowSelection: selectionRows[0]

@@ -119,7 +119,7 @@ export type P02RuleVersions = {
   levelCapabilities: "scoring-rules.v2.0";
   constraintRules: "constraint-rules.v2.1";
   dependencyRules: "dependency-rules.v2.1";
-  targetRules: "target-rules.v2.1";
+  targetRules: "target-rules.v2.2";
 };
 
 export type P02ProviderRequest = {

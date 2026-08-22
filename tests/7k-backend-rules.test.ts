@@ -44,7 +44,7 @@ test("declares the exact versioned 7K server resources", () => {
     elements: "elements.v1",
     transitions: "transitions-70.v1",
     archetypes: "archetypes.v1",
-    targetRules: "target-rules.v2.1",
+    targetRules: "target-rules.v2.2",
     moneyNow: "money-now.v2.2",
   });
   assert.equal(ARCHETYPES_RESOURCE_VERSION, "archetypes.v1");

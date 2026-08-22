@@ -15,7 +15,7 @@ import { runP02Stage } from "../server/p02/stage-runner";
 import type { P02Repository, StoredP02Result } from "../server/p02/stage-types";
 import type { P02Provider, P02ProviderRequest, P02ProviderResponse, P02ResultV1_3 } from "../server/p02/types";
 import { P02InvariantError, P02SchemaValidationError, validateP02Invariants, validateP02Schema } from "../server/p02/validation";
-import type { P01ResultV1_4_1 } from "../server/p01/types";
+import type { P01ResultV1_4_2 } from "../server/p01/types";
 
 const SCORES: SevenKScores = { authenticity: 4, audience: 4, product_method: 2, sales_technology: 3, funnel: 2, blog: 1, team: 1 };
 
@@ -30,7 +30,7 @@ function diagnostic(): DiagnosticInputV1_2 {
   };
 }
 
-function p01(scores = SCORES): P01ResultV1_4_1 {
+function p01(scores = SCORES): P01ResultV1_4_2 {
   const ledger = SEVEN_K_ELEMENT_IDS.map((id, index) => ({
     id: `E0${index + 1}`,
     source_field: index === 3 ? "experience.failures" : `project.${id}`,
@@ -46,13 +46,13 @@ function p01(scores = SCORES): P01ResultV1_4_1 {
     matched_level_rule_id: `SR2-${id.toUpperCase()}-${String(scores[id]).padStart(2, "0")}`,
     next_level_rule_id: scores[id] < 10 ? `SR2-${id.toUpperCase()}-${String(scores[id] + 1).padStart(2, "0")}` : null,
     evidence_ids: [`E0${index + 1}`], counterevidence_ids: [], why_not_higher: "Не доказано", contradiction: null, historical_asset: null, missing_evidence: [],
-  }])) as P01ResultV1_4_1["current7k"];
+  }])) as P01ResultV1_4_2["current7k"];
   const history = Object.fromEntries(MONEY_NOW_SCENARIO_IDS.map((id) => [id, {
     history_status: "not_reported", new_material_condition: "not_applicable", condition_codes: [], summary: null,
     evidence_ids: [], new_condition_evidence_ids: [], confidence: "low",
-  }])) as P01ResultV1_4_1["moneyNowHistory"];
+  }])) as P01ResultV1_4_2["moneyNowHistory"];
   return {
-    promptVersion: "P-01.v1.4.1", schemaVersion: "1.4", analysisStatus: "ok", evidenceLedger: ledger, current7k,
+    promptVersion: "P-01.v1.4.2", schemaVersion: "1.4", analysisStatus: "ok", evidenceLedger: ledger, current7k,
     businessMap: {
       economics: "120 000 ₽", products: "Пакет не объяснён", audienceResult: "Эксперты", acquisition: "Реклама",
       sales: "Встречи без оплат", assets: "Telegram", operations: "Лично", uniqueness: "Стратегия",
@@ -62,13 +62,13 @@ function p01(scores = SCORES): P01ResultV1_4_1 {
     moneyChainFacts: [{ stage: "payment", summary: "Встречи без оплат", value: 0, denominator: 4, conversionPct: 0, period: "месяц", evidence_ids: ["E04"] }],
     moneyNowSignals: [],
     moneyNowFacts: unknownMoneyNowFacts(), moneyNowHistory: history,
-    targetIntent: { rawBusinessModel: "Пакетная работа", normalizedModelFamily: "package_1to1", primaryModelFamily: "package_1to1", secondaryModelFamilies: [], activatedCapabilities: [], desiredRoleSummary: null, desiredSystemWeeklyHours: null, confidence: "medium", missing_evidence: [] },
+    targetIntent: { rawBusinessModel: "Пакетная работа", normalizedModelFamily: "package_1to1", primaryModelFamily: "package_1to1", secondaryModelFamilies: [], activatedCapabilities: [{ code: "regular_personal_sales", reason: "Нужна регулярная личная технология продаж.", source_fields: ["target.businessModel"] }], desiredRoleSummary: null, desiredSystemWeeklyHours: null, confidence: "medium", missing_evidence: [] },
     sanityChecks: [],
   };
 }
 
 function stage4Source(result = p01()): Stage4Source {
-  return { analysisRunId: "run-1", diagnosticId: "diag-1", runStatus: "targeting", normalizedInput: diagnostic(), p01AnalysisResultId: "p01-1", p01PromptVersion: "P-01.v1.4.1", p01OutputSchemaVersion: "1.4", p01InputHash: "p01-input", p01Result: result, p01FailureCode: null, p01FailureMessage: null };
+  return { analysisRunId: "run-1", diagnosticId: "diag-1", runStatus: "targeting", normalizedInput: diagnostic(), p01AnalysisResultId: "p01-1", p01PromptVersion: "P-01.v1.4.2", p01OutputSchemaVersion: "1.4", p01InputHash: "p01-input", p01Result: result, p01FailureCode: null, p01FailureMessage: null };
 }
 
 function upstream(result = p01()): P02UpstreamSource {
@@ -78,7 +78,7 @@ function upstream(result = p01()): P02UpstreamSource {
     currentScores: computation.currentScores, targetInput: computation.targetInput, target: computation.target, archetype: computation.archetype,
     resourceVersions: computation.resourceVersions, deterministicInputHash: "stage4-input", startedAt: "2026-08-18T10:00:00.000Z", completedAt: "2026-08-18T10:00:01.000Z", failureCode: null, failureMessage: null,
   };
-  return { analysisRunId: "run-1", diagnosticId: "diag-1", runStatus: "strategizing", p01AnalysisResultId: "p01-1", p01PromptVersion: "P-01.v1.4.1", p01OutputSchemaVersion: "1.4", p01InputHash: "p01-input", p01Result: result, p01FailureCode: null, targetStage };
+  return { analysisRunId: "run-1", diagnosticId: "diag-1", runStatus: "strategizing", p01AnalysisResultId: "p01-1", p01PromptVersion: "P-01.v1.4.2", p01OutputSchemaVersion: "1.4", p01InputHash: "p01-input", p01Result: result, p01FailureCode: null, targetStage };
 }
 
 function output(): P02ResultV1_3 {

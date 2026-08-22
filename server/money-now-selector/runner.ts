@@ -78,7 +78,7 @@ function selectionSnapshot(
 ): MoneyNowSelectionSnapshot {
   return {
     ...resourceFields(),
-    p01PromptVersion: "P-01.v1.4.1",
+    p01PromptVersion: "P-01.v1.4.2",
     selectionStatus: decision.selectionStatus,
     selectedScenario: decision.selectedScenario,
     candidateTrace: decision.candidateTrace,

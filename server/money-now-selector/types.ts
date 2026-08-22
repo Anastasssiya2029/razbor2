@@ -5,24 +5,24 @@ import type {
   MoneyNowSelectorInputV1_1,
 } from "@/server/7k/money-now-selector";
 export type { MoneyNowSelectorInputV1_1 } from "@/server/7k/money-now-selector";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { ResolvedTransitionPlan } from "@/server/task-resolver/types";
 
 export const MONEY_NOW_SELECTOR_STAGE_VERSION =
   "money-now-selector-stage.v1" as const;
 export const MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256 =
-  "3928d327b7aac2274d67f069f114fa8e65cd7bce13082b696c824756aeaf19f6" as const;
+  "caef74cee52cfd061fdf0e962d9624fb8ff2024d7a515493ce2c6e48ca91ad5c" as const;
 export const MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256 =
-  "2a95a374673df6e98ca2c2080fcc00ab4477b0c6d656776870a930552418f746" as const;
+  "85c9b26e03f7583e3d46f995be4cf400b8f2bfcfc2842675627ae9497041045b" as const;
 
 export type MoneyNowSelectionSnapshot = {
   stageVersion: typeof MONEY_NOW_SELECTOR_STAGE_VERSION;
-  selectorContractVersion: "money-now-selector-contract.v1.1";
+  selectorContractVersion: "money-now-selector-contract.v1.2";
   selectorContractJsonSha256: typeof MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256;
   selectorContractTsSha256: typeof MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256;
   businessMethodologyVersion: "money-now.v2.2";
   factExtractionVersion: "money-now-fact-extraction.v1";
-  p01PromptVersion: "P-01.v1.4.1";
+  p01PromptVersion: "P-01.v1.4.2";
   selectionStatus: "selected" | "no_eligible_scenario";
   selectedScenario: MoneyNowSelectedScenario | null;
   candidateTrace: MoneyNowCandidateTrace[];
@@ -56,7 +56,7 @@ export type MoneyNowSelectorSource = {
     promptVersion: string | null;
     outputSchemaVersion: string | null;
     inputHash: string | null;
-    result: P01ResultV1_4_1 | null;
+    result: P01ResultV1_4_2 | null;
     failureCode: string | null;
   };
   taskResolver: {
@@ -90,7 +90,7 @@ export type StoredMoneyNowSelection = {
   taskResolverPlanId: string | null;
   taskResolverPlanHash: string | null;
   stageVersion: typeof MONEY_NOW_SELECTOR_STAGE_VERSION;
-  selectorContractVersion: "money-now-selector-contract.v1.1";
+  selectorContractVersion: "money-now-selector-contract.v1.2";
   selectorContractJsonSha256: typeof MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256;
   selectorContractTsSha256: typeof MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256;
   businessMethodologyVersion: "money-now.v2.2";

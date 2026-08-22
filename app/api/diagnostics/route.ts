@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         nextStep: {
           method: "POST",
           href: `/api/analysis-runs/${created.analysisRunId}/p01`,
-          module: "P-01.v1.4.1",
+          module: "P-01.v1.4.2",
         },
         schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
         methodologyVersion: METHODOLOGY_VERSION,

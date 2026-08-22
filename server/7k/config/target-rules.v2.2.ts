@@ -1,6 +1,6 @@
 import type { SevenKElementId, SevenKPartialScores, SevenKScores } from "../types";
 
-export const TARGET_RULES_RESOURCE_VERSION = "target-rules.v2.1" as const;
+export const TARGET_RULES_RESOURCE_VERSION = "target-rules.v2.2" as const;
 
 export const BASE_MODEL_FAMILIES = [
   "single_service",
@@ -31,10 +31,10 @@ export const BASE_MODEL_PROFILES = {
   },
   package_1to1: {
     authenticity: 4,
-    audience: 5,
+    audience: 4,
     product_method: 3,
-    sales_technology: 5,
-    funnel: 4,
+    sales_technology: 4,
+    funnel: 3,
     blog: 0,
     team: 0,
   },
@@ -185,6 +185,32 @@ export const CAPABILITY_FLOORS = {
 } as const satisfies Record<string, CapabilityFloorDefinition>;
 
 export type CapabilityCode = keyof typeof CAPABILITY_FLOORS;
+
+export const DELEGATION_MATURITY_LADDER = [
+  { level: 1, code: "ai_for_owner", meaning: "AI помогает владельцу выполнять отдельные рабочие задачи." },
+  { level: 2, code: "specialist_contractors", meaning: "Отдельные функции выполняют подрядчики." },
+  { level: 3, code: "regular_freelancers", meaning: "Повторяемые задачи закреплены за регулярными исполнителями." },
+  { level: 4, code: "assistant_ai_team", meaning: "Постоянный ассистент и AI поддерживают владельца." },
+  { level: 5, code: "partial_process_delegation", meaning: "Команде переданы задачи и части процессов." },
+  { level: 6, code: "process_result_ownership", meaning: "Команде переданы процессы целиком и ответственность за результат." },
+  { level: 7, code: "ai_enhanced_employees", meaning: "Ключевые сотрудники системно используют собственных AI-помощников." },
+  { level: 8, code: "function_heads", meaning: "Крупные функции переданы руководителям направлений." },
+  { level: 9, code: "management_layer", meaning: "Владелец управляет бизнесом только через руководителей." },
+  { level: 10, code: "autonomous_org", meaning: "Организация работает, развивается и масштабируется автономно." },
+] as const;
+
+export const NEXT_LEVEL_TARGET_POLICY = {
+  version: "next-level-target-policy.v1",
+  scoredHorizon: "horizon_2_next_level",
+  laterHorizon: "horizon_3_later_vision",
+  rules: [
+    "activatedCapabilities contains only capabilities required for the realistic next business level within the stated target deadline",
+    "distant wishes about autonomy, scale, or the owner's eventual role stay only in desiredRoleSummary and never become activated capabilities",
+    "use the delegation maturity ladder literally; assistance, task delegation, process ownership, function heads, management layer, and autonomous organization are different levels",
+    "do not skip delegation levels without explicit target evidence that the intermediate operating capability already exists",
+    "when target wording mixes the next step with a distant vision, score the narrower next step and preserve the distant vision textually",
+  ],
+} as const;
 
 export type TargetModifierDefinition = {
   description: string;

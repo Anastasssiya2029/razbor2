@@ -63,10 +63,10 @@ export async function prepareMoneyNowSelectorInput(
       "upstream_blocked",
     );
   }
-  if (p01.promptVersion !== "P-01.v1.4.1" || p01.outputSchemaVersion !== "1.4") {
+  if (p01.promptVersion !== "P-01.v1.4.2" || p01.outputSchemaVersion !== "1.4") {
     throw new MoneyNowSelectorStageError(
       "MONEY_NOW_SELECTOR_UNSUPPORTED_P01_VERSION",
-      "Money Now Selector accepts only persisted P-01.v1.4.1/schema 1.4.",
+      "Money Now Selector accepts only persisted P-01.v1.4.2/schema 1.4.",
       "upstream_blocked",
     );
   }
@@ -119,7 +119,7 @@ export async function prepareMoneyNowSelectorInput(
     );
   }
   if (
-    MONEY_NOW_SELECTOR_CONTRACT_VERSION !== "money-now-selector-contract.v1.1" ||
+    MONEY_NOW_SELECTOR_CONTRACT_VERSION !== "money-now-selector-contract.v1.2" ||
     MONEY_NOW_RESOURCE_VERSION !== "money-now.v2.2" ||
     MONEY_NOW_FACT_EXTRACTION_VERSION !== "money-now-fact-extraction.v1"
   ) {

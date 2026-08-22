@@ -8,7 +8,7 @@ import {
   type MoneyNowSelectionSnapshot,
   type StoredMoneyNowSelection,
 } from "../../server/money-now-selector/types";
-import type { P01ResultV1_4_1 } from "../../server/p01/types";
+import type { P01ResultV1_4_2 } from "../../server/p01/types";
 import type { StoredP02Result } from "../../server/p02/stage-types";
 import type { P01StrategyContext, P02ResultV1_3, TargetConfigProjection } from "../../server/p02/types";
 import type { StoredP03Result } from "../../server/p03/stage-types";
@@ -41,8 +41,8 @@ export const P04_FIXTURE_CURRENT: SevenKScores = {
 function evidence(
   id: string,
   fact: string,
-  options: Partial<P01ResultV1_4_1["evidenceLedger"][number]> = {},
-): P01ResultV1_4_1["evidenceLedger"][number] {
+  options: Partial<P01ResultV1_4_2["evidenceLedger"][number]> = {},
+): P01ResultV1_4_2["evidenceLedger"][number] {
   return {
     id,
     source_field: "project.sales",
@@ -56,7 +56,7 @@ function evidence(
   };
 }
 
-function history(): P01ResultV1_4_1["moneyNowHistory"] {
+function history(): P01ResultV1_4_2["moneyNowHistory"] {
   return Object.fromEntries(MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [scenarioId, {
     history_status: "not_reported",
     new_material_condition: "not_applicable",
@@ -65,10 +65,10 @@ function history(): P01ResultV1_4_1["moneyNowHistory"] {
     evidence_ids: [],
     new_condition_evidence_ids: [],
     confidence: "low",
-  }])) as unknown as P01ResultV1_4_1["moneyNowHistory"];
+  }])) as unknown as P01ResultV1_4_2["moneyNowHistory"];
 }
 
-export function p04FixtureP01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_4_1 {
+export function p04FixtureP01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_4_2 {
   const ledger = [
     evidence("E01", "Текущая бизнес-система описана по каждому элементу 7К."),
     evidence("E02", "За текущий месяц было 10 целевых встреч и одно предложение дошло до оплаты.", { evidence_type: "metric_result" }),
@@ -91,7 +91,7 @@ export function p04FixtureP01(selectedScenario: MoneyNowScenarioId | null = "MN1
     contradiction: null,
     historical_asset: null,
     missing_evidence: ["Повторяемый результат"],
-  }])) as unknown as P01ResultV1_4_1["current7k"];
+  }])) as unknown as P01ResultV1_4_2["current7k"];
   const facts = unknownMoneyNowFacts();
   if (selectedScenario) {
     for (const factCode of MONEY_NOW_SELECTOR_CONTRACT.scenarioRequiredFacts[selectedScenario]) {
@@ -104,7 +104,7 @@ export function p04FixtureP01(selectedScenario: MoneyNowScenarioId | null = "MN1
     }
   }
   return {
-    promptVersion: "P-01.v1.4.1",
+    promptVersion: "P-01.v1.4.2",
     schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger: ledger,
@@ -149,7 +149,11 @@ export function p04FixtureP01(selectedScenario: MoneyNowScenarioId | null = "MN1
       normalizedModelFamily: "package_1to1",
       primaryModelFamily: "package_1to1",
       secondaryModelFamilies: [],
-      activatedCapabilities: [],
+      activatedCapabilities: [{
+        code: "priority_segment",
+        reason: "Маршрут фикстуры проверяет переход аудитории к подтверждённому приоритетному сегменту.",
+        source_fields: ["target.businessModel"],
+      }],
       desiredRoleSummary: null,
       desiredSystemWeeklyHours: null,
       confidence: "medium",
@@ -325,6 +329,7 @@ export async function makeP04Source(
   const target = calculateTargetConfiguration({
     currentScores: P04_FIXTURE_CURRENT,
     modelFamily: "package_1to1",
+    activatedCapabilities: ["priority_segment"],
     desiredSystemWeeklyHours: null,
   });
   const archetype = calculateBusinessArchetype(P04_FIXTURE_CURRENT);
@@ -353,10 +358,10 @@ export async function makeP04Source(
     archetype,
     resourceVersions: {
       stageVersion: "target-archetype-stage.v1",
-      p01PromptVersion: "P-01.v1.4.1",
+      p01PromptVersion: "P-01.v1.4.2",
       p01OutputSchemaVersion: "1.4",
       elements: "elements.v1",
-      targetRules: "target-rules.v2.1",
+      targetRules: "target-rules.v2.2",
       archetypes: "archetypes.v1",
     },
     deterministicInputHash: "target-input",
@@ -389,7 +394,7 @@ export async function makeP04Source(
       levelCapabilities: "scoring-rules.v2.0",
       constraintRules: "constraint-rules.v2.1",
       dependencyRules: "dependency-rules.v2.1",
-      targetRules: "target-rules.v2.1",
+      targetRules: "target-rules.v2.2",
     },
     inputHash: "p02-input",
     strategyContext,
@@ -442,12 +447,12 @@ export async function makeP04Source(
   } : null;
   const snapshot: MoneyNowSelectionSnapshot = {
     stageVersion: "money-now-selector-stage.v1",
-    selectorContractVersion: "money-now-selector-contract.v1.1",
+    selectorContractVersion: "money-now-selector-contract.v1.2",
     selectorContractJsonSha256: MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256,
     selectorContractTsSha256: MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256,
     businessMethodologyVersion: "money-now.v2.2",
     factExtractionVersion: "money-now-fact-extraction.v1",
-    p01PromptVersion: "P-01.v1.4.1",
+    p01PromptVersion: "P-01.v1.4.2",
     selectionStatus: selected ? "selected" : "no_eligible_scenario",
     selectedScenario,
     candidateTrace: [],
@@ -464,7 +469,7 @@ export async function makeP04Source(
     taskResolverPlanId: "plan-1",
     taskResolverPlanHash: resolvedTransitionPlanHash,
     stageVersion: "money-now-selector-stage.v1",
-    selectorContractVersion: "money-now-selector-contract.v1.1",
+    selectorContractVersion: "money-now-selector-contract.v1.2",
     selectorContractJsonSha256: MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256,
     selectorContractTsSha256: MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256,
     businessMethodologyVersion: "money-now.v2.2",
@@ -496,7 +501,7 @@ export async function makeP04Source(
     promptVersion: "P-03.v1.5",
     outputSchemaVersion: "1.5",
     ruleVersions: {
-      selectorContract: "money-now-selector-contract.v1.1",
+      selectorContract: "money-now-selector-contract.v1.2",
       selectorMethodology: "money-now.v2.2",
       prescriptionMethodology: "money-now.v2.3",
       prescriptionRules: "money-now-prescription-rules.v1",
@@ -548,7 +553,7 @@ export async function makeP04Source(
     clientContext: { expertName: "Екатерина", niche: "Консалтинг" },
     p01: {
       id: "p01-1",
-      promptVersion: "P-01.v1.4.1",
+      promptVersion: "P-01.v1.4.2",
       outputSchemaVersion: "1.4",
       result: p01,
       failureCode: null,

@@ -77,11 +77,11 @@ export async function prepareTaskResolverInput(source: TaskResolverSource): Prom
   if (!p01.id || !p01.result || p01.failureCode) {
     throw new TaskResolverError("TASK_RESOLVER_P01_MISSING", "Persisted validated P-01 is required for current score verification.", "upstream_blocked");
   }
-  if (p01.promptVersion !== "P-01.v1.4.1" || p01.outputSchemaVersion !== "1.4") {
-    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_P01_VERSION", "Task Resolver requires P-01.v1.4.1/schema 1.4.", "upstream_blocked");
+  if (p01.promptVersion !== "P-01.v1.4.2" || p01.outputSchemaVersion !== "1.4") {
+    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_P01_VERSION", "Task Resolver requires P-01.v1.4.2/schema 1.4.", "upstream_blocked");
   }
-  if (stage4.resourceVersions.targetRules !== "target-rules.v2.1" || stage4.target.resourceVersion !== "target-rules.v2.1") {
-    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_TARGET_VERSION", "Task Resolver requires target-rules.v2.1.", "upstream_blocked");
+  if (stage4.resourceVersions.targetRules !== "target-rules.v2.2" || stage4.target.resourceVersion !== "target-rules.v2.2") {
+    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_TARGET_VERSION", "Task Resolver requires target-rules.v2.2.", "upstream_blocked");
   }
   if (TRANSITIONS_RESOURCE_VERSION !== "transitions-70.v1") {
     throw new TaskResolverError("TASK_RESOLVER_REGISTRY_VERSION_MISMATCH", "Task Resolver requires transitions-70.v1.", "integrity");

@@ -22,7 +22,7 @@ import {
   selectMoneyNowCandidate,
   type MoneyNowSelectorInputV1_1,
 } from "../server/7k/money-now-selector";
-import type { P01ResultV1_4_1 } from "../server/p01/types";
+import type { P01ResultV1_4_2 } from "../server/p01/types";
 import { buildMoneyNowHistoryGuardInput } from "../server/p01/money-now-history-adapter";
 import { sha256 } from "../server/stage4/hash";
 import type { ResolvedTransitionPlan } from "../server/task-resolver/types";
@@ -52,10 +52,10 @@ const ELEMENTS = [
 function evidence(
   id: string,
   options: {
-    timeScope?: P01ResultV1_4_1["evidenceLedger"][number]["time_scope"];
-    valence?: P01ResultV1_4_1["evidenceLedger"][number]["valence"];
+    timeScope?: P01ResultV1_4_2["evidenceLedger"][number]["time_scope"];
+    valence?: P01ResultV1_4_2["evidenceLedger"][number]["valence"];
   } = {},
-): P01ResultV1_4_1["evidenceLedger"][number] {
+): P01ResultV1_4_2["evidenceLedger"][number] {
   return {
     id,
     source_field: "project.sales",
@@ -68,7 +68,7 @@ function evidence(
   };
 }
 
-function defaultHistory(): P01ResultV1_4_1["moneyNowHistory"] {
+function defaultHistory(): P01ResultV1_4_2["moneyNowHistory"] {
   return Object.fromEntries(
     MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [
       scenarioId,
@@ -82,10 +82,10 @@ function defaultHistory(): P01ResultV1_4_1["moneyNowHistory"] {
         confidence: "low",
       },
     ]),
-  ) as P01ResultV1_4_1["moneyNowHistory"];
+  ) as P01ResultV1_4_2["moneyNowHistory"];
 }
 
-function baseP01(): P01ResultV1_4_1 {
+function baseP01(): P01ResultV1_4_2 {
   const current7k = Object.fromEntries(
     ELEMENTS.map((elementId) => [
       elementId,
@@ -104,9 +104,9 @@ function baseP01(): P01ResultV1_4_1 {
         missing_evidence: ["Повторяемый результат"],
       },
     ]),
-  ) as unknown as P01ResultV1_4_1["current7k"];
+  ) as unknown as P01ResultV1_4_2["current7k"];
   return {
-    promptVersion: "P-01.v1.4.1",
+    promptVersion: "P-01.v1.4.2",
     schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger: [evidence("E01")],
@@ -148,7 +148,7 @@ function baseP01(): P01ResultV1_4_1 {
 }
 
 function ensureEvidence(
-  result: P01ResultV1_4_1,
+  result: P01ResultV1_4_2,
   id: string,
   options: Parameters<typeof evidence>[1] = {},
 ): void {
@@ -158,7 +158,7 @@ function ensureEvidence(
 }
 
 function setFact(
-  result: P01ResultV1_4_1,
+  result: P01ResultV1_4_2,
   factCode: MoneyNowFactCode,
   options: {
     state?: "confirmed_true" | "confirmed_false" | "unknown";
@@ -182,7 +182,7 @@ function setFact(
 }
 
 function confirmScenario(
-  result: P01ResultV1_4_1,
+  result: P01ResultV1_4_2,
   scenarioId: MoneyNowScenarioId,
   confidence: MoneyNowFactConfidence = "medium",
 ): void {
@@ -191,7 +191,7 @@ function confirmScenario(
   }
 }
 
-function selectorInput(result: P01ResultV1_4_1): MoneyNowSelectorInputV1_1 {
+function selectorInput(result: P01ResultV1_4_2): MoneyNowSelectorInputV1_1 {
   return {
     facts: structuredClone(result.moneyNowFacts),
     history: buildMoneyNowHistoryGuardInput(result.moneyNowHistory),
@@ -236,7 +236,7 @@ function source(result = baseP01()): MoneyNowSelectorSource {
     runStatus: "money_now",
     p01: {
       id: "p01-1",
-      promptVersion: "P-01.v1.4.1",
+      promptVersion: "P-01.v1.4.2",
       outputSchemaVersion: "1.4",
       inputHash: "p01-input",
       result,
@@ -275,7 +275,7 @@ class MemoryRepository implements MoneyNowSelectorRepository {
   }
 }
 
-test("1. P-01 v1.4.1 is accepted", async () => {
+test("1. P-01 v1.4.2 is accepted", async () => {
   const prepared = await prepareMoneyNowSelectorInput(source());
   assert.equal(prepared.selectorInput.history.scenarios.MN01.history_status, "not_reported");
 });
@@ -293,9 +293,9 @@ test("2. P-01 v1.4 and v1.3 are rejected", async () => {
   }
 });
 
-test("3. selector contract internal version is exactly v1.1", () => {
-  assert.equal(MONEY_NOW_SELECTOR_CONTRACT_VERSION, "money-now-selector-contract.v1.1");
-  assert.equal(MONEY_NOW_SELECTOR_CONTRACT.version, "money-now-selector-contract.v1.1");
+test("3. selector contract internal version is exactly v1.2", () => {
+  assert.equal(MONEY_NOW_SELECTOR_CONTRACT_VERSION, "money-now-selector-contract.v1.2");
+  assert.equal(MONEY_NOW_SELECTOR_CONTRACT.version, "money-now-selector-contract.v1.2");
 });
 
 test("4. contract SHA/version snapshot is exact", () => {
@@ -382,6 +382,17 @@ test("15. capacity risk remains a ranking candidate", () => {
   confirmScenario(p01, "MN05");
   const trace = selectedTrace(selectMoneyNowCandidate(selectorInput(p01)), "MN05");
   assert.equal(trace.capacityFit, "risk");
+  assert.equal(trace.includedInRanking, true);
+});
+
+test("15a. MN08 can use an existing audience under owner overload without adding delivery", () => {
+  const p01 = baseP01();
+  confirmScenario(p01, "MN08");
+  setFact(p01, "CURRENT_OVERLOAD");
+  const trace = selectedTrace(selectMoneyNowCandidate(selectorInput(p01)), "MN08");
+  assert.equal(MONEY_NOW_SELECTOR_CONTRACT.capacityModes.MN08, "uses_existing_flow");
+  assert.equal(trace.capacityFit, "risk");
+  assert.equal(trace.eligible, true);
   assert.equal(trace.includedInRanking, true);
 });
 
@@ -687,7 +698,7 @@ test("stored resource versions and hashes are deterministic", async () => {
   const repository = new MemoryRepository(source(p01));
   const executed = await runMoneyNowSelectorStage("run-1", { repository, createId: () => "mn-1" });
   assert.equal(executed.result.stageVersion, "money-now-selector-stage.v1");
-  assert.equal(executed.result.selectorContractVersion, "money-now-selector-contract.v1.1");
+  assert.equal(executed.result.selectorContractVersion, "money-now-selector-contract.v1.2");
   assert.equal(executed.result.p01ResultHash, await sha256(p01));
 });
 

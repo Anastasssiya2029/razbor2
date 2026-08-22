@@ -49,7 +49,7 @@ function assertFrozenVersions(source: AnalysisResultSource): void {
     fail("ANALYSIS_RESULT_P03_VERSION_UNSUPPORTED", "Final assembly requires P-03.v1.5/schema 1.5.", "version_conflict");
   }
   if (
-    p03.ruleVersions.selectorContract !== "money-now-selector-contract.v1.1" ||
+    p03.ruleVersions.selectorContract !== "money-now-selector-contract.v1.2" ||
     p03.ruleVersions.selectorMethodology !== "money-now.v2.2" ||
     p03.ruleVersions.prescriptionMethodology !== "money-now.v2.3"
   ) {
@@ -60,17 +60,17 @@ function assertFrozenVersions(source: AnalysisResultSource): void {
   }
   const versions = p04.ruleVersions;
   if (
-    versions.p01Prompt !== "P-01.v1.4.1" ||
+    versions.p01Prompt !== "P-01.v1.4.2" ||
     versions.p01Schema !== "1.4" ||
     versions.targetStage !== "target-archetype-stage.v1" ||
-    versions.targetRules !== "target-rules.v2.1" ||
+    versions.targetRules !== "target-rules.v2.2" ||
     versions.archetypes !== "archetypes.v1" ||
     versions.p02Prompt !== "P-02.v1.3" ||
     versions.p02Schema !== "1.3" ||
     versions.taskResolver !== "task-resolver-stage.v1" ||
     versions.transitions !== "transitions-70.v1" ||
     versions.moneyNowSelector !== "money-now-selector-stage.v1" ||
-    versions.moneyNowSelectorContract !== "money-now-selector-contract.v1.1" ||
+    versions.moneyNowSelectorContract !== "money-now-selector-contract.v1.2" ||
     versions.p03Prompt !== "P-03.v1.5" ||
     versions.p03Schema !== "1.5"
   ) {

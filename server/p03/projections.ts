@@ -31,7 +31,7 @@ import {
 } from "@/server/7k/prompts/p03.v1.5";
 
 export const P03_RULE_VERSIONS: P03RuleVersions = {
-  selectorContract: "money-now-selector-contract.v1.1",
+  selectorContract: "money-now-selector-contract.v1.2",
   selectorMethodology: "money-now.v2.2",
   prescriptionMethodology: "money-now.v2.3",
   prescriptionRules: "money-now-prescription-rules.v1",
@@ -96,8 +96,8 @@ export async function prepareP03Input(source: P03Source): Promise<P03PreparedInp
   if (!p01.id || !p01.result || p01.failureCode) {
     throw new P03Error("P03_P01_MISSING", "A successful persisted P-01 result is required.", "upstream_blocked");
   }
-  if (p01.promptVersion !== "P-01.v1.4.1" || p01.outputSchemaVersion !== "1.4") {
-    throw new P03Error("P03_UNSUPPORTED_P01_VERSION", "P-03 accepts only persisted P-01.v1.4.1/schema 1.4.", "upstream_blocked");
+  if (p01.promptVersion !== "P-01.v1.4.2" || p01.outputSchemaVersion !== "1.4") {
+    throw new P03Error("P03_UNSUPPORTED_P01_VERSION", "P-03 accepts only persisted P-01.v1.4.2/schema 1.4.", "upstream_blocked");
   }
   try {
     validateP01Invariants(validateP01Schema(p01.result));
@@ -111,7 +111,7 @@ export async function prepareP03Input(source: P03Source): Promise<P03PreparedInp
     selection.selectorContractVersion !== MONEY_NOW_SELECTOR_CONTRACT_VERSION ||
     selection.businessMethodologyVersion !== MONEY_NOW_RESOURCE_VERSION ||
     selection.factExtractionVersion !== MONEY_NOW_FACT_EXTRACTION_VERSION ||
-    selection.snapshot.p01PromptVersion !== "P-01.v1.4.1"
+    selection.snapshot.p01PromptVersion !== "P-01.v1.4.2"
   ) {
     throw new P03Error("P03_SELECTION_VERSION_UNSUPPORTED", "Stage 7 selection versions do not match the approved P-03 preflight.", "upstream_blocked");
   }

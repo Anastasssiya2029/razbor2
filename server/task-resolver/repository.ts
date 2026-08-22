@@ -2,7 +2,7 @@ import { getDb } from "@/db";
 import { analysisRuns, p01AnalysisResults, p02AnalysisResults, resolvedTransitionPlans, targetArchetypeResults } from "@/db/schema";
 import type { TargetConfigurationResult } from "@/server/7k";
 import type { SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import { storedP02ResultFromRow } from "@/server/p02/repository";
 import type { TargetArchetypeResourceVersions } from "@/server/stage4/types";
 import { eq, sql } from "drizzle-orm";
@@ -83,7 +83,7 @@ export function createD1TaskResolverRepository(): TaskResolverRepository {
           promptVersion: p01Row?.promptVersion ?? null,
           outputSchemaVersion: p01Row?.outputSchemaVersion ?? null,
           inputHash: p01Row?.inputHash ?? null,
-          result: parseNullable<P01ResultV1_4_1>(p01Row?.resultJson ?? null),
+          result: parseNullable<P01ResultV1_4_2>(p01Row?.resultJson ?? null),
           failureCode: p01Row?.failureCode ?? null,
         },
         targetStage: hasTarget ? {

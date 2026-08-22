@@ -8,7 +8,7 @@ import {
 import { validateDiagnosticInput } from "@/lib/diagnostic-input";
 import type { BusinessArchetypeResult, TargetConfigurationInput, TargetConfigurationResult } from "@/server/7k";
 import type { SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import { and, eq, sql } from "drizzle-orm";
 import type {
   Stage4Source,
@@ -61,7 +61,7 @@ export function createD1TargetArchetypeRepository(): TargetArchetypeRepository {
         p01PromptVersion: row.p01PromptVersion,
         p01OutputSchemaVersion: row.p01OutputSchemaVersion,
         p01InputHash: row.p01InputHash,
-        p01Result: parseNullable<P01ResultV1_4_1>(row.p01ResultJson),
+        p01Result: parseNullable<P01ResultV1_4_2>(row.p01ResultJson),
         p01FailureCode: row.p01FailureCode,
         p01FailureMessage: row.p01FailureMessage,
       };

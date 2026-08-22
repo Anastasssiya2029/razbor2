@@ -287,7 +287,7 @@ function complexityLabel(rank: 1 | 2 | 3 | 4): "low" | "medium" | "high" {
 
 /**
  * The only executable Money Now selector. Eligibility comes exclusively from
- * persisted P-01 v1.4.1 atomic facts; ranking is contract/methodology driven.
+ * persisted P-01 v1.4.2 atomic facts; ranking is contract/methodology driven.
  */
 export function selectMoneyNowCandidate(
   input: MoneyNowSelectorInputV1_1,

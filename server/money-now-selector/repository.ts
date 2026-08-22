@@ -5,7 +5,7 @@ import {
   p01AnalysisResults,
   resolvedTransitionPlans,
 } from "@/db/schema";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { ResolvedTransitionPlan } from "@/server/task-resolver/types";
 import { eq, sql } from "drizzle-orm";
 import type {
@@ -110,7 +110,7 @@ export function createD1MoneyNowSelectorRepository(): MoneyNowSelectorRepository
           promptVersion: row.p01?.promptVersion ?? null,
           outputSchemaVersion: row.p01?.outputSchemaVersion ?? null,
           inputHash: row.p01?.inputHash ?? null,
-          result: parseNullable<P01ResultV1_4_1>(row.p01?.resultJson ?? null),
+          result: parseNullable<P01ResultV1_4_2>(row.p01?.resultJson ?? null),
           failureCode: row.p01?.failureCode ?? null,
         },
         taskResolver: hasTaskResolver

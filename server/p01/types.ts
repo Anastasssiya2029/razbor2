@@ -1,5 +1,5 @@
 import type { DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
-import type { BaseModelFamily, ModelFamily } from "@/server/7k/config/target-rules.v2.1";
+import type { BaseModelFamily, ModelFamily } from "@/server/7k/config/target-rules.v2.2";
 import type { MoneyNowScenarioId } from "@/server/7k/config/money-now.v2.2";
 import type {
   MoneyNowFactCode,
@@ -145,8 +145,8 @@ export type P01MoneyNowFact = {
 
 export type P01MoneyNowFacts = Record<MoneyNowFactCode, P01MoneyNowFact>;
 
-export type P01ResultV1_4_1 = {
-  promptVersion: "P-01.v1.4.1";
+export type P01ResultV1_4_2 = {
+  promptVersion: "P-01.v1.4.2";
   schemaVersion: typeof P01_OUTPUT_SCHEMA_VERSION;
   analysisStatus: P01AnalysisStatus;
   evidenceLedger: P01Evidence[];
@@ -180,13 +180,13 @@ export type P01ResultV1_4_1 = {
 };
 
 /** Read-only shape for already persisted historical P-01 v1.4 snapshots. */
-export type P01ResultV1_4 = Omit<P01ResultV1_4_1, "promptVersion"> & {
+export type P01ResultV1_4 = Omit<P01ResultV1_4_2, "promptVersion"> & {
   promptVersion: "P-01.v1.4";
 };
 
 /** Read-only shape for already persisted historical P-01 v1.3 snapshots. */
 export type P01ResultV1_3 = Omit<
-  P01ResultV1_4_1,
+  P01ResultV1_4_2,
   "promptVersion" | "schemaVersion" | "moneyNowFacts"
 > & {
   promptVersion: "P-01.v1.3";
@@ -196,7 +196,7 @@ export type P01ResultV1_3 = Omit<
 export type P01RuleVersions = {
   scoringRules: "scoring-rules.v2.0";
   evidenceRouting: "evidence-routing.v3.0";
-  targetModelDictionary: "target-model-dictionary.v2.1";
+  targetModelDictionary: "target-model-dictionary.v2.2";
   moneyNowHistoryMap: "money-now-history-map.v2.2";
   moneyNowFactExtraction: "money-now-fact-extraction.v1";
 };
@@ -229,7 +229,7 @@ export interface P01Provider {
 export type P01RunMetadata = {
   provider: string;
   model: string;
-  promptVersion: "P-01.v1.4.1";
+  promptVersion: "P-01.v1.4.2";
   outputSchemaVersion: typeof P01_OUTPUT_SCHEMA_VERSION;
   ruleVersions: P01RuleVersions;
   inputHash: string;
@@ -245,13 +245,13 @@ export type P01RunMetadata = {
 export type P01RunOutcome =
   | {
       kind: "success";
-      result: P01ResultV1_4_1;
+      result: P01ResultV1_4_2;
       metadata: P01RunMetadata;
       providerRawResponse: unknown;
     }
   | {
       kind: "blocked";
-      result: P01ResultV1_4_1;
+      result: P01ResultV1_4_2;
       failureCode: "P01_BLOCKED_INSUFFICIENT_DATA" | "P01_BLOCKED_INCONSISTENCY";
       failureMessage: string;
       metadata: P01RunMetadata;

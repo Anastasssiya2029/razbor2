@@ -3,7 +3,7 @@ import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "@/server/7k/config/evidence-r
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "@/server/7k/config/money-now-history-map.v2.2";
 import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "@/server/7k/config/money-now-fact-extraction.v1";
 import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v2.0";
-import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.1";
+import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
 import { openRouterErrorArtifact } from "@/server/ai/openrouter-json";
 import { createConfiguredP01Provider } from "./provider";

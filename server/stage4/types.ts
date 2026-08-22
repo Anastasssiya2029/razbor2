@@ -4,18 +4,18 @@ import type {
   TargetConfigurationInput,
   TargetConfigurationResult,
 } from "@/server/7k";
-import type { DesiredOwnerRole } from "@/server/7k/config/target-rules.v2.1";
+import type { DesiredOwnerRole } from "@/server/7k/config/target-rules.v2.2";
 import type { SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 
 export const TARGET_ARCHETYPE_STAGE_VERSION = "target-archetype-stage.v1" as const;
 
 export type TargetArchetypeResourceVersions = {
   stageVersion: typeof TARGET_ARCHETYPE_STAGE_VERSION;
-  p01PromptVersion: "P-01.v1.4.1";
+  p01PromptVersion: "P-01.v1.4.2";
   p01OutputSchemaVersion: "1.4";
   elements: "elements.v1";
-  targetRules: "target-rules.v2.1";
+  targetRules: "target-rules.v2.2";
   archetypes: "archetypes.v1";
 };
 
@@ -28,7 +28,7 @@ export type Stage4Source = {
   p01PromptVersion: string | null;
   p01OutputSchemaVersion: string | null;
   p01InputHash: string | null;
-  p01Result: P01ResultV1_4_1 | null;
+  p01Result: P01ResultV1_4_2 | null;
   p01FailureCode: string | null;
   p01FailureMessage: string | null;
 };

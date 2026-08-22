@@ -20,17 +20,17 @@ import {
 } from "./types";
 
 export const P04_RULE_VERSIONS: P04RuleVersions = {
-  p01Prompt: "P-01.v1.4.1",
+  p01Prompt: "P-01.v1.4.2",
   p01Schema: "1.4",
   targetStage: "target-archetype-stage.v1",
-  targetRules: "target-rules.v2.1",
+  targetRules: "target-rules.v2.2",
   archetypes: "archetypes.v1",
   p02Prompt: "P-02.v1.3",
   p02Schema: "1.3",
   taskResolver: "task-resolver-stage.v1",
   transitions: "transitions-70.v1",
   moneyNowSelector: "money-now-selector-stage.v1",
-  moneyNowSelectorContract: "money-now-selector-contract.v1.1",
+  moneyNowSelectorContract: "money-now-selector-contract.v1.2",
   p03Prompt: "P-03.v1.5",
   p03Schema: "1.5",
   reportPolicy: P04_REPORT_POLICY_VERSION,
@@ -235,12 +235,12 @@ export async function prepareP04Input(source: P04Source): Promise<P04PreparedInp
   const p03 = source.p03;
 
   if (!p01.id || !p01.result || p01.failureCode) fail("P04_P01_MISSING", "Successful persisted P-01 is required.", "upstream_blocked");
-  if (p01.promptVersion !== "P-01.v1.4.1" || p01.outputSchemaVersion !== "1.4") fail("P04_P01_VERSION_UNSUPPORTED", "P-04 requires P-01.v1.4.1/schema 1.4.", "upstream_blocked");
+  if (p01.promptVersion !== "P-01.v1.4.2" || p01.outputSchemaVersion !== "1.4") fail("P04_P01_VERSION_UNSUPPORTED", "P-04 requires P-01.v1.4.2/schema 1.4.", "upstream_blocked");
   validateP01Invariants(validateP01Schema(p01.result));
   if (p01.result.analysisStatus !== "ok" && p01.result.analysisStatus !== "low_confidence") fail("P04_P01_BLOCKED", `P-01 status ${p01.result.analysisStatus} is not reportable.`, "upstream_blocked");
 
   if (!target || target.failureCode || !target.target || !target.archetype || !target.currentScores) fail("P04_TARGET_MISSING", "Successful persisted Target + Archetype is required.", "upstream_blocked");
-  if (target.resourceVersions.stageVersion !== "target-archetype-stage.v1" || target.resourceVersions.targetRules !== "target-rules.v2.1" || target.resourceVersions.archetypes !== "archetypes.v1") fail("P04_TARGET_VERSION_UNSUPPORTED", "Target/Archetype versions are unsupported.", "upstream_blocked");
+  if (target.resourceVersions.stageVersion !== "target-archetype-stage.v1" || target.resourceVersions.targetRules !== "target-rules.v2.2" || target.resourceVersions.archetypes !== "archetypes.v1") fail("P04_TARGET_VERSION_UNSUPPORTED", "Target/Archetype versions are unsupported.", "upstream_blocked");
 
   if (!p02 || p02.failureCode || !p02.result) fail("P04_P02_MISSING", "Valid persisted P-02 is required.", "upstream_blocked");
   if (p02.promptVersion !== "P-02.v1.3" || p02.outputSchemaVersion !== "1.3") fail("P04_P02_VERSION_UNSUPPORTED", "P-04 requires P-02.v1.3/schema 1.3.", "upstream_blocked");
@@ -250,8 +250,8 @@ export async function prepareP04Input(source: P04Source): Promise<P04PreparedInp
   if (!selection || selection.failure || !selection.snapshot) fail("P04_MONEY_NOW_SELECTION_MISSING", "Successful persisted Stage 7 selection is required.", "upstream_blocked");
   if (
     selection.stageVersion !== "money-now-selector-stage.v1" ||
-    selection.selectorContractVersion !== "money-now-selector-contract.v1.1"
-  ) fail("P04_MONEY_NOW_VERSION_UNSUPPORTED", "P-04 requires Stage 7 selector contract v1.1.", "upstream_blocked");
+    selection.selectorContractVersion !== "money-now-selector-contract.v1.2"
+  ) fail("P04_MONEY_NOW_VERSION_UNSUPPORTED", "P-04 requires Stage 7 selector contract v1.2.", "upstream_blocked");
   if (!p03 || p03.failureCode) fail("P04_P03_MISSING", "Valid persisted P-03 stage outcome is required.", "upstream_blocked");
   if (p03.promptVersion !== "P-03.v1.5" || p03.outputSchemaVersion !== "1.5") fail("P04_P03_VERSION_UNSUPPORTED", "P-04 requires P-03.v1.5/schema 1.5.", "upstream_blocked");
   if (!p03.result && !p03.skippedOutcome) fail("P04_P03_OUTCOME_MISSING", "P-03 has neither a validated result nor skipped outcome.", "upstream_blocked");

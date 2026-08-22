@@ -158,7 +158,7 @@ export type P03ResultV1_5 = {
 };
 
 export type P03RuleVersions = {
-  selectorContract: "money-now-selector-contract.v1.1";
+  selectorContract: "money-now-selector-contract.v1.2";
   selectorMethodology: "money-now.v2.2";
   prescriptionMethodology: "money-now.v2.3";
   prescriptionRules: "money-now-prescription-rules.v1";

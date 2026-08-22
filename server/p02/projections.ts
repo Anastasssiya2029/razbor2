@@ -4,9 +4,9 @@ import {
   DEPENDENCY_RULES_RESOURCE_VERSION,
   LEVEL_CAPABILITIES_RESOURCE_VERSION,
 } from "@/server/7k/config/p02-strategy-rules.v2.1";
-import { TARGET_RULES_RESOURCE_VERSION, type DesiredOwnerRole, type TargetModifierCode } from "@/server/7k/config/target-rules.v2.1";
+import { TARGET_RULES_RESOURCE_VERSION, type DesiredOwnerRole, type TargetModifierCode } from "@/server/7k/config/target-rules.v2.2";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "@/server/7k/types";
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { StoredTargetArchetypeResult } from "@/server/stage4/types";
 import { validateP01Invariants, validateP01Schema } from "@/server/p01/validation";
 import { P02Error } from "./errors";
@@ -28,7 +28,7 @@ export type P02UpstreamSource = {
   p01PromptVersion: string | null;
   p01OutputSchemaVersion: string | null;
   p01InputHash: string | null;
-  p01Result: P01ResultV1_4_1 | null;
+  p01Result: P01ResultV1_4_2 | null;
   p01FailureCode: string | null;
   targetStage: Pick<
     StoredTargetArchetypeResult,
@@ -65,7 +65,7 @@ function containsLegacyId(value: unknown): boolean {
   return false;
 }
 
-function currentScores(p01: P01ResultV1_4_1): SevenKScores {
+function currentScores(p01: P01ResultV1_4_2): SevenKScores {
   const scores = Object.fromEntries(
     SEVEN_K_ELEMENT_IDS.map((elementId) => [elementId, p01.current7k[elementId].score]),
   ) as Record<string, number | null>;
@@ -110,8 +110,8 @@ export function assertDesiredRoleConsistency(
 }
 
 export function prepareP02Input(source: P02UpstreamSource): P02PreparedInput {
-  if (source.p01PromptVersion !== "P-01.v1.4.1" || source.p01OutputSchemaVersion !== "1.4") {
-    throw new P02Error("P02_UNSUPPORTED_P01_VERSION", "P-02 supports only persisted P-01.v1.4.1/schema 1.4.", "upstream_blocked");
+  if (source.p01PromptVersion !== "P-01.v1.4.2" || source.p01OutputSchemaVersion !== "1.4") {
+    throw new P02Error("P02_UNSUPPORTED_P01_VERSION", "P-02 supports only persisted P-01.v1.4.2/schema 1.4.", "upstream_blocked");
   }
   if (!source.p01Result) {
     throw new P02Error("P02_P01_RESULT_MISSING", source.p01FailureCode ?? "Persisted P-01 result is missing.", "upstream_blocked");
@@ -128,8 +128,8 @@ export function prepareP02Input(source: P02UpstreamSource): P02PreparedInput {
   if (!stage4 || stage4.failureCode || !stage4.target || !stage4.currentScores) {
     throw new P02Error("P02_TARGET_RESULT_MISSING", stage4?.failureMessage ?? "Persisted deterministic Target Configuration is required.", "upstream_blocked");
   }
-  if (stage4.resourceVersions.targetRules !== "target-rules.v2.1" || stage4.target.resourceVersion !== "target-rules.v2.1") {
-    throw new P02Error("P02_UNSUPPORTED_TARGET_VERSION", "P-02 requires target-rules.v2.1.", "upstream_blocked");
+  if (stage4.resourceVersions.targetRules !== "target-rules.v2.2" || stage4.target.resourceVersion !== "target-rules.v2.2") {
+    throw new P02Error("P02_UNSUPPORTED_TARGET_VERSION", "P-02 requires target-rules.v2.2.", "upstream_blocked");
   }
   if (stage4.p01AnalysisResultId !== source.p01AnalysisResultId) {
     throw new P02Error("P02_UPSTREAM_VERSION_CONFLICT", "Stage 4 is linked to a different P-01 result.", "version_conflict");

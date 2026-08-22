@@ -19,7 +19,7 @@
   ],
   "properties": {
     "promptVersion": {
-      "const": "P-01.v1.4.1"
+      "const": "P-01.v1.4.2"
     },
     "schemaVersion": {
       "const": "1.4"

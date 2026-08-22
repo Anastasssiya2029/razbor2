@@ -49,7 +49,7 @@ Deterministic Stage 7 УЖЕ выбрал один Money Now scenario. Ты НЕ
 `SELECTED_MONEY_SCENARIO` — immutable source of truth из Stage 7.
 Его `scenario_id` и `scenario_title` нельзя менять.
 
-`P03_CONTEXT` — server-side проекция persisted P-01.v1.4.1 только для выбранного сценария. Она может содержать:
+`P03_CONTEXT` — server-side проекция persisted P-01.v1.4.2 только для выбранного сценария. Она может содержать:
 - evidenceLedger;
 - current7k;
 - businessMap;

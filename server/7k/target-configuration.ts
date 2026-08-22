@@ -14,7 +14,7 @@ import {
   type ModelFamily,
   type TargetDelegationCode,
   type TargetModifierCode,
-} from "./config/target-rules.v2.1";
+} from "./config/target-rules.v2.2";
 import {
   SEVEN_K_ELEMENT_IDS,
   SevenKValidationError,

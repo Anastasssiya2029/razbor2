@@ -23,11 +23,11 @@ AI is limited to P-01, P-02, P-03 and P-04. Target scores, archetype, fixed task
 ## Frozen versions
 
 - Diagnostic input: `1.2`
-- P-01: `P-01.v1.4.1`, schema `1.4`
-- Target/Archetype: `target-archetype-stage.v1`, `target-rules.v2.1`, `archetypes.v1`
+- P-01: `P-01.v1.4.2`, schema `1.4`
+- Target/Archetype: `target-archetype-stage.v1`, `target-rules.v2.2`, `archetypes.v1`
 - P-02: `P-02.v1.3`, schema `1.3`
 - Task Resolver: `task-resolver-stage.v1`, `transitions-70.v1`
-- Money Now selector: `money-now-selector-stage.v1`, contract `money-now-selector-contract.v1.1`, methodology `money-now.v2.2`
+- Money Now selector: `money-now-selector-stage.v1`, contract `money-now-selector-contract.v1.2`, methodology `money-now.v2.2`
 - Money Now prescription: methodology `money-now.v2.3`
 - P-03: `P-03.v1.5`, schema `1.5`
 - P-04: `P-04.v1.2`, schema `1.2`

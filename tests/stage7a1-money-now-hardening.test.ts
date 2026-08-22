@@ -46,7 +46,7 @@ test("P-01 extraction dictionary contains no selector rules", () => {
 });
 
 test("runtime proof mapping is derived from the raw selector contract", () => {
-  assert.equal(MONEY_NOW_SELECTOR_CONTRACT_VERSION, "money-now-selector-contract.v1.1");
+  assert.equal(MONEY_NOW_SELECTOR_CONTRACT_VERSION, "money-now-selector-contract.v1.2");
   assert.deepEqual(
     MONEY_NOW_PROOF_LEVEL_BY_CONFIDENCE,
     MONEY_NOW_SELECTOR_CONTRACT.proofLevelMapping,
@@ -124,8 +124,8 @@ test("Stage 4, P-02 and Task Resolver accept only the hardened P-01 prompt versi
   ];
   for (const file of files) {
     const source = readFileSync(file, "utf8");
-    assert.match(source, /P-01\.v1\.4\.1/u, file);
-    assert.doesNotMatch(source, /P-01\.v1\.4(?!\.1)/u, file);
+    assert.match(source, /P-01\.v1\.4\.2/u, file);
+    assert.doesNotMatch(source, /P-01\.v1\.4(?!\.2)/u, file);
   }
 });
 
@@ -153,4 +153,3 @@ test("Stage 7A.1 does not call Selector, P-03 or P-04", () => {
   assert.doesNotMatch(source, /selectMoneyNowCandidate\s*\(/u);
   assert.doesNotMatch(source, /P-03|P-04/u);
 });
-

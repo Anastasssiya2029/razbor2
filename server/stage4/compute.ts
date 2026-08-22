@@ -14,7 +14,7 @@ import {
   type DesiredOwnerRole,
   type ModelFamily,
   type TargetModifierCode,
-} from "@/server/7k/config/target-rules.v2.1";
+} from "@/server/7k/config/target-rules.v2.2";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "@/server/7k/types";
 import { getTargetArchetypeResourceVersions } from "@/server/7k/methodology-registry";
 import { validateP01Invariants, validateP01Schema } from "@/server/p01/validation";
@@ -145,10 +145,10 @@ function deriveDesiredOwnerRole(modifiers: readonly TargetModifierCode[]): {
 }
 
 function assertP01Ready(source: Stage4Source): void {
-  if (source.p01PromptVersion !== "P-01.v1.4.1" || source.p01OutputSchemaVersion !== "1.4") {
+  if (source.p01PromptVersion !== "P-01.v1.4.2" || source.p01OutputSchemaVersion !== "1.4") {
     throw new Stage4Error(
       "STAGE4_UNSUPPORTED_P01_VERSION",
-      "Stage 4 supports only persisted P-01.v1.4.1 / output schema 1.4.",
+      "Stage 4 supports only persisted P-01.v1.4.2 / output schema 1.4.",
       "upstream_blocked",
       {
         promptVersion: source.p01PromptVersion,

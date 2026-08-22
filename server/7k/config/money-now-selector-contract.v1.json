@@ -1,5 +1,5 @@
 {
-  "version": "money-now-selector-contract.v1.1",
+  "version": "money-now-selector-contract.v1.2",
   "businessMethodologyVersion": "money-now.v2.2",
   "factStateEnum": [
     "confirmed_true",
@@ -290,7 +290,7 @@
     "MN05": "requires_additional_delivery",
     "MN06": "requires_additional_delivery",
     "MN07": "requires_additional_delivery",
-    "MN08": "requires_additional_delivery",
+    "MN08": "uses_existing_flow",
     "MN09": "requires_additional_delivery",
     "MN10": "requires_additional_delivery",
     "MN11": "requires_additional_delivery",

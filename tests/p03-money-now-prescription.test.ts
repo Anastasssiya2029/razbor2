@@ -26,7 +26,7 @@ import {
   type StoredMoneyNowSelection,
 } from "../server/money-now-selector/types";
 import { buildMoneyNowHistoryGuardInput } from "../server/p01/money-now-history-adapter";
-import type { P01ResultV1_4_1 } from "../server/p01/types";
+import type { P01ResultV1_4_2 } from "../server/p01/types";
 import { sha256 } from "../server/stage4/hash";
 import { P03Error } from "../server/p03/errors";
 import { prepareP03Input, type P03SelectedPreparedInput } from "../server/p03/projections";
@@ -60,8 +60,8 @@ import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 function evidence(
   id: string,
   fact: string,
-  options: Partial<P01ResultV1_4_1["evidenceLedger"][number]> = {},
-): P01ResultV1_4_1["evidenceLedger"][number] {
+  options: Partial<P01ResultV1_4_2["evidenceLedger"][number]> = {},
+): P01ResultV1_4_2["evidenceLedger"][number] {
   return {
     id,
     source_field: "project.sales",
@@ -75,7 +75,7 @@ function evidence(
   };
 }
 
-function history(): P01ResultV1_4_1["moneyNowHistory"] {
+function history(): P01ResultV1_4_2["moneyNowHistory"] {
   return Object.fromEntries(MONEY_NOW_SCENARIO_IDS.map((scenarioId) => [scenarioId, {
     history_status: "not_reported",
     new_material_condition: "not_applicable",
@@ -84,10 +84,10 @@ function history(): P01ResultV1_4_1["moneyNowHistory"] {
     evidence_ids: [],
     new_condition_evidence_ids: [],
     confidence: "low",
-  }])) as unknown as P01ResultV1_4_1["moneyNowHistory"];
+  }])) as unknown as P01ResultV1_4_2["moneyNowHistory"];
 }
 
-function p01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_4_1 {
+function p01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_4_2 {
   const ledger = [
     evidence("E01", "Текущая бизнес-система описана по каждому элементу 7К."),
     evidence("E02", "За текущий месяц было 10 целевых встреч и одно предложение дошло до оплаты.", { evidence_type: "metric_result" }),
@@ -111,7 +111,7 @@ function p01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_
     contradiction: null,
     historical_asset: null,
     missing_evidence: ["Повторяемый результат"],
-  }])) as unknown as P01ResultV1_4_1["current7k"];
+  }])) as unknown as P01ResultV1_4_2["current7k"];
   const facts = unknownMoneyNowFacts();
   if (selectedScenario) {
     for (const factCode of MONEY_NOW_SELECTOR_CONTRACT.scenarioRequiredFacts[selectedScenario]) {
@@ -124,7 +124,7 @@ function p01(selectedScenario: MoneyNowScenarioId | null = "MN14"): P01ResultV1_
     }
   }
   return {
-    promptVersion: "P-01.v1.4.1",
+    promptVersion: "P-01.v1.4.2",
     schemaVersion: "1.4",
     analysisStatus: "ok",
     evidenceLedger: ledger,
@@ -188,12 +188,12 @@ async function source(selectedScenario: MoneyNowScenarioId | null = "MN14"): Pro
   });
   const snapshot: MoneyNowSelectionSnapshot = {
     stageVersion: "money-now-selector-stage.v1",
-    selectorContractVersion: "money-now-selector-contract.v1.1",
+    selectorContractVersion: "money-now-selector-contract.v1.2",
     selectorContractJsonSha256: MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256,
     selectorContractTsSha256: MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256,
     businessMethodologyVersion: "money-now.v2.2",
     factExtractionVersion: "money-now-fact-extraction.v1",
-    p01PromptVersion: "P-01.v1.4.1",
+    p01PromptVersion: "P-01.v1.4.2",
     selectionStatus: decision.selectionStatus,
     selectedScenario: decision.selectedScenario,
     candidateTrace: decision.candidateTrace,
@@ -209,7 +209,7 @@ async function source(selectedScenario: MoneyNowScenarioId | null = "MN14"): Pro
     taskResolverPlanId: "task-1",
     taskResolverPlanHash: "task-hash",
     stageVersion: "money-now-selector-stage.v1",
-    selectorContractVersion: "money-now-selector-contract.v1.1",
+    selectorContractVersion: "money-now-selector-contract.v1.2",
     selectorContractJsonSha256: MONEY_NOW_SELECTOR_CONTRACT_JSON_SHA256,
     selectorContractTsSha256: MONEY_NOW_SELECTOR_CONTRACT_TS_SHA256,
     businessMethodologyVersion: "money-now.v2.2",
@@ -228,7 +228,7 @@ async function source(selectedScenario: MoneyNowScenarioId | null = "MN14"): Pro
     runStatus: "money_now",
     p01: {
       id: "p01-1",
-      promptVersion: "P-01.v1.4.1",
+      promptVersion: "P-01.v1.4.2",
       outputSchemaVersion: "1.4",
       result,
       failureCode: null,
@@ -477,7 +477,7 @@ test("old text-only intervention rules are removed as a second source of truth",
 
 test("P-03 prompt and schema are versioned as v1.5 without legacy schema symbols", () => {
   assert.equal(P03_PROMPT_VERSION, "P-03.v1.5");
-  assert.equal(P03_PROMPT_SHA256, "577b177834110f5071eb132b2a1594a7f19981bad39cf04dee1b9cb73f28feaf");
+  assert.equal(P03_PROMPT_SHA256, "f70793b9bba665275fb3eaa95f588b77aa2dfb5b873ddcb7bced454910bc3e88");
   assert.equal(createHash("sha256").update(P03_SYSTEM_PROMPT).digest("hex"), P03_PROMPT_SHA256);
   assert.match(P03_SYSTEM_PROMPT, /P03_OUTPUT_SCHEMA_V1_5/u);
   assert.doesNotMatch(P03_SYSTEM_PROMPT, /P03_OUTPUT_SCHEMA_V1_[34]|Canonical codes:|CAPACITY_BOTTLENECK/u);

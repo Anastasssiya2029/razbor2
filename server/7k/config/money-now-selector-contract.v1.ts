@@ -27,7 +27,7 @@ export type {
 };
 
 export const MONEY_NOW_SELECTOR_CONTRACT_VERSION =
-  "money-now-selector-contract.v1.1" as const;
+  "money-now-selector-contract.v1.2" as const;
 export const MONEY_NOW_PROOF_MAP_VERSION = "money-now-proof-map.v1" as const;
 
 export type MoneyNowCapacityMode =
@@ -328,4 +328,3 @@ export function evaluateMoneyNowCapacityFit(
   }
   throw new Error(`No capacity-fit rule matched mode ${mode}.`);
 }
-

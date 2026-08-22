@@ -3,7 +3,7 @@ import { EVIDENCE_ROUTING, EVIDENCE_ROUTING_GLOBAL_CONTEXT } from "@/server/7k/c
 import { MONEY_NOW_HISTORY_MAP } from "@/server/7k/config/money-now-history-map.v2.2";
 import { MONEY_NOW_FACT_EXTRACTION_DICTIONARY } from "@/server/7k/config/money-now-fact-extraction.v1";
 import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
-import { TARGET_MODEL_DICTIONARY } from "@/server/7k/config/target-model-dictionary.v2.1";
+import { TARGET_MODEL_DICTIONARY } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { P01_SYSTEM_PROMPT_TEMPLATE } from "@/server/7k/prompts/p01.v1.4";
 
 function replaceRequired(template: string, marker: string, value: unknown): string {
@@ -30,6 +30,14 @@ export function buildP01SystemPrompt(
     MONEY_NOW_FACT_EXTRACTION_DICTIONARY,
   );
   prompt = replaceRequired(prompt, "{{DIAGNOSTIC_INPUT_JSON}}", input);
+
+  prompt += `\n\n<TARGET_HORIZON_CONTROL>\n`;
+  prompt += `Для activatedCapabilities применяй nextLevelTargetPolicy и delegationMaturityLadder из TARGET_MODEL_DICTIONARY буквально.\n`;
+  prompt += `В activatedCapabilities включай только возможности реалистичного следующего уровня в срок target.deadlineMonths.\n`;
+  prompt += `Дальнюю автономность, масштаб и будущую роль владельца сохраняй только в desiredRoleSummary; они не должны повышать target через capability или modifier.\n`;
+  prompt += `Не смешивай помощь владельцу, делегирование задач, передачу процесса и результата, руководителей функций, слой управления и автономную организацию.\n`;
+  prompt += `Если формулировка смешивает ближайший шаг и дальнее видение, активируй более узкий ближайший шаг.\n`;
+  prompt += `</TARGET_HORIZON_CONTROL>`;
 
   if (correction) {
     prompt += `\n\n<CONTROLLED_REEVALUATION>\nИсправь только перечисленные противоречия, не меняя вход и versioned rules:\n${correction}\n</CONTROLLED_REEVALUATION>`;

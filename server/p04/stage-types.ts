@@ -1,4 +1,4 @@
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { StoredP02Result } from "@/server/p02/stage-types";
 import type { StoredP03Result } from "@/server/p03/stage-types";
 import type { StoredTargetArchetypeResult } from "@/server/stage4/types";
@@ -26,7 +26,7 @@ export type P04Source = {
     id: string | null;
     promptVersion: string | null;
     outputSchemaVersion: string | null;
-    result: P01ResultV1_4_1 | null;
+    result: P01ResultV1_4_2 | null;
     failureCode: string | null;
   };
   targetStage: StoredTargetArchetypeResult | null;

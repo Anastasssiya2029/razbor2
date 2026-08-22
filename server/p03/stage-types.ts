@@ -1,4 +1,4 @@
-import type { P01ResultV1_4_1 } from "@/server/p01/types";
+import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { StoredMoneyNowSelection } from "@/server/money-now-selector/types";
 import type {
   BackendMetric,
@@ -18,7 +18,7 @@ export type P03Source = {
     id: string | null;
     promptVersion: string | null;
     outputSchemaVersion: string | null;
-    result: P01ResultV1_4_1 | null;
+    result: P01ResultV1_4_2 | null;
     failureCode: string | null;
   };
   moneyNowSelection: StoredMoneyNowSelection | null;

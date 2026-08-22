@@ -349,7 +349,7 @@ test("38. prompt/schema/resource versions and exact prompt SHA are pinned", () =
   assert.equal(P04_PROMPT_SHA256, "55e3956bd053c5daa525dc48ca0e6ec62a23972497a2ba725d4b8898a707a9b4");
   assert.equal(createHash("sha256").update(P04_SYSTEM_PROMPT).digest("hex"), P04_PROMPT_SHA256);
   assert.equal(P04_RULE_VERSIONS.p03Prompt, "P-03.v1.5");
-  assert.equal(P04_RULE_VERSIONS.moneyNowSelectorContract, "money-now-selector-contract.v1.1");
+  assert.equal(P04_RULE_VERSIONS.moneyNowSelectorContract, "money-now-selector-contract.v1.2");
 });
 
 test("39. all four Money Now statuses validate without changing their backend state", async () => {
