@@ -932,6 +932,10 @@ button {
   margin: 0;
 }
 
+.auth-form .primary-button.compact {
+  justify-self: center;
+}
+
 .analysis-card {
   padding: 34px 30px 38px;
   overflow: hidden;
