@@ -199,12 +199,15 @@ export async function completeOpenRouterJson(options: {
   if (options.appUrl) headers["http-referer"] = options.appUrl;
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = (options.baseUrl ?? "https://openrouter.ai/api/v1").replace(/\/$/u, "");
+  const systemPrompt = options.structuredOutput
+    ? options.systemPrompt
+    : `${options.systemPrompt}\n\n<OUTPUT_JSON_SCHEMA>\n${JSON.stringify(options.outputSchema)}\n</OUTPUT_JSON_SCHEMA>\nВерни только JSON, который точно соответствует OUTPUT_JSON_SCHEMA.`;
   const response = await fetchImpl(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers,
     body: JSON.stringify({
       model: options.model,
-      messages: [{ role: "system", content: options.systemPrompt }],
+      messages: [{ role: "system", content: systemPrompt }],
       response_format: options.structuredOutput
         ? {
             type: "json_schema",

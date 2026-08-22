@@ -38,6 +38,11 @@ export function buildP01SystemPrompt(
   prompt += `Не смешивай помощь владельцу, делегирование задач, передачу процесса и результата, руководителей функций, слой управления и автономную организацию.\n`;
   prompt += `Если формулировка смешивает ближайший шаг и дальнее видение, активируй более узкий ближайший шаг.\n`;
   prompt += `</TARGET_HORIZON_CONTROL>`;
+  prompt += `\n\n<OUTPUT_CONTRACT_CONTROL>\n`;
+  prompt += `Корневое поле promptVersion должно быть ровно "P-01.v1.4.2".\n`;
+  prompt += `Корневое поле schemaVersion должно быть ровно "1.4".\n`;
+  prompt += `Не используй названия версии из описательных заголовков вместо этих двух точных констант.\n`;
+  prompt += `</OUTPUT_CONTRACT_CONTROL>`;
 
   if (correction) {
     prompt += `\n\n<CONTROLLED_REEVALUATION>\nИсправь только перечисленные противоречия, не меняя вход и versioned rules:\n${correction}\n</CONTROLLED_REEVALUATION>`;

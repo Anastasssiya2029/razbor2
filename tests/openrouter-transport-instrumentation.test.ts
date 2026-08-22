@@ -363,6 +363,33 @@ test("mocked successful transport retains the frozen parsed response path", asyn
   });
 });
 
+test("JSON-object fallback receives the exact local output schema without extra requests", async () => {
+  let calls = 0;
+  let capturedBody: Record<string, unknown> | null = null;
+  const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    calls += 1;
+    capturedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  const result = await completeOpenRouterJson({
+    ...transportOptions(fetchImpl),
+    structuredOutput: false,
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(result.text, '{"ok":true}');
+  const messages = capturedBody?.messages as Array<{ role: string; content: string }>;
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0]?.role, "system");
+  assert.match(messages[0]?.content ?? "", /<OUTPUT_JSON_SCHEMA>/u);
+  assert.match(messages[0]?.content ?? "", /"required":\["ok"\]/u);
+  assert.deepEqual(capturedBody?.response_format, { type: "json_object" });
+});
+
 class FailingProvider implements P01Provider {
   readonly provider = "mock";
   readonly model = "mock-p01";
