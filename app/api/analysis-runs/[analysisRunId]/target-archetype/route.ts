@@ -1,10 +1,12 @@
 import { Stage4Error, runTargetAndArchetypeStage } from "@/server/stage4";
+import { analysisRunAccessErrorResponse, requireAnalysisRunAccess } from "@/server/analysis-runs";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
+    await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
     const executed = await runTargetAndArchetypeStage(analysisRunId);
     if (executed.status === "analysis_failed") {
       return Response.json(
@@ -36,6 +38,8 @@ export async function POST(_request: Request, context: RouteContext) {
       },
     });
   } catch (error) {
+    const accessResponse = analysisRunAccessErrorResponse(error);
+    if (accessResponse) return accessResponse;
     if (error instanceof Stage4Error) {
       const status = error.code === "STAGE4_ANALYSIS_RUN_NOT_FOUND" ? 404 : 409;
       return Response.json(

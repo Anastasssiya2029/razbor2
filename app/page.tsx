@@ -14,6 +14,10 @@ import {
   type SystemElementId,
 } from "@/lib/business-analysis";
 import type { ClientsCountPeriod, DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
+import { logoutAndRedirect, useAppSession } from "@/app/_components/app-session";
+import { AnalysisResultView } from "@/app/_components/analysis-result-view";
+import type { AnalysisResultV1 } from "@/server/analysis-result";
+import { GiftWheel } from "@/app/_components/gift-wheel";
 
 type FieldProps = {
   label: string;
@@ -1090,6 +1094,12 @@ type CreateDiagnosticResponse = {
   message?: string;
 };
 
+type RunAnalysisResponse = {
+  status?: "ready";
+  result?: AnalysisResultV1;
+  message?: string;
+};
+
 function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalysisResult {
   const factualAnswers = [
     { title: "Откуда приходят клиенты", value: diagnostic.values.sources },
@@ -1109,6 +1119,7 @@ function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalys
 }
 
 export default function Home() {
+  const { user, loading: sessionLoading } = useAppSession({ redirectToLogin: true });
   const [activeTab, setActiveTab] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
   const [maxUnlockedStage, setMaxUnlockedStage] = useState(0);
@@ -1122,6 +1133,7 @@ export default function Home() {
   const [loadingTarget, setLoadingTarget] = useState<"analysis" | "plan" | null>(null);
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
+  const [realAnalysisResult, setRealAnalysisResult] = useState<AnalysisResultV1 | null>(null);
 
   const formula = useMemo(() => {
     const goal = values.goalIncome?.trim() || "_____";
@@ -1146,37 +1158,52 @@ export default function Home() {
     const rawValues = { ...values };
 
     try {
-      const response = await fetch("/api/diagnostics", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          sourceSchemaVersion: "diagnostic-flat-form.v1.2",
-          rawAnswers: {
-            values: rawValues,
-            deadline,
-            clientsCountPeriod,
-            desiredSystemWeeklyHoursApplicable: desiredSystemHoursApplicable,
-          },
-        }),
-      });
-      const result = (await response.json()) as CreateDiagnosticResponse;
-      if (!response.ok) {
-        throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось сохранить диагностику.");
-      }
+      let diagnostic = submittedDiagnostic;
+      if (!diagnostic) {
+        const response = await fetch("/api/diagnostics", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            sourceSchemaVersion: "diagnostic-flat-form.v1.2",
+            rawAnswers: {
+              values: rawValues,
+              deadline,
+              clientsCountPeriod,
+              desiredSystemWeeklyHoursApplicable: desiredSystemHoursApplicable,
+            },
+          }),
+        });
+        const result = (await response.json()) as CreateDiagnosticResponse;
+        if (!response.ok) {
+          throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось сохранить диагностику.");
+        }
 
-      const diagnostic: SubmittedDiagnostic = {
-        values: rawValues,
-        deadline,
-        input: result.input,
-        diagnosticId: result.diagnosticId,
-        analysisRunId: result.analysisRunId,
-      };
-      setSubmittedDiagnostic(diagnostic);
-      setAnalysisResult(buildPrototypeAnalysis(diagnostic));
+        diagnostic = {
+          values: rawValues,
+          deadline,
+          input: result.input,
+          diagnosticId: result.diagnosticId,
+          analysisRunId: result.analysisRunId,
+        };
+        setSubmittedDiagnostic(diagnostic);
+      }
       setLoadingTarget("analysis");
       setAnalysisSlide(0);
       window.scrollTo({ top: 0, behavior: "smooth" });
+
+      const analysisResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
+        method: "POST",
+      });
+      const analysis = (await analysisResponse.json()) as RunAnalysisResponse;
+      if (!analysisResponse.ok || !analysis.result) {
+        throw new Error(analysis.message ?? "Не удалось завершить разбор. Ответы сохранены в кабинете.");
+      }
+      setRealAnalysisResult(analysis.result);
+      setCurrentStage(1);
+      setMaxUnlockedStage(2);
+      setLoadingTarget(null);
     } catch (error) {
+      setLoadingTarget(null);
       setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить диагностику.");
     } finally {
       setIsSubmittingDiagnostic(false);
@@ -1190,15 +1217,10 @@ export default function Home() {
 
   useEffect(() => {
     if (!loadingTarget) return;
-    const destination = loadingTarget;
+    if (loadingTarget === "analysis") return;
     const timer = window.setTimeout(() => {
-      if (destination === "analysis") {
-        setCurrentStage(1);
-        setMaxUnlockedStage((current) => Math.max(current, 1));
-      } else {
-        setCurrentStage(2);
-        setMaxUnlockedStage((current) => Math.max(current, 2));
-      }
+      setCurrentStage(2);
+      setMaxUnlockedStage((current) => Math.max(current, 2));
       setLoadingTarget(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }, 10000);
@@ -1216,11 +1238,18 @@ export default function Home() {
   const submittedFieldCount = Object.values(submittedValues).filter((value) => value.trim()).length + 2;
   const visibleAnalysis = analysisResult ?? demoBusinessAnalysis;
 
+  if (sessionLoading || !user) {
+    return <main className="admin-loading">Проверяю доступ…</main>;
+  }
+
   return (
     <main className={`site-shell ${loadingTarget ? "is-neuro-loading" : ""}`}>
       {!loadingTarget && <header className="site-header">
         <Brand />
-        <span className="system-label">Система пошагового роста</span>
+        <nav className="admin-actions" aria-label="Навигация кабинета">
+          <a className="admin-button" href="/cabinet">Мои разборы</a>
+          <button className="admin-button danger" type="button" onClick={() => void logoutAndRedirect()}>Выйти</button>
+        </nav>
       </header>}
 
       {!loadingTarget && <section className="hero" aria-labelledby="page-title">
@@ -1428,6 +1457,16 @@ export default function Home() {
           )}
         </div>
       </section>
+      ) : realAnalysisResult ? (
+        <section className="embedded-result">
+          <AnalysisResultView
+            result={realAnalysisResult}
+            deadlineLabel={submittedDiagnostic?.deadline ?? deadline}
+            currentRevenueRub={submittedDiagnostic?.input.current.monthlyRevenueRub}
+            targetRevenueRub={submittedDiagnostic?.input.target.monthlyRevenueRub}
+          />
+          {submittedDiagnostic && <GiftWheel analysisRunId={submittedDiagnostic.analysisRunId} />}
+        </section>
       ) : currentStage === 1 ? (
         // При подключении ИИ buildPrototypeAnalysis заменяется серверным ответом business_analysis_v1.
         <AnalysisSection

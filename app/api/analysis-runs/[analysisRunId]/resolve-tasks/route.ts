@@ -1,10 +1,12 @@
 import { runTaskResolverStage, TaskResolverError } from "@/server/task-resolver";
+import { analysisRunAccessErrorResponse, requireAnalysisRunAccess } from "@/server/analysis-runs";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
+    await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
     const executed = await runTaskResolverStage(analysisRunId);
     if (executed.status === "analysis_failed") {
       return Response.json({
@@ -24,6 +26,8 @@ export async function POST(_request: Request, context: RouteContext) {
       moneyNowSelectorStarted: false,
     });
   } catch (error) {
+    const accessResponse = analysisRunAccessErrorResponse(error);
+    if (accessResponse) return accessResponse;
     if (error instanceof TaskResolverError) {
       const status = error.code === "TASK_RESOLVER_ANALYSIS_RUN_NOT_FOUND"
         ? 404

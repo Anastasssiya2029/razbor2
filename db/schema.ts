@@ -1,6 +1,66 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+export const appUsers = sqliteTable(
+  "app_users",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    displayName: text("display_name").notNull(),
+    role: text("role").notNull(),
+    status: text("status").notNull().default("invited"),
+    authSubject: text("auth_subject"),
+    createdByUserId: text("created_by_user_id"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("app_users_email_unique").on(table.email),
+    uniqueIndex("app_users_auth_subject_unique").on(table.authSubject),
+    index("app_users_role_status_idx").on(table.role, table.status),
+    check("app_users_role_check", sql`${table.role} in ('architect','admin','manager')`),
+    check("app_users_status_check", sql`${table.status} in ('invited','active','disabled')`),
+  ],
+);
+
+export const appSessions = sqliteTable(
+  "app_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+    lastSeenAt: integer("last_seen_at").notNull(),
+    revokedAt: text("revoked_at"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("app_sessions_token_hash_unique").on(table.tokenHash),
+    index("app_sessions_user_idx").on(table.userId),
+    index("app_sessions_expiry_idx").on(table.expiresAt),
+  ],
+);
+
+export const clients = sqliteTable(
+  "clients",
+  {
+    id: text("id").primaryKey(),
+    displayName: text("display_name").notNull(),
+    niche: text("niche"),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("clients_owner_created_idx").on(table.createdByUserId, table.createdAt),
+    index("clients_name_idx").on(table.displayName),
+  ],
+);
+
 export const diagnostics = sqliteTable(
   "diagnostics",
   {
@@ -8,11 +68,18 @@ export const diagnostics = sqliteTable(
     schemaVersion: text("schema_version").notNull(),
     sourceSchemaVersion: text("source_schema_version").notNull(),
     methodologyVersion: text("methodology_version").notNull(),
+    clientId: text("client_id").references(() => clients.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    ownerUserId: text("owner_user_id").references(() => appUsers.id, { onDelete: "restrict", onUpdate: "cascade" }),
     rawAnswersJson: text("raw_answers_json").notNull(),
     normalizedInputJson: text("normalized_input_json").notNull(),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("diagnostics_created_at_idx").on(table.createdAt)],
+  (table) => [
+    index("diagnostics_created_at_idx").on(table.createdAt),
+    index("diagnostics_owner_created_idx").on(table.ownerUserId, table.createdAt),
+    index("diagnostics_client_idx").on(table.clientId),
+  ],
 );
 
 export const analysisRuns = sqliteTable(
@@ -39,6 +106,59 @@ export const analysisRuns = sqliteTable(
       "analysis_runs_status_check",
       sql`${table.status} in ('draft','queued','scoring','targeting','strategizing','money_now','resolving_tasks','writing_report','ready','analysis_failed')`,
     ),
+  ],
+);
+
+export const analysisRunLocks = sqliteTable(
+  "analysis_run_locks",
+  {
+    analysisRunId: text("analysis_run_id")
+      .primaryKey()
+      .references(() => analysisRuns.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    token: text("token").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("analysis_run_locks_expiry_idx").on(table.expiresAt)],
+);
+
+export const analysisGifts = sqliteTable(
+  "analysis_gifts",
+  {
+    id: text("id").primaryKey(),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    tariff: text("tariff").notNull(),
+    prizeCode: text("prize_code").notNull(),
+    prizeName: text("prize_name").notNull(),
+    selectedByUserId: text("selected_by_user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    selectedAt: text("selected_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("analysis_gifts_run_unique").on(table.analysisRunId),
+    index("analysis_gifts_selected_by_idx").on(table.selectedByUserId),
+    check("analysis_gifts_tariff_check", sql`${table.tariff} in ('self','support')`),
+  ],
+);
+
+export const analysisSheetSyncs = sqliteTable(
+  "analysis_sheet_syncs",
+  {
+    analysisRunId: text("analysis_run_id")
+      .primaryKey()
+      .references(() => analysisRuns.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastErrorCode: text("last_error_code"),
+    syncedAt: text("synced_at"),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("analysis_sheet_syncs_status_idx").on(table.status),
+    check("analysis_sheet_syncs_status_check", sql`${table.status} in ('pending','synced','failed','not_configured')`),
   ],
 );
 

@@ -2,12 +2,14 @@ import {
   MoneyNowSelectorStageError,
   runMoneyNowSelectorStage,
 } from "@/server/money-now-selector";
+import { analysisRunAccessErrorResponse, requireAnalysisRunAccess } from "@/server/analysis-runs";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
+    await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
     const executed = await runMoneyNowSelectorStage(analysisRunId);
     if (executed.status === "analysis_failed") {
       return Response.json(
@@ -31,6 +33,8 @@ export async function POST(_request: Request, context: RouteContext) {
       p04Started: false,
     });
   } catch (error) {
+    const accessResponse = analysisRunAccessErrorResponse(error);
+    if (accessResponse) return accessResponse;
     if (error instanceof MoneyNowSelectorStageError) {
       const status = error.code === "MONEY_NOW_SELECTOR_ANALYSIS_RUN_NOT_FOUND"
         ? 404

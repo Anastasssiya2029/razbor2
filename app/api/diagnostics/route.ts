@@ -1,21 +1,13 @@
-import { getDb } from "@/db";
-import { analysisRuns, diagnostics } from "@/db/schema";
 import {
   DIAGNOSTIC_SCHEMA_VERSION,
-  DiagnosticContractError,
   METHODOLOGY_VERSION,
   normalizeDiagnosticSubmission,
 } from "@/lib/diagnostic-input";
+import { requireAuthenticatedUser } from "@/server/auth";
+import { createDiagnosticRecord } from "@/server/diagnostics";
+import { diagnosticErrorResponse } from "@/server/diagnostics/http";
 
 const MAX_REQUEST_BYTES = 256 * 1024;
-
-function storageErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Unexpected storage error";
-  if (message.includes("no such table")) {
-    return "Хранилище диагностики ещё не мигрировано. Примените сгенерированную D1-миграцию.";
-  }
-  return message;
-}
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
@@ -24,61 +16,46 @@ export async function POST(request: Request) {
   }
 
   try {
+    const actor = await requireAuthenticatedUser(request);
     const payload = await request.json();
+    const intent = payload && typeof payload === "object" && (payload as Record<string, unknown>).intent === "draft"
+      ? "draft"
+      : "submit";
     const normalized = normalizeDiagnosticSubmission(payload);
-    const diagnosticId = crypto.randomUUID();
-    const analysisRunId = crypto.randomUUID();
-    const db = await getDb();
-
-    await db.batch([
-      db.insert(diagnostics).values({
-        id: diagnosticId,
-        schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
-        sourceSchemaVersion: normalized.sourceSchemaVersion,
-        methodologyVersion: METHODOLOGY_VERSION,
-        rawAnswersJson: JSON.stringify(normalized.rawPayload),
-        normalizedInputJson: JSON.stringify(normalized.input),
-      }),
-      db.insert(analysisRuns).values({
-        id: analysisRunId,
-        diagnosticId,
-        status: "queued",
-        schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
-        methodologyVersion: METHODOLOGY_VERSION,
-        promptVersionsJson: "{}",
-        modelMetadataJson: "{}",
-      }),
-    ]);
-
+    const created = await createDiagnosticRecord({ actor, normalized, intent });
+    if (intent === "draft") {
+      return Response.json(
+        {
+          clientId: created.clientId,
+          diagnosticId: created.diagnosticId,
+          analysisRunId: created.analysisRunId,
+          status: "draft",
+          nextStep: null,
+          schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
+          methodologyVersion: METHODOLOGY_VERSION,
+          input: created.normalized.input,
+        },
+        { status: 201 },
+      );
+    }
     return Response.json(
       {
-        diagnosticId,
-        analysisRunId,
+        clientId: created.clientId,
+        diagnosticId: created.diagnosticId,
+        analysisRunId: created.analysisRunId,
         status: "queued",
         nextStep: {
           method: "POST",
-          href: `/api/analysis-runs/${analysisRunId}/p01`,
+          href: `/api/analysis-runs/${created.analysisRunId}/p01`,
           module: "P-01.v1.4.1",
         },
         schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
         methodologyVersion: METHODOLOGY_VERSION,
-        input: normalized.input,
+        input: created.normalized.input,
       },
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof DiagnosticContractError) {
-      return Response.json(
-        { error: "invalid_diagnostic_input", issues: error.issues },
-        { status: 422 },
-      );
-    }
-    if (error instanceof SyntaxError) {
-      return Response.json({ error: "invalid_json" }, { status: 400 });
-    }
-    return Response.json(
-      { error: "diagnostic_storage_failed", message: storageErrorMessage(error) },
-      { status: 500 },
-    );
+    return diagnosticErrorResponse(error);
   }
 }

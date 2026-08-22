@@ -5,6 +5,7 @@ import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "@/server/7k/config/money-now-
 import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.1";
 import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
+import { openRouterErrorArtifact } from "@/server/ai/openrouter-json";
 import { createConfiguredP01Provider } from "./provider";
 import { buildP01SystemPrompt } from "./request";
 import type {
@@ -184,6 +185,7 @@ export async function runP01EvidenceScorer(
       latestRaw = response.rawResponse;
       addUsage(usage, response.usage);
     } catch (error) {
+      latestRaw = openRouterErrorArtifact(error);
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;
         correction = null;

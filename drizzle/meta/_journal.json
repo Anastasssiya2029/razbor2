@@ -64,6 +64,41 @@
       "when": 1787131251809,
       "tag": "0008_famous_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1787402659901,
+      "tag": "0009_closed_brother_voodoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1787402933263,
+      "tag": "0010_solid_speed_demon",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1787403351919,
+      "tag": "0011_orange_triton",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1787404143945,
+      "tag": "0012_groovy_thunderball",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1787404633432,
+      "tag": "0013_dear_quentin_quire",
+      "breakpoints": true
     }
   ]
 }

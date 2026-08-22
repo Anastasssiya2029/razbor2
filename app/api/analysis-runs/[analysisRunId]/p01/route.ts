@@ -1,13 +1,19 @@
 import { getDb } from "@/db";
 import { analysisRuns, diagnostics, p01AnalysisResults } from "@/db/schema";
 import { validateDiagnosticInput } from "@/lib/diagnostic-input";
+import { analysisRunAccessErrorResponse, requireAnalysisRunAccess } from "@/server/analysis-runs";
 import { executeP01AnalysisRun } from "@/server/p01/analysis-run-service";
 import { and, eq } from "drizzle-orm";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
+  try {
+    await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
+  } catch (error) {
+    return analysisRunAccessErrorResponse(error) ?? Response.json({ error: "ANALYSIS_RUN_ACCESS_FAILED" }, { status: 500 });
+  }
   const db = await getDb();
   const rows = await db
     .select({
