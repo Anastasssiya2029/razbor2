@@ -8,6 +8,7 @@ import {
   completeOpenRouterJson,
   openRouterErrorArtifact,
   openRouterHttpErrorFromResponse,
+  prepareOpenRouterStructuredSchema,
 } from "../server/ai/openrouter-json";
 import { P01RunExecutionError, runP01EvidenceScorer } from "../server/p01/runner";
 import type { P01Provider, P01ProviderRequest, P01ProviderResponse } from "../server/p01/types";
@@ -18,6 +19,33 @@ const OUTPUT_SCHEMA = {
   required: ["ok"],
   additionalProperties: false,
 };
+
+test("provider schema is compacted without weakening local validation", () => {
+  const repeated = {
+    type: "object",
+    properties: {
+      state: { enum: ["yes", "no"], maxLength: 3 },
+      score: { type: "integer", minimum: 0, maximum: 10 },
+    },
+    required: ["state", "score"],
+    additionalProperties: false,
+  };
+  const compacted = prepareOpenRouterStructuredSchema({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    type: "object",
+    properties: { first: repeated, second: repeated },
+    required: ["first", "second"],
+    additionalProperties: false,
+  });
+  const serialized = JSON.stringify(compacted);
+  assert.doesNotMatch(serialized, /\$schema|minLength|maxLength|minimum|maximum/u);
+  assert.match(serialized, /#\/\$defs\/shared_1/u);
+  assert.ok(isRecordForTest(compacted.$defs));
+});
+
+function isRecordForTest(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 const MALICIOUS_SENTINELS = [
   "Client Anna reported revenue 100000 and unstable leads",

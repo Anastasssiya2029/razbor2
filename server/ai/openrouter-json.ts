@@ -53,6 +53,98 @@ export class OpenRouterHttpError extends Error {
 
 type FetchLike = typeof fetch;
 
+const PROVIDER_UNSUPPORTED_SCHEMA_KEYWORDS = new Set([
+  "$schema",
+  "$id",
+  "minLength",
+  "maxLength",
+  "pattern",
+  "format",
+  "minimum",
+  "maximum",
+  "multipleOf",
+  "minItems",
+  "maxItems",
+  "uniqueItems",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function sanitizeProviderSchema(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeProviderSchema);
+  if (!isRecord(value)) return value;
+  const result: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (PROVIDER_UNSUPPORTED_SCHEMA_KEYWORDS.has(key)) continue;
+    if (key === "const") {
+      result.enum = [sanitizeProviderSchema(child)];
+      continue;
+    }
+    result[key] = sanitizeProviderSchema(child);
+  }
+  return result;
+}
+
+function isSchemaNode(value: Record<string, unknown>): boolean {
+  return ["type", "enum", "anyOf", "items", "properties", "$ref"].some((key) => key in value);
+}
+
+function compactProviderSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const signatures = new Map<string, { count: number; value: Record<string, unknown> }>();
+  const collect = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(collect);
+      return;
+    }
+    if (!isRecord(value)) return;
+    const signature = JSON.stringify(value);
+    if (signature.length >= 80 && isSchemaNode(value)) {
+      const current = signatures.get(signature);
+      signatures.set(signature, { count: (current?.count ?? 0) + 1, value });
+    }
+    Object.values(value).forEach(collect);
+  };
+  collect(schema);
+
+  const names = new Map<string, string>();
+  const definitions: Record<string, unknown> = {};
+  const pending: Array<{ name: string; value: Record<string, unknown> }> = [];
+  const transform = (value: unknown, skipSelf = false): unknown => {
+    if (Array.isArray(value)) return value.map((child) => transform(child));
+    if (!isRecord(value)) return value;
+    const signature = JSON.stringify(value);
+    const repeated = signatures.get(signature);
+    if (!skipSelf && repeated && repeated.count > 1) {
+      let name = names.get(signature);
+      if (!name) {
+        name = `shared_${names.size + 1}`;
+        names.set(signature, name);
+        pending.push({ name, value: repeated.value });
+      }
+      return { $ref: `#/$defs/${name}` };
+    }
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, transform(child)]),
+    );
+  };
+
+  const compacted = transform(schema, true) as Record<string, unknown>;
+  for (let index = 0; index < pending.length; index += 1) {
+    const item = pending[index];
+    definitions[item.name] = transform(item.value, true);
+  }
+  if (Object.keys(definitions).length > 0) compacted.$defs = definitions;
+  return compacted;
+}
+
+export function prepareOpenRouterStructuredSchema(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  return compactProviderSchema(sanitizeProviderSchema(schema) as Record<string, unknown>);
+}
+
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -214,7 +306,7 @@ export async function completeOpenRouterJson(options: {
             json_schema: {
               name: options.schemaName,
               strict: true,
-              schema: options.outputSchema,
+              schema: prepareOpenRouterStructuredSchema(options.outputSchema),
             },
           }
         : { type: "json_object" },
