@@ -299,7 +299,7 @@ export async function completeOpenRouterJson(options: {
     headers,
     body: JSON.stringify({
       model: options.model,
-      reasoning: { effort: "low", exclude: true },
+      reasoning: { effort: "none", exclude: true },
       messages: [{ role: "system", content: systemPrompt }],
       response_format: options.structuredOutput
         ? {

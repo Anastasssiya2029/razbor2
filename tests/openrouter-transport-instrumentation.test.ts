@@ -350,7 +350,7 @@ test("mocked error transport preserves frozen request semantics and performs one
   assert.equal(calls, 1);
   assert.deepEqual(capturedBody, {
     model: "test/model",
-    reasoning: { effort: "low", exclude: true },
+    reasoning: { effort: "none", exclude: true },
     messages: [{ role: "system", content: "SYSTEM_PROMPT_SENT_TO_PROVIDER" }],
     response_format: {
       type: "json_schema",
