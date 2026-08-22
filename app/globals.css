@@ -480,10 +480,10 @@ button {
 
 .tab.active .tab-number {
   color: white;
-  background: linear-gradient(145deg, var(--velvet) 2%, var(--purple) 70%, var(--berry) 100%);
+  background: linear-gradient(145deg, #542379 0%, #852b8d 52%, #c9317f 100%);
   box-shadow:
     0 5px 13px rgba(109, 47, 182, 0.28),
-    5px 3px 14px rgba(113, 29, 104, 0.16);
+    5px 3px 14px rgba(201, 49, 127, 0.2);
 }
 
 .tab-content {
