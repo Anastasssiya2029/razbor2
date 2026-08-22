@@ -6,6 +6,7 @@ import { AppBrand } from "@/app/_components/brand";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -47,7 +48,29 @@ export default function LoginPage() {
         </div>
         <form className="auth-form" onSubmit={submit}>
           <label>Email<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-          <label>Пароль<input type="password" autoComplete="current-password" minLength={6} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          <label>
+            Пароль
+            <span className="password-input">
+              <input
+                type={passwordVisible ? "text" : "password"}
+                autoComplete="current-password"
+                minLength={6}
+                maxLength={128}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+              <button
+                className="password-visibility-toggle"
+                type="button"
+                aria-label={passwordVisible ? "Скрыть пароль" : "Показать пароль"}
+                aria-pressed={passwordVisible}
+                onClick={() => setPasswordVisible((visible) => !visible)}
+              >
+                <span className="password-visibility-icon" aria-hidden="true" />
+              </button>
+            </span>
+          </label>
           <button className="primary-button compact" type="submit" disabled={busy}>
             {busy ? "Проверяю…" : "Войти"}
           </button>

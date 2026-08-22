@@ -74,6 +74,16 @@ body {
 .auth-form input,
 .team-form input,
 .team-form select { width: 100%; min-height: 50px; padding: 11px 14px; color: var(--ink); background: #fff; border: 1px solid rgba(109, 47, 182, .22); border-radius: 11px; outline: none; }
+.password-input { position: relative; display: block; }
+.password-input input { padding-right: 54px; }
+.password-visibility-toggle { width: 40px; height: 40px; padding: 0; position: absolute; top: 50%; right: 6px; display: grid; place-items: center; color: #7b277d; background: transparent; border: 0; border-radius: 10px; cursor: pointer; transform: translateY(-50%); }
+.password-visibility-toggle:hover { background: rgba(109, 47, 182, .08); }
+.password-visibility-toggle:focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(109, 47, 182, .16); }
+.password-visibility-icon { width: 19px; height: 19px; position: relative; display: block; }
+.password-visibility-icon::before { width: 15px; height: 15px; position: absolute; top: 2px; left: 2px; content: ""; border: 2px solid currentColor; border-radius: 65% 15%; transform: rotate(45deg); }
+.password-visibility-icon::after { width: 5px; height: 5px; position: absolute; top: 7px; left: 7px; content: ""; background: currentColor; border-radius: 50%; }
+.password-visibility-toggle[aria-pressed="true"] .password-visibility-icon { opacity: .72; }
+.password-visibility-toggle[aria-pressed="true"] .password-visibility-icon::after { width: 22px; height: 2px; top: 8px; left: -1px; border-radius: 2px; transform: rotate(-45deg); }
 .auth-message,
 .team-message { margin: 15px 0 0; padding: 12px 14px; color: #5d2461; background: #fbf1fb; border-radius: 10px; font-size: 14px; }
 .auth-switch { width: 100%; margin-top: 18px; padding: 8px; color: #7b277d; background: transparent; border: 0; cursor: pointer; font-weight: 750; }
