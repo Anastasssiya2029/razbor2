@@ -56,3 +56,13 @@ test("text answers match label size without inheriting label emphasis", () => {
     /\.field-number textarea\s*\{[\s\S]*?font-size:\s*16px;[\s\S]*?font-weight:\s*600;/u,
   );
 });
+
+test("long analysis shows real pipeline progress and immediately advances completed stages", () => {
+  const page = readFileSync("app/page.tsx", "utf8");
+  const styles = readFileSync("app/globals.css", "utf8");
+  assert.match(page, /analysisProgressByStatus/u);
+  assert.match(page, /Шаг \$\{progress\.step\} из 6/u);
+  assert.match(page, /обычно занимает 3–6 минут/u);
+  assert.match(page, /analysis\.status !== "ready"\) \{\s*continue;/u);
+  assert.match(styles, /\.neuro-progress-meter/u);
+});

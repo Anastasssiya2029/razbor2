@@ -680,8 +680,99 @@ function BusinessAnalysis({
   );
 }
 
-function NeuroAnalysisScreen({ mode }: { mode: "analysis" | "plan" }) {
+type AnalysisProgressStatus =
+  | "queued"
+  | "scoring"
+  | "targeting"
+  | "strategizing"
+  | "resolving_tasks"
+  | "money_now"
+  | "writing_report"
+  | "ready";
+
+const analysisProgressByStatus: Record<AnalysisProgressStatus, {
+  step: number;
+  percent: number;
+  title: string;
+  detail: string;
+}> = {
+  queued: {
+    step: 1,
+    percent: 8,
+    title: "Оцениваю 7 элементов системы",
+    detail: "Сопоставляю ответы с матрицей 7К и проверяю доказательства для каждого балла.",
+  },
+  scoring: {
+    step: 1,
+    percent: 12,
+    title: "Оцениваю 7 элементов системы",
+    detail: "Сопоставляю ответы с матрицей 7К и проверяю доказательства для каждого балла.",
+  },
+  targeting: {
+    step: 2,
+    percent: 28,
+    title: "Рассчитываю архетип и цель",
+    detail: "Программно рассчитываю текущий архетип и допустимую целевую конфигурацию.",
+  },
+  strategizing: {
+    step: 3,
+    percent: 42,
+    title: "Ищу главную связку роста",
+    detail: "Определяю ограничение и элементы, которые должны усиливаться вместе.",
+  },
+  resolving_tasks: {
+    step: 4,
+    percent: 60,
+    title: "Подбираю задачи перехода",
+    detail: "Сверяю связку роста с матрицей переходов и формирую последовательность действий.",
+  },
+  money_now: {
+    step: 5,
+    percent: 72,
+    title: "Определяю денежные действия",
+    detail: "Проверяю, какое действие может быстрее всего дать деньги в текущей ситуации.",
+  },
+  writing_report: {
+    step: 6,
+    percent: 88,
+    title: "Собираю индивидуальный план",
+    detail: "Объединяю расчёты, задачи и рекомендации в итоговый разбор.",
+  },
+  ready: {
+    step: 6,
+    percent: 100,
+    title: "Разбор готов",
+    detail: "Завершаю сохранение результата в кабинете.",
+  },
+};
+
+function formatAnalysisElapsed(seconds: number): string {
+  if (seconds < 60) return `${seconds} сек`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return remainder ? `${minutes} мин ${remainder} сек` : `${minutes} мин`;
+}
+
+function NeuroAnalysisScreen({
+  mode,
+  analysisStatus = "queued",
+  startedAt = null,
+}: {
+  mode: "analysis" | "plan";
+  analysisStatus?: AnalysisProgressStatus;
+  startedAt?: number | null;
+}) {
   const isPlan = mode === "plan";
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const progress = analysisProgressByStatus[analysisStatus];
+
+  useEffect(() => {
+    if (isPlan || !startedAt) return;
+    const updateElapsed = () => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    updateElapsed();
+    const timer = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(timer);
+  }, [isPlan, startedAt]);
 
   return (
     <section className="diagnostic-card neuro-screen" aria-live="polite" aria-busy="true">
@@ -694,19 +785,37 @@ function NeuroAnalysisScreen({ mode }: { mode: "analysis" | "plan" }) {
       <span className="neuro-badge">
         <BrainIcon className="neuro-badge-brain" /> Нейро-анализ
       </span>
-      <p className="neuro-status-title">{isPlan ? "Собираю маршрут перехода" : "Анализирую вашу систему"}</p>
+      <p className="neuro-status-title">{isPlan ? "Собираю маршрут перехода" : progress.title}</p>
       <p className="neuro-status-copy">
         {isPlan
           ? "Алекс сопоставляет текущий уровень каждого элемента 7К с вашей целью и собирает последовательность действий без лишней нагрузки."
-          : "Сейчас наш нейро-маркетолог Алекс анализирует все ваши ответы, состояние бизнес-системы и определяет ключевую точку перехода к цели."}
+          : progress.detail}
       </p>
       <div className="neuro-progress">
         <span className="neuro-spinner" aria-hidden="true" />
         <div>
-          <strong>Прогресс</strong>
-          <span>{isPlan ? "Выстраиваем приоритеты…" : "Обрабатываем данные…"}</span>
+          <strong>{isPlan ? "Прогресс" : `Шаг ${progress.step} из 6 · ${formatAnalysisElapsed(elapsedSeconds)}`}</strong>
+          <span>{isPlan ? "Выстраиваем приоритеты…" : `${progress.percent}% выполнено`}</span>
         </div>
       </div>
+      {!isPlan && (
+        <>
+          <div
+            className="neuro-progress-meter"
+            role="progressbar"
+            aria-label="Прогресс анализа"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress.percent}
+          >
+            <span style={{ width: `${progress.percent}%` }} />
+          </div>
+          <p className="neuro-duration-note">
+            Полный разбор обычно занимает 3–6 минут: четыре AI‑этапа выполняются последовательно.
+            Анкета уже сохранена — повторно отправлять её не нужно.
+          </p>
+        </>
+      )}
     </section>
   );
 }
@@ -1173,7 +1282,7 @@ type CreateDiagnosticResponse = {
 };
 
 type RunAnalysisResponse = {
-  status?: "ready";
+  status?: AnalysisProgressStatus;
   result?: AnalysisResultV1;
   error?: string;
   message?: string;
@@ -1252,6 +1361,8 @@ export default function Home() {
   const [isSavingStart, setIsSavingStart] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [loadingTarget, setLoadingTarget] = useState<"analysis" | "plan" | null>(null);
+  const [analysisProgressStatus, setAnalysisProgressStatus] = useState<AnalysisProgressStatus>("queued");
+  const [analysisStartedAt, setAnalysisStartedAt] = useState<number | null>(null);
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
   const [realAnalysisResult, setRealAnalysisResult] = useState<AnalysisResultV1 | null>(null);
@@ -1336,6 +1447,8 @@ export default function Home() {
     setRealAnalysisResult(null);
     setSubmissionError(null);
     setLoadingTarget(null);
+    setAnalysisProgressStatus("queued");
+    setAnalysisStartedAt(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -1498,6 +1611,8 @@ export default function Home() {
         setSubmittedDiagnostic(diagnostic);
       }
       setLoadingTarget("analysis");
+      setAnalysisProgressStatus("queued");
+      setAnalysisStartedAt(Date.now());
       setAnalysisSlide(0);
       window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -1513,10 +1628,16 @@ export default function Home() {
             throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
           }
           analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
-          if (analysisResponse.ok && analysis?.result) break;
+          if (analysisResponse.ok && analysis?.status) {
+            setAnalysisProgressStatus(analysis.status);
+          }
+          if (analysisResponse.ok && analysis?.status === "ready" && analysis.result) break;
           if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
             setSubmittedDiagnostic(null);
             throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
+          }
+          if (analysisResponse.ok && analysis?.status && analysis.status !== "ready") {
+            continue;
           }
         } catch (error) {
           if (error instanceof Error && /завершился ошибкой|Сессия входа завершилась/u.test(error.message)) throw error;
@@ -1531,6 +1652,9 @@ export default function Home() {
           throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
+        if (status?.status && status.status in analysisProgressByStatus) {
+          setAnalysisProgressStatus(status.status as AnalysisProgressStatus);
+        }
         if (status?.status === "analysis_failed") {
           setSubmittedDiagnostic(null);
           throw new Error(`Разбор завершился ошибкой${status.errorCode ? ` (${status.errorCode})` : ""}. Ответы сохранены в кабинете.`);
@@ -1558,9 +1682,11 @@ export default function Home() {
       setCurrentStage(1);
       setMaxUnlockedStage(2);
       setLoadingTarget(null);
+      setAnalysisStartedAt(null);
       window.sessionStorage.removeItem(FORM_RECOVERY_STORAGE_KEY);
     } catch (error) {
       setLoadingTarget(null);
+      setAnalysisStartedAt(null);
       setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить диагностику.");
     } finally {
       setIsSubmittingDiagnostic(false);
@@ -1621,7 +1747,11 @@ export default function Home() {
       </section>}
 
       {loadingTarget ? (
-        <NeuroAnalysisScreen mode={loadingTarget} />
+        <NeuroAnalysisScreen
+          mode={loadingTarget}
+          analysisStatus={analysisProgressStatus}
+          startedAt={analysisStartedAt}
+        />
       ) : currentStage === 0 ? (
       <section className="diagnostic-card" aria-label="Диагностика бизнес-системы">
         <div className="identity-grid">
