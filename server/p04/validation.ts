@@ -187,7 +187,13 @@ export function canonicalizeP04ImmutableEchoes(
 }
 
 function safeNarrativeTypography(value: string): string {
-  return value.replace(/[—–]/gu, "-");
+  return value
+    .replace(/[—–]/gu, "-")
+    .replace(/\b(?:готова|готов)\b/giu, "готовы")
+    .replace(/\b(?:сделала|сделал)\b/giu, "сделали")
+    .replace(/\b(?:начала|начал)\b/giu, "начали")
+    .replace(/\b(?:выстроила|выстроил)\b/giu, "выстроили")
+    .replace(/\b(?:решила|решил)\b/giu, "решили");
 }
 
 export function canonicalizeP04NarrativePresentation(
