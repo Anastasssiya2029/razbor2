@@ -657,6 +657,18 @@ test("matched history with confirmed current new condition remains valid", async
   assert.doesNotThrow(() => finalizeAndValidateP03Output(value, prepared));
 });
 
+test("no-match history discards model-supplied evidence that cannot represent a matched attempt", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const value = validOutput(prepared);
+  value.interventionHistoryReview[1].matched_attempt_evidence_ids = ["E01", "E10"];
+  value.interventionHistoryReview[1].new_condition_evidence_ids = ["E10"];
+
+  const normalized = finalizeAndValidateP03Output(value, prepared);
+
+  assert.deepEqual(normalized.interventionHistoryReview[1].matched_attempt_evidence_ids, []);
+  assert.deepEqual(normalized.interventionHistoryReview[1].new_condition_evidence_ids, []);
+});
+
 test("unclear intervention history requires blocked_by_insufficient_evidence", async () => {
   const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
   const blocked = blockedUnclearHistoryOutput(prepared);

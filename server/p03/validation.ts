@@ -102,6 +102,34 @@ export function canonicalizeP03SupportingElements(
   return normalized;
 }
 
+function canonicalizeP03HistoryEvidence(
+  result: P03ResultV1_5,
+  input: P03SelectedPreparedInput,
+): P03ResultV1_5 {
+  const normalized = structuredClone(result);
+  const attemptEvidence = new Set(
+    input.context.businessMap.experience.attempts.flatMap((attempt) => attempt.evidence_ids),
+  );
+  const currentEvidence = new Set(
+    input.context.evidenceLedger
+      .filter((item) => item.time_scope === "current")
+      .map((item) => item.id),
+  );
+
+  normalized.interventionHistoryReview = normalized.interventionHistoryReview.map((review) => ({
+    ...review,
+    matched_attempt_evidence_ids:
+      review.match_status === "no_match" || review.match_status === "not_reported"
+        ? []
+        : review.matched_attempt_evidence_ids.filter((id) => attemptEvidence.has(id)),
+    new_condition_evidence_ids:
+      review.new_condition_status === "not_applicable"
+        ? []
+        : review.new_condition_evidence_ids.filter((id) => currentEvidence.has(id)),
+  }));
+  return normalized;
+}
+
 function forbiddenLegacyIssues(value: unknown, path = ""): P03ValidationIssue[] {
   const issues: P03ValidationIssue[] = [];
   if (value === "products_method") {
@@ -503,7 +531,10 @@ export function finalizeAndValidateP03Output(
   input: P03SelectedPreparedInput,
 ): P03ResultV1_5 {
   const schemaValid = validateP03Schema(value);
-  const normalized = canonicalizeP03SupportingElements(schemaValid);
+  const normalized = canonicalizeP03HistoryEvidence(
+    canonicalizeP03SupportingElements(schemaValid),
+    input,
+  );
   validateP03Schema(normalized);
   return validateP03Invariants(normalized, input);
 }
