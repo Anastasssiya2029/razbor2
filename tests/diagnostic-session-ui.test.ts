@@ -21,6 +21,14 @@ test("expired authentication redirects only after the draft has a recovery path"
   assert.match(session, /window\.addEventListener\("focus"/u);
 });
 
+test("a recovered failed or stale analysis run is not reused for changed answers", () => {
+  const page = readFileSync("app/page.tsx", "utf8");
+  assert.match(page, /submittedDiagnosticMatchesForm/u);
+  assert.match(page, /status\?\.status === "analysis_failed"/u);
+  assert.match(page, /reusableDiagnostic = null/u);
+  assert.match(page, /setSubmittedDiagnostic\(null\)/u);
+});
+
 test("the situation summary is split into four paragraphs and rubles are formatted", () => {
   const page = readFileSync("app/page.tsx", "utf8");
   assert.match(page, /situationParagraphs/u);

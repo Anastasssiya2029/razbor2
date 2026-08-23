@@ -1146,6 +1146,8 @@ function Brand() {
 type SubmittedDiagnostic = {
   values: Record<string, string>;
   deadline: string;
+  clientsCountPeriod?: ClientsCountPeriod;
+  desiredSystemHoursApplicable?: boolean;
   input: DiagnosticInputV1_2;
   diagnosticId: string;
   analysisRunId: string;
@@ -1195,6 +1197,27 @@ async function readJsonObject<T>(response: Response): Promise<T | null> {
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+function submittedDiagnosticMatchesForm(
+  submitted: SubmittedDiagnostic,
+  values: Record<string, string>,
+  deadline: string,
+  clientsCountPeriod: ClientsCountPeriod,
+  desiredSystemHoursApplicable: boolean,
+): boolean {
+  if (
+    submitted.deadline !== deadline
+    || submitted.clientsCountPeriod !== clientsCountPeriod
+    || submitted.desiredSystemHoursApplicable !== desiredSystemHoursApplicable
+  ) {
+    return false;
+  }
+
+  const submittedValues = valuesForSubmission(submitted.values);
+  const currentValues = valuesForSubmission(values);
+  const keys = new Set([...Object.keys(submittedValues), ...Object.keys(currentValues)]);
+  return [...keys].every((key) => submittedValues[key] === currentValues[key]);
 }
 
 function buildPrototypeAnalysis(diagnostic: SubmittedDiagnostic): BusinessAnalysisResult {
@@ -1346,7 +1369,7 @@ export default function Home() {
     setIsSavingStart(true);
     const rawValues = { ...values };
     try {
-      const response = submittedDiagnostic
+      const response = submittedDiagnostic?.status === "draft"
         ? await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}`, {
             method: "PATCH",
             credentials: "include",
@@ -1369,6 +1392,8 @@ export default function Home() {
       setSubmittedDiagnostic({
         values: rawValues,
         deadline,
+        clientsCountPeriod,
+        desiredSystemHoursApplicable,
         input: result.input,
         diagnosticId: result.diagnosticId,
         analysisRunId: result.analysisRunId,
@@ -1388,9 +1413,38 @@ export default function Home() {
     const rawValues = { ...values };
 
     try {
+      let reusableDiagnostic = submittedDiagnostic;
+      if (
+        reusableDiagnostic?.status === "queued"
+        && !submittedDiagnosticMatchesForm(
+          reusableDiagnostic,
+          rawValues,
+          deadline,
+          clientsCountPeriod,
+          desiredSystemHoursApplicable,
+        )
+      ) {
+        reusableDiagnostic = null;
+      }
+
+      if (reusableDiagnostic?.status === "queued") {
+        const statusResponse = await fetch(`/api/analysis-runs/${reusableDiagnostic.analysisRunId}/run`, {
+          method: "GET",
+          credentials: "include",
+          headers: { accept: "application/json" },
+        });
+        if (redirectToLoginAfterExpiredSession(statusResponse)) {
+          throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+        }
+        const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
+        if (statusResponse.ok && status?.status === "analysis_failed") {
+          reusableDiagnostic = null;
+        }
+      }
+
       let diagnostic: SubmittedDiagnostic;
-      if (submittedDiagnostic?.status === "draft") {
-        const response = await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}/submit`, {
+      if (reusableDiagnostic?.status === "draft") {
+        const response = await fetch(`/api/diagnostics/${reusableDiagnostic.diagnosticId}/submit`, {
           method: "POST",
           credentials: "include",
           headers: { "content-type": "application/json" },
@@ -1406,14 +1460,16 @@ export default function Home() {
         diagnostic = {
           values: rawValues,
           deadline,
+          clientsCountPeriod,
+          desiredSystemHoursApplicable,
           input: result.input,
           diagnosticId: result.diagnosticId,
           analysisRunId: result.analysisRunId,
           status: result.status,
         };
         setSubmittedDiagnostic(diagnostic);
-      } else if (submittedDiagnostic) {
-        diagnostic = submittedDiagnostic;
+      } else if (reusableDiagnostic) {
+        diagnostic = reusableDiagnostic;
       } else {
         const response = await fetch("/api/diagnostics", {
           method: "POST",
@@ -1432,6 +1488,8 @@ export default function Home() {
         diagnostic = {
           values: rawValues,
           deadline,
+          clientsCountPeriod,
+          desiredSystemHoursApplicable,
           input: result.input,
           diagnosticId: result.diagnosticId,
           analysisRunId: result.analysisRunId,
@@ -1457,6 +1515,7 @@ export default function Home() {
           analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
           if (analysisResponse.ok && analysis?.result) break;
           if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
+            setSubmittedDiagnostic(null);
             throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
           }
         } catch (error) {
@@ -1473,6 +1532,7 @@ export default function Home() {
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
         if (status?.status === "analysis_failed") {
+          setSubmittedDiagnostic(null);
           throw new Error(`Разбор завершился ошибкой${status.errorCode ? ` (${status.errorCode})` : ""}. Ответы сохранены в кабинете.`);
         }
         if (status?.status === "ready") {

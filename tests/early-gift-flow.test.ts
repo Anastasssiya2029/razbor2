@@ -6,7 +6,7 @@ test("the first form block is persisted as a draft before opening project info",
   const page = readFileSync("app/page.tsx", "utf8");
   assert.match(page, /saveStartAndOpenProject/u);
   assert.match(page, /diagnosticPayload\(rawValues, "draft"\)/u);
-  assert.match(page, /\/api\/diagnostics\/\$\{submittedDiagnostic\.diagnosticId\}\/submit/u);
+  assert.match(page, /\/api\/diagnostics\/\$\{reusableDiagnostic\.diagnosticId\}\/submit/u);
   assert.match(page, /"Колесо возможностей"/u);
   assert.match(page, /currentStage === 3 && submittedDiagnostic/u);
 });
