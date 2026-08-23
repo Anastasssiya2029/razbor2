@@ -669,6 +669,23 @@ test("no-match history discards model-supplied evidence that cannot represent a 
   assert.deepEqual(normalized.interventionHistoryReview[1].new_condition_evidence_ids, []);
 });
 
+test("duplicate interventions and dangling evidence are removed without inventing a prescription", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const value = validOutput(prepared);
+  value.diagnosis.evidence_ids.push("E999");
+  value.businessPrescription!.interventions[1] = structuredClone(value.businessPrescription!.interventions[0]);
+  value.interventionHistoryReview[1] = structuredClone(value.interventionHistoryReview[0]);
+  value.test30d!.actions[1] = structuredClone(value.test30d!.actions[0]);
+
+  const normalized = finalizeAndValidateP03Output(value, prepared);
+
+  assert.deepEqual(normalized.diagnosis.evidence_ids, ["E05", "E07"]);
+  assert.equal(normalized.businessPrescription!.interventions.length, 1);
+  assert.equal(normalized.interventionHistoryReview.length, 1);
+  assert.equal(normalized.test30d!.actions.length, 1);
+  assert.equal(normalized.businessPrescription!.interventions[0].intervention_code, "INT_QUALIFY_BEFORE_SALE");
+});
+
 test("unclear intervention history requires blocked_by_insufficient_evidence", async () => {
   const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
   const blocked = blockedUnclearHistoryOutput(prepared);

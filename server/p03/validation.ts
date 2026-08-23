@@ -107,6 +107,7 @@ function canonicalizeP03HistoryEvidence(
   input: P03SelectedPreparedInput,
 ): P03ResultV1_5 {
   const normalized = structuredClone(result);
+  const evidenceSet = new Set(input.context.evidenceLedger.map((item) => item.id));
   const attemptEvidence = new Set(
     input.context.businessMap.experience.attempts.flatMap((attempt) => attempt.evidence_ids),
   );
@@ -115,6 +116,40 @@ function canonicalizeP03HistoryEvidence(
       .filter((item) => item.time_scope === "current")
       .map((item) => item.id),
   );
+
+  normalized.diagnosis.evidence_ids = normalized.diagnosis.evidence_ids.filter((id) => evidenceSet.has(id));
+  normalized.diagnosis.counterevidence_ids = normalized.diagnosis.counterevidence_ids.filter((id) => evidenceSet.has(id));
+  normalized.diagnosis.contributing_cause_codes = normalized.diagnosis.contributing_cause_codes.filter(
+    (code, index, codes) => code !== normalized.diagnosis.primary_cause_code && codes.indexOf(code) === index,
+  );
+  normalized.sanityChecks = normalized.sanityChecks.map((check) => ({
+    ...check,
+    evidence_ids: check.evidence_ids.filter((id) => evidenceSet.has(id)),
+  }));
+  if (normalized.targetMetric) {
+    normalized.targetMetric.evidence_ids = normalized.targetMetric.evidence_ids.filter((id) => evidenceSet.has(id));
+  }
+  if (normalized.businessPrescription?.zero_step) {
+    normalized.businessPrescription.zero_step.evidence_ids =
+      normalized.businessPrescription.zero_step.evidence_ids.filter((id) => evidenceSet.has(id));
+  }
+
+  if (normalized.businessPrescription) {
+    const seenInterventions = new Set<string>();
+    normalized.businessPrescription.interventions = normalized.businessPrescription.interventions.filter((item) => {
+      if (seenInterventions.has(item.intervention_code)) return false;
+      seenInterventions.add(item.intervention_code);
+      return true;
+    });
+    if (normalized.test30d) {
+      const seenActions = new Set<string>();
+      normalized.test30d.actions = normalized.test30d.actions.filter((item) => {
+        if (seenActions.has(item.intervention_code)) return false;
+        seenActions.add(item.intervention_code);
+        return true;
+      });
+    }
+  }
 
   normalized.interventionHistoryReview = normalized.interventionHistoryReview.map((review) => ({
     ...review,
@@ -127,6 +162,12 @@ function canonicalizeP03HistoryEvidence(
         ? []
         : review.new_condition_evidence_ids.filter((id) => currentEvidence.has(id)),
   }));
+  const seenReviews = new Set<string>();
+  normalized.interventionHistoryReview = normalized.interventionHistoryReview.filter((review) => {
+    if (seenReviews.has(review.intervention_code)) return false;
+    seenReviews.add(review.intervention_code);
+    return true;
+  });
   return normalized;
 }
 
@@ -531,9 +572,8 @@ export function finalizeAndValidateP03Output(
   input: P03SelectedPreparedInput,
 ): P03ResultV1_5 {
   const schemaValid = validateP03Schema(value);
-  const normalized = canonicalizeP03HistoryEvidence(
-    canonicalizeP03SupportingElements(schemaValid),
-    input,
+  const normalized = canonicalizeP03SupportingElements(
+    canonicalizeP03HistoryEvidence(schemaValid, input),
   );
   validateP03Schema(normalized);
   return validateP03Invariants(normalized, input);
