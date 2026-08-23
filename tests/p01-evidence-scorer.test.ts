@@ -22,6 +22,7 @@ import type {
 import {
   P01InvariantError,
   P01SchemaValidationError,
+  normalizeP01CanonicalFields,
   validateP01Invariants,
   validateP01Schema,
 } from "../server/p01/validation";
@@ -172,6 +173,22 @@ function hasInvariantCode(code: string) {
   return (error: unknown) =>
     error instanceof P01InvariantError && error.issues.some((issue) => issue.code === code);
 }
+
+test("P-01 canonicalizes fields that are forbidden for not-reported history", () => {
+  const fixture = validP01Fixture();
+  fixture.moneyNowHistory.MN06.evidence_ids = ["E01"];
+  fixture.moneyNowHistory.MN06.new_condition_evidence_ids = ["E01"];
+  fixture.moneyNowHistory.MN06.condition_codes = ["AUDIENCE"];
+  fixture.moneyNowHistory.MN06.new_material_condition = "yes";
+
+  const normalized = normalizeP01CanonicalFields(fixture);
+
+  assert.deepEqual(normalized.moneyNowHistory.MN06.evidence_ids, []);
+  assert.deepEqual(normalized.moneyNowHistory.MN06.new_condition_evidence_ids, []);
+  assert.deepEqual(normalized.moneyNowHistory.MN06.condition_codes, []);
+  assert.equal(normalized.moneyNowHistory.MN06.new_material_condition, "not_applicable");
+  assert.equal(validateP01Invariants(normalized), normalized);
+});
 
 function addMoneyNowFactEvidence(
   fixture: P01ResultV1_4_2,

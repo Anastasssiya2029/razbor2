@@ -70,6 +70,25 @@ export function validateP01Schema(value: unknown): P01ResultV1_4_2 {
   return value as P01ResultV1_4_2;
 }
 
+export function normalizeP01CanonicalFields(result: P01ResultV1_4_2): P01ResultV1_4_2 {
+  for (const scenarioId of MONEY_NOW_SCENARIO_IDS) {
+    const history = result.moneyNowHistory[scenarioId];
+    if (history.history_status === "not_reported") {
+      history.new_material_condition = "not_applicable";
+      history.condition_codes = [];
+      history.evidence_ids = [];
+      history.new_condition_evidence_ids = [];
+    } else if (history.history_status === "worked_sustained") {
+      history.new_material_condition = "not_applicable";
+      history.condition_codes = [];
+      history.new_condition_evidence_ids = [];
+    } else if (history.history_status === "unclear") {
+      history.new_material_condition = "unknown";
+    }
+  }
+  return result;
+}
+
 function findForbiddenLegacyId(value: unknown, path = ""): P01ValidationIssue[] {
   const issues: P01ValidationIssue[] = [];
   if (value === "products_method") {

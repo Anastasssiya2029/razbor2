@@ -19,6 +19,7 @@ import { P01_OUTPUT_SCHEMA_VERSION } from "./types";
 import {
   P01InvariantError,
   P01SchemaValidationError,
+  normalizeP01CanonicalFields,
   P01_OUTPUT_SCHEMA,
   p01SanityErrors,
   validateP01Invariants,
@@ -219,7 +220,7 @@ export async function runP01EvidenceScorer(
 
     let result;
     try {
-      result = validateP01Schema(parsed);
+      result = normalizeP01CanonicalFields(validateP01Schema(parsed));
     } catch (error) {
       if (error instanceof P01SchemaValidationError && technicalRetryCount === 0) {
         technicalRetryCount += 1;
