@@ -280,7 +280,7 @@ test("33. runner performs one semantic retry with invariant feedback", async () 
 test("runner normalizes presentation-only drift after the bounded semantic retry", async () => {
   const input = await prepared();
   const drifted = makeValidP04Output(input);
-  drifted.businessValidation.explanation = "Сигнал — это проверка результата.";
+  drifted.businessValidation.explanation = "Когда клиентка готова — сигнал проверен.";
   drifted.targetConfiguration.key_shifts[0].shift = "Переход — без смены маршрута.";
   drifted.whyNotNow[0].text = "Вернитесь к этому, когда будете готова.";
   drifted.finalFocus.headline = "Запустите придуманную задачу";
@@ -293,6 +293,7 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   assert.doesNotMatch(JSON.stringify(result.result), /[—–]/u);
   assert.doesNotMatch(JSON.stringify(result.result), /готова/u);
   assert.match(result.result.whyNotNow[0].text, /ближайшего маршрута/u);
+  assert.match(result.result.businessValidation.explanation, /Контрольная точка/u);
   assert.equal(result.result.finalFocus.first_task_id, input.reportPolicy.firstTask.taskId);
   assert.equal(result.result.finalFocus.first_action, input.reportPolicy.firstTask.task);
 });

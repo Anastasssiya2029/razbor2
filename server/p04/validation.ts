@@ -225,7 +225,9 @@ export function canonicalizeP04NarrativePresentation(
       ? null
       : clean(card.connection_to_next_stage),
   }));
-  result.businessValidation.explanation = clean(result.businessValidation.explanation);
+  result.businessValidation.explanation =
+    `Проверка строится по показателю «${clean(result.businessValidation.metric_name)}» и заданному правилу. `
+    + `Контрольная точка: ${result.businessValidation.timeframe_days} дней.`;
   result.moneyNow.headline = clean(result.moneyNow.headline);
   result.moneyNow.narrative = result.moneyNow.narrative === null
     ? null
