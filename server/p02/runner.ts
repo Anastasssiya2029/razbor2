@@ -15,6 +15,7 @@ import {
   P02InvariantError,
   P02SchemaValidationError,
   P02_OUTPUT_SCHEMA,
+  normalizeP02CanonicalFields,
   validateP02Invariants,
   validateP02Schema,
   type P02ValidationIssue,
@@ -150,7 +151,7 @@ export async function runP02TransitionStrategist(
 
     let result;
     try {
-      result = validateP02Schema(parsed);
+      result = normalizeP02CanonicalFields(validateP02Schema(parsed), input);
     } catch (error) {
       if (error instanceof P02SchemaValidationError && technicalRetryCount === 0) {
         technicalRetryCount += 1;

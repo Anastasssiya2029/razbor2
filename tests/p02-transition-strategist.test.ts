@@ -14,7 +14,7 @@ import { runP02TransitionStrategist } from "../server/p02/runner";
 import { runP02Stage } from "../server/p02/stage-runner";
 import type { P02Repository, StoredP02Result } from "../server/p02/stage-types";
 import type { P02Provider, P02ProviderRequest, P02ProviderResponse, P02ResultV1_3 } from "../server/p02/types";
-import { P02InvariantError, P02SchemaValidationError, validateP02Invariants, validateP02Schema } from "../server/p02/validation";
+import { P02InvariantError, P02SchemaValidationError, normalizeP02CanonicalFields, validateP02Invariants, validateP02Schema } from "../server/p02/validation";
 import type { P01ResultV1_4_2 } from "../server/p01/types";
 
 const SCORES: SevenKScores = { authenticity: 4, audience: 4, product_method: 2, sales_technology: 3, funnel: 2, blog: 1, team: 1 };
@@ -142,16 +142,50 @@ test("18. broken 7K partition is rejected", () => { const value = output(); valu
 test("19. unknown ID and legacy products_method are rejected", () => { const value = output() as unknown as { bundle: { priority_element: string } }; value.bundle.priority_element = "products_method"; assert.throws(() => validateP02Schema(value), P02SchemaValidationError); });
 test("20. explicit desiredRoleSummary conflict returns TARGET_CONFIG_INCONSISTENCY", () => { const input = prepared(); assert.throws(() => assertDesiredRoleConsistency("Передать продажи менеджеру", input.targetConfig), (error: unknown) => error instanceof P02Error && error.code === "TARGET_CONFIG_INCONSISTENCY"); });
 test("21. transport failure gets at most one technical retry", async () => { const provider = new QueueProvider([new Error("network"), output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.technicalRetryCount, 1); });
-test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.businessValidation.checkpoint_after_order = 2; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
+test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.constraint.root_evidence_ids = ["E99"]; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
+test("P-02 canonicalizes zero-gap build elements and clamps milestones to persisted target", () => {
+  const input = prepared();
+  const value = output();
+  value.bundle.build_elements = ["team"];
+  value.bundle.maintain_elements = value.bundle.maintain_elements.filter((id) => id !== "team");
+  value.elementSequence[0].to_score = 10;
+  value.elementSequence.push({
+    ...value.elementSequence[0],
+    order: 2,
+    element_id: "team",
+    role: "build",
+    from_score: input.currentScores.team,
+    to_score: input.currentScores.team + 1,
+  });
+  value.businessValidation.checkpoint_after_order = 2;
+
+  const normalized = normalizeP02CanonicalFields(value, input);
+
+  assert.deepEqual(normalized.bundle.build_elements, []);
+  assert.ok(normalized.bundle.maintain_elements.includes("team"));
+  assert.deepEqual(normalized.elementSequence.map((step) => ({
+    order: step.order,
+    element_id: step.element_id,
+    from_score: step.from_score,
+    to_score: step.to_score,
+  })), [{
+    order: 1,
+    element_id: "product_method",
+    from_score: input.currentScores.product_method,
+    to_score: input.targetConfig.targetScores.product_method,
+  }]);
+  assert.equal(normalized.businessValidation.checkpoint_after_order, 1);
+  assert.equal(validateP02Invariants(normalized, input), normalized);
+});
 test("final P-02 validation failure persists only safe issue codes and paths", async () => {
   const broken = output();
-  broken.businessValidation.checkpoint_after_order = 2;
+  broken.constraint.root_evidence_ids = ["E99"];
   const provider = new QueueProvider([broken, broken]);
   await assert.rejects(
     () => runP02TransitionStrategist(prepared(), { provider }),
     (error: unknown) =>
       error instanceof Error &&
-      /checkpoint_outside_sequence@\/businessValidation\/checkpoint_after_order/u.test(error.message) &&
+      /dangling_evidence_id@\/constraint\/root_evidence_ids\/0/u.test(error.message) &&
       !error.message.includes(broken.businessValidation.if_signal_absent),
   );
 });

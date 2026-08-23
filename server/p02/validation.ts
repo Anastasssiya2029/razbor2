@@ -34,6 +34,59 @@ export function validateP02Schema(value: unknown): P02ResultV1_3 {
   return value as P02ResultV1_3;
 }
 
+export function normalizeP02CanonicalFields(
+  result: P02ResultV1_3,
+  input: { targetConfig: TargetConfigProjection; currentScores: SevenKScores },
+): P02ResultV1_3 {
+  const zeroGapBuild = new Set(
+    result.bundle.build_elements.filter(
+      (elementId) => input.targetConfig.targetScores[elementId] <= input.currentScores[elementId],
+    ),
+  );
+  result.bundle.build_elements = result.bundle.build_elements.filter(
+    (elementId) => !zeroGapBuild.has(elementId),
+  );
+  for (const elementId of zeroGapBuild) {
+    const isLater = result.bundle.later_elements.some((item) => item.element_id === elementId);
+    if (
+      elementId !== result.bundle.priority_element &&
+      !isLater &&
+      !result.bundle.maintain_elements.includes(elementId)
+    ) {
+      result.bundle.maintain_elements.push(elementId);
+    }
+  }
+
+  const active = new Set<SevenKElementId>([
+    ...(result.bundle.priority_element ? [result.bundle.priority_element] : []),
+    ...result.bundle.build_elements,
+  ]);
+  const previousTo = new Map<SevenKElementId, number>();
+  const sequence: P02ResultV1_3["elementSequence"] = [];
+  for (const step of result.elementSequence) {
+    if (!active.has(step.element_id)) continue;
+    const fromScore = previousTo.get(step.element_id) ?? input.currentScores[step.element_id];
+    const toScore = Math.min(step.to_score, input.targetConfig.targetScores[step.element_id]);
+    if (toScore <= fromScore) continue;
+    sequence.push({
+      ...step,
+      order: sequence.length + 1,
+      role: step.element_id === result.bundle.priority_element ? "priority" : "build",
+      from_score: fromScore,
+      to_score: toScore,
+    });
+    previousTo.set(step.element_id, toScore);
+  }
+  result.elementSequence = sequence;
+  if (sequence.length > 0) {
+    result.businessValidation.checkpoint_after_order = Math.min(
+      Math.max(1, result.businessValidation.checkpoint_after_order),
+      sequence.length,
+    );
+  }
+  return result;
+}
+
 function add(issues: P02ValidationIssue[], path: string, code: string, message: string): void {
   issues.push({ path, code, message });
 }
