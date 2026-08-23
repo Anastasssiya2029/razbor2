@@ -25,6 +25,7 @@ import { logoutAndRedirect, useAppSession } from "@/app/_components/app-session"
 import { AnalysisResultView } from "@/app/_components/analysis-result-view";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { GiftWheel } from "@/app/_components/gift-wheel";
+import type { AnalysisOverview } from "@/lib/analysis-overview";
 
 type FieldProps = {
   label: string;
@@ -1000,12 +1001,18 @@ function AnalysisSection({
   setActiveSlide,
   submittedFieldCount,
   onOpenPlan,
+  planReady,
+  progressStatus,
+  backgroundError,
 }: {
-  analysis: BusinessAnalysisResult;
+  analysis: AnalysisOverview;
   activeSlide: number;
   setActiveSlide: (slide: number) => void;
   submittedFieldCount: number;
   onOpenPlan: () => void;
+  planReady: boolean;
+  progressStatus: AnalysisProgressStatus;
+  backgroundError: string | null;
 }) {
   const pointerStart = useRef<number | null>(null);
   const [archetypeOpen, setArchetypeOpen] = useState(false);
@@ -1092,7 +1099,7 @@ function AnalysisSection({
             <article className="analysis-slide" aria-hidden={activeSlide !== 1}>
               <div className="analysis-slide-heading">
                 <span>02</span>
-                <h3>Модель 7К под цель</h3>
+                <h3>Бизнес-модель под вашу цель</h3>
               </div>
               <ModelLegend />
               <SystemModel elements={systemElements} target />
@@ -1112,7 +1119,7 @@ function AnalysisSection({
       </div>
 
       <div className="analysis-pagination" aria-label="Экраны разбора">
-        {["Текущая модель 7К", "Модель 7К под цель"].map((label, index) => (
+        {["Текущая модель 7К", "Бизнес-модель под вашу цель"].map((label, index) => (
           <button
             type="button"
             className={activeSlide === index ? "active" : ""}
@@ -1125,7 +1132,28 @@ function AnalysisSection({
       </div>
       <p className="analysis-counter" aria-live="polite">{activeSlide + 1} / {slideCount}</p>
 
-      <BusinessAnalysis analysis={analysis} onOpenPlan={onOpenPlan} />
+      <EvolutionMap currentArchetypeId={analysis.archetype.id} />
+
+      <div className={`route-action-wrap ${planReady ? "is-ready" : "is-building"}`} aria-live="polite">
+        <span>{backgroundError ? "Нужна повторная попытка" : planReady ? "Следующий шаг" : "AI-конвейер продолжает работу"}</span>
+        <h3>
+          {backgroundError
+            ? "Разбор уже сохранён, но план перехода пока не собран"
+            : planReady
+              ? "Посмотреть, в какой последовательности усиливать систему"
+              : analysisProgressByStatus[progressStatus].detail}
+        </h3>
+        <p>
+          {backgroundError
+            ? backgroundError
+            : planReady
+              ? "Все рекомендации и задачи готовы."
+              : "Текущая и целевая модели уже готовы — их можно обсуждать с клиентом, пока система собирает рекомендации."}
+        </p>
+        <button type="button" className="primary-button route-button" onClick={onOpenPlan} disabled={!planReady}>
+          {planReady ? "Маршрут перехода" : "План ещё собирается"} {planReady && <ArrowIcon />}
+        </button>
+      </div>
 
       <ArchetypeDialog
         archetypeId={analysis.archetype.id}
@@ -1283,6 +1311,7 @@ type CreateDiagnosticResponse = {
 
 type RunAnalysisResponse = {
   status?: AnalysisProgressStatus;
+  overview?: AnalysisOverview | null;
   result?: AnalysisResultV1;
   error?: string;
   message?: string;
@@ -1364,8 +1393,9 @@ export default function Home() {
   const [analysisProgressStatus, setAnalysisProgressStatus] = useState<AnalysisProgressStatus>("queued");
   const [analysisStartedAt, setAnalysisStartedAt] = useState<number | null>(null);
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisOverview | null>(null);
   const [realAnalysisResult, setRealAnalysisResult] = useState<AnalysisResultV1 | null>(null);
+  const [analysisBackgroundError, setAnalysisBackgroundError] = useState<string | null>(null);
   const [recoveryReady, setRecoveryReady] = useState(false);
 
   const situationParagraphs = useMemo(() => {
@@ -1445,6 +1475,7 @@ export default function Home() {
     setSubmittedDiagnostic(null);
     setAnalysisResult(null);
     setRealAnalysisResult(null);
+    setAnalysisBackgroundError(null);
     setSubmissionError(null);
     setLoadingTarget(null);
     setAnalysisProgressStatus("queued");
@@ -1522,8 +1553,10 @@ export default function Home() {
 
   const openAnalysis = async () => {
     setSubmissionError(null);
+    setAnalysisBackgroundError(null);
     setIsSubmittingDiagnostic(true);
     const rawValues = { ...values };
+    let overviewAvailable = false;
 
     try {
       let reusableDiagnostic = submittedDiagnostic;
@@ -1631,6 +1664,15 @@ export default function Home() {
           if (analysisResponse.ok && analysis?.status) {
             setAnalysisProgressStatus(analysis.status);
           }
+          if (analysisResponse.ok && analysis?.overview && !overviewAvailable) {
+            overviewAvailable = true;
+            setAnalysisResult(analysis.overview);
+            setCurrentStage(1);
+            setMaxUnlockedStage((current) => Math.max(current, 1));
+            setLoadingTarget(null);
+            setAnalysisStartedAt(null);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
           if (analysisResponse.ok && analysis?.status === "ready" && analysis.result) break;
           if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
             setSubmittedDiagnostic(null);
@@ -1687,29 +1729,23 @@ export default function Home() {
     } catch (error) {
       setLoadingTarget(null);
       setAnalysisStartedAt(null);
-      setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить диагностику.");
+      const message = error instanceof Error ? error.message : "Не удалось сохранить диагностику.";
+      if (overviewAvailable) {
+        setAnalysisBackgroundError(message);
+      } else {
+        setSubmissionError(message);
+      }
     } finally {
       setIsSubmittingDiagnostic(false);
     }
   };
 
   const openTransitionPlan = () => {
-    setLoadingTarget("plan");
+    if (!realAnalysisResult) return;
+    setCurrentStage(2);
+    setMaxUnlockedStage((current) => Math.max(current, 2));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  useEffect(() => {
-    if (!loadingTarget) return;
-    if (loadingTarget === "analysis") return;
-    const timer = window.setTimeout(() => {
-      setCurrentStage(2);
-      setMaxUnlockedStage((current) => Math.max(current, 2));
-      setLoadingTarget(null);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 10000);
-
-    return () => window.clearTimeout(timer);
-  }, [loadingTarget]);
 
   const showJourneyStage = (stage: number) => {
     if (loadingTarget) return;
@@ -1953,32 +1989,34 @@ export default function Home() {
         <section className="embedded-result wheel-stage">
           <GiftWheel analysisRunId={submittedDiagnostic.analysisRunId} />
         </section>
-      ) : realAnalysisResult ? (
-        <section className="embedded-result">
-          <AnalysisResultView
-            result={realAnalysisResult}
-            view={currentStage === 2 ? "plan" : "analysis"}
-            deadlineLabel={submittedDiagnostic?.deadline ?? deadline}
-            currentRevenueRub={submittedDiagnostic?.input.current.monthlyRevenueRub}
-            targetRevenueRub={submittedDiagnostic?.input.target.monthlyRevenueRub}
-          />
-        </section>
       ) : currentStage === 1 ? (
-        // При подключении ИИ buildPrototypeAnalysis заменяется серверным ответом business_analysis_v1.
         <AnalysisSection
           analysis={visibleAnalysis}
           activeSlide={analysisSlide}
           setActiveSlide={setAnalysisSlide}
           submittedFieldCount={submittedFieldCount}
           onOpenPlan={openTransitionPlan}
+          planReady={Boolean(realAnalysisResult)}
+          progressStatus={realAnalysisResult ? "ready" : analysisProgressStatus}
+          backgroundError={analysisBackgroundError}
         />
+      ) : realAnalysisResult ? (
+        <section className="embedded-result">
+          <AnalysisResultView
+            result={realAnalysisResult}
+            view="plan"
+            deadlineLabel={submittedDiagnostic?.deadline ?? deadline}
+            currentRevenueRub={submittedDiagnostic?.input.current.monthlyRevenueRub}
+            targetRevenueRub={submittedDiagnostic?.input.target.monthlyRevenueRub}
+          />
+        </section>
       ) : (
-        <TransitionPlan
-          analysis={visibleAnalysis}
-          values={submittedValues}
-          deadline={submittedDiagnostic?.deadline ?? deadline}
-          onBack={() => showJourneyStage(1)}
-        />
+        <section className="embedded-result">
+          <div className="route-action-wrap is-building">
+            <span>AI-конвейер продолжает работу</span>
+            <h3>План перехода появится здесь сразу после завершения рекомендаций</h3>
+          </div>
+        </section>
       )}
 
       {!loadingTarget && <nav className="journey" aria-label="Этапы работы">

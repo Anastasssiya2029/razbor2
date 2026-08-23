@@ -4265,6 +4265,20 @@ body :is(
   line-height: 1.3;
 }
 
+.route-action-wrap p {
+  max-width: 650px;
+  margin: 10px auto 0;
+  color: #796b7d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.route-action-wrap.is-building {
+  background:
+    radial-gradient(320px 150px at 50% 100%, rgba(220, 46, 149, 0.08), transparent 75%),
+    linear-gradient(145deg, #fbf7fd, #fff);
+}
+
 .route-button {
   margin-top: 25px;
 }

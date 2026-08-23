@@ -4,6 +4,7 @@ import {
   AnalysisPipelineError,
   advanceAnalysisPipeline,
   analysisRunAccessErrorResponse,
+  getAnalysisOverview,
   requireAnalysisRunAccess,
 } from "@/server/analysis-runs";
 import { syncAnalysisToGoogleSheet } from "@/server/google-sheets";
@@ -64,6 +65,9 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
     const execution = await advanceAnalysisPipeline(analysisRunId);
+    const overview = execution.status === "targeting"
+      ? null
+      : await getAnalysisOverview(analysisRunId);
     const sheetSync = execution.status === "ready"
       ? await syncAnalysisToGoogleSheet(analysisRunId)
       : null;
@@ -71,6 +75,7 @@ export async function POST(request: Request, context: RouteContext) {
       analysisRunId,
       status: execution.status,
       idempotentReplay: execution.idempotentReplay,
+      overview,
       result: execution.result,
       sheetSync: sheetSync?.status ?? "not_ready",
     }, { headers: { "cache-control": "no-store" } });
