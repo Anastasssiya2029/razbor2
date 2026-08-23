@@ -142,6 +142,57 @@ function canonicalizePackageOneToOneTarget(
   }
 }
 
+function failClosedMoneyNowFact(
+  result: P01ResultV1_4_2,
+  factCode: keyof P01ResultV1_4_2["moneyNowFacts"],
+  summary: string,
+): void {
+  result.moneyNowFacts[factCode] = {
+    state: "unknown",
+    confidence: "low",
+    summary,
+    evidence_ids: [],
+  };
+}
+
+function canonicalizePackageOneToOneCurrentFlowFacts(
+  result: P01ResultV1_4_2,
+  input: DiagnosticInputV1_2,
+): void {
+  if (result.targetIntent.normalizedModelFamily !== "package_1to1") return;
+
+  const products = normalizeTargetModelText(input.current.products);
+  const bestSeller = normalizeTargetModelText(input.current.bestSeller);
+  const clientPath = normalizeTargetModelText(input.project.clientPath);
+  const firstMeetingToPackage =
+    products.includes("пакет") &&
+    /после\s+перв(?:ой|ую)\s+(?:консультац|сесси|встреч).{0,100}пакет/iu.test(bestSeller);
+  const explicitPostPackageOffer =
+    /после\s+(?:завершения\s+)?пакет.{0,120}(?:следующ|продлен|допродаж|повторн)/iu.test(
+      `${products} ${bestSeller} ${clientPath}`,
+    );
+  if (firstMeetingToPackage && !explicitPostPackageOffer) {
+    const summary =
+      "Подтверждён вход из первой встречи в основной пакет, но не отдельное продолжение или допродажа после него.";
+    failClosedMoneyNowFact(result, "LOGICAL_CONTINUATION_EXISTS", summary);
+    failClosedMoneyNowFact(result, "CONTINUATION_OBJECTIVELY_NEEDED", summary);
+    failClosedMoneyNowFact(result, "NEXT_PRODUCT_OR_ADDITIONAL_TASK_EXISTS", summary);
+    failClosedMoneyNowFact(result, "ONE_OFF_CLIENT_WORK_EXISTS", summary);
+  }
+
+  const explicitlyMentionsFormerClients =
+    /(?:бывш|завершивш|прошл(?:ые|ых)\s+клиент)/iu.test(
+      `${input.project.clients} ${input.project.socialAssets} ${input.experience.bestPeriod}`,
+    );
+  if (!explicitlyMentionsFormerClients) {
+    failClosedMoneyNowFact(
+      result,
+      "HAS_FORMER_CLIENTS",
+      "Наличие бывших клиентов прямо не подтверждено исходными ответами.",
+    );
+  }
+}
+
 export function normalizeP01CanonicalFields(
   result: P01ResultV1_4_2,
   source?: string | DiagnosticInputV1_2,
@@ -171,6 +222,7 @@ export function normalizeP01CanonicalFields(
 
   if (typeof source === "object") {
     canonicalizePackageOneToOneTarget(result, source);
+    canonicalizePackageOneToOneCurrentFlowFacts(result, source);
   }
 
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));

@@ -259,6 +259,40 @@ test("P-01 package 1:1 target keeps blog out and requires regular personal sales
   );
 });
 
+test("P-01 does not mistake first-session to core-package flow for a post-package upsell", () => {
+  const fixture = validP01Fixture();
+  for (const factCode of [
+    "LOGICAL_CONTINUATION_EXISTS",
+    "CONTINUATION_OBJECTIVELY_NEEDED",
+    "NEXT_PRODUCT_OR_ADDITIONAL_TASK_EXISTS",
+    "ONE_OFF_CLIENT_WORK_EXISTS",
+    "HAS_FORMER_CLIENTS",
+  ] as const) {
+    fixture.moneyNowFacts[factCode] = {
+      state: "confirmed_true",
+      confidence: "high",
+      summary: "Ошибочный вывод модели.",
+      evidence_ids: ["E01"],
+    };
+  }
+
+  const normalized = normalizeP01CanonicalFields(
+    fixture,
+    structuredClone(ANNA_GOLDEN_CASE.input),
+  );
+
+  for (const factCode of [
+    "LOGICAL_CONTINUATION_EXISTS",
+    "CONTINUATION_OBJECTIVELY_NEEDED",
+    "NEXT_PRODUCT_OR_ADDITIONAL_TASK_EXISTS",
+    "ONE_OFF_CLIENT_WORK_EXISTS",
+    "HAS_FORMER_CLIENTS",
+  ] as const) {
+    assert.equal(normalized.moneyNowFacts[factCode].state, "unknown");
+    assert.deepEqual(normalized.moneyNowFacts[factCode].evidence_ids, []);
+  }
+});
+
 test("P-01 fails closed unsupported money-now facts instead of accepting wrong evidence scope", () => {
   const fixture = validP01Fixture();
   fixture.evidenceLedger.push({

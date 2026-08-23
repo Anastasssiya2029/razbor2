@@ -60,6 +60,9 @@ function truncate(value: string, max: number): string {
 
 export function canonicalizeP03SupportingElements(result: P03ResultV1_5): P03ResultV1_5 {
   const normalized = structuredClone(result);
+  if (normalized.targetMetric && normalized.test30d) {
+    normalized.test30d.primary_metric = normalized.targetMetric.metric_name;
+  }
   const interventions = normalized.businessPrescription?.interventions ?? [];
   const codes = interventions
     .map((item) => item.intervention_code)

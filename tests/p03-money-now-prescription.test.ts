@@ -470,6 +470,16 @@ test("supporting elements are the exact canonical union and unknown history tags
   assert.throws(() => assertKnownPrescriptionHistoryTags(["made_up_tag"]));
 });
 
+test("test30d primary metric is canonicalized to the validated target metric label", async () => {
+  const prepared = await prepareP03Input(await source("MN14")) as P03SelectedPreparedInput;
+  const value = validOutput(prepared);
+  value.test30d!.primary_metric = "Другая формулировка того же показателя";
+
+  const normalized = finalizeAndValidateP03Output(value, prepared);
+
+  assert.equal(normalized.test30d!.primary_metric, normalized.targetMetric!.metric_name);
+});
+
 test("old text-only intervention rules are removed as a second source of truth", () => {
   const legacy = readFileSync("server/7k/config/money-now.v2.2.ts", "utf8");
   assert.doesNotMatch(legacy, /MONEY_NOW_INTERVENTION_RULES|MONEY_NOW_CAUSE_CODES/u);
