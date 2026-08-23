@@ -284,6 +284,9 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   drifted.businessValidation.explanation = "Когда клиентка готова — сигнал проверен.";
   drifted.targetConfiguration.key_shifts[0].shift = "Переход — без смены маршрута.";
   drifted.whyNotNow[0].text = "Вернитесь к этому, когда будете готова.";
+  const whyNotNowWithTrigger = 0;
+  input.reportPolicy.whyNotNowExpected[whyNotNowWithTrigger].return_trigger =
+    "Когда будете готова вернуться к этому элементу";
   drifted.finalFocus.headline = "Запустите придуманную задачу";
   const provider = new QueueProvider([drifted, drifted]);
 
@@ -292,9 +295,10 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   assert.equal(provider.requests.length, 2);
   assert.equal(result.result.finalFocus.headline, "Первый шаг");
   assert.doesNotMatch(JSON.stringify(result.result), /[—–]/u);
-  assert.doesNotMatch(JSON.stringify(result.result), /готова/u);
+  assert.doesNotMatch(result.result.opening.summary, /начала/u);
   assert.doesNotMatch(JSON.stringify(result.result), /начала/u);
-  assert.match(result.result.whyNotNow[0].text, /ближайшего маршрута/u);
+  assert.doesNotMatch(result.result.whyNotNow[whyNotNowWithTrigger].text, /готова/u);
+  assert.match(result.result.whyNotNow[whyNotNowWithTrigger].text, /готовы вернуться/u);
   assert.match(result.result.businessValidation.explanation, /Контрольная точка/u);
   assert.equal(result.result.finalFocus.first_task_id, input.reportPolicy.firstTask.taskId);
   assert.equal(result.result.finalFocus.first_action, input.reportPolicy.firstTask.task);

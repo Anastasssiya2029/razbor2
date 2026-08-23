@@ -189,11 +189,11 @@ export function canonicalizeP04ImmutableEchoes(
 function safeNarrativeTypography(value: string): string {
   return value
     .replace(/[—–]/gu, "-")
-    .replace(/\b(?:готова|готов)\b/giu, "готовы")
-    .replace(/\b(?:сделала|сделал)\b/giu, "сделали")
-    .replace(/\b(?:начала|начал)\b/giu, "начали")
-    .replace(/\b(?:выстроила|выстроил)\b/giu, "выстроили")
-    .replace(/\b(?:решила|решил)\b/giu, "решили");
+    .replace(/(^|[^\p{L}])(?:готова|готов)(?=$|[^\p{L}])/giu, "$1готовы")
+    .replace(/(^|[^\p{L}])(?:сделала|сделал)(?=$|[^\p{L}])/giu, "$1сделали")
+    .replace(/(^|[^\p{L}])(?:начала|начал)(?=$|[^\p{L}])/giu, "$1начали")
+    .replace(/(^|[^\p{L}])(?:выстроила|выстроил)(?=$|[^\p{L}])/giu, "$1выстроили")
+    .replace(/(^|[^\p{L}])(?:решила|решил)(?=$|[^\p{L}])/giu, "$1решили");
 }
 
 export function canonicalizeP04NarrativePresentation(
