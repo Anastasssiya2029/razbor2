@@ -222,7 +222,7 @@ export async function runP01EvidenceScorer(
     try {
       result = normalizeP01CanonicalFields(
         validateP01Schema(parsed),
-        normalizedInput.target.businessModel,
+        normalizedInput,
       );
     } catch (error) {
       if (error instanceof P01SchemaValidationError && technicalRetryCount === 0) {

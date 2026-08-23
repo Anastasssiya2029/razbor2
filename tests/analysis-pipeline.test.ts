@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   AnalysisPipelineError,
+  advanceAnalysisPipeline,
   runAnalysisPipeline,
   type AnalysisPipelineDependencies,
   type AnalysisPipelineStatus,
@@ -66,6 +67,40 @@ test("pipeline executes every module once and in business order", async () => {
     "tasks",
     "money-selector",
     "p03",
+    "p04",
+    "assemble",
+    "unlock:lock-token",
+  ]);
+});
+
+test("resumable advance executes at most one provider stage per request", async () => {
+  const harness = pipelineHarness("queued");
+
+  const first = await advanceAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(first.status, "targeting");
+  assert.equal(first.result, null);
+  assert.deepEqual(harness.calls, ["lock", "p01", "unlock:lock-token"]);
+});
+
+test("resumable advance continues from persisted state without replaying prior stages", async () => {
+  const harness = pipelineHarness("strategizing");
+
+  const advanced = await advanceAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(advanced.status, "resolving_tasks");
+  assert.deepEqual(harness.calls, ["lock", "p02", "unlock:lock-token"]);
+});
+
+test("resumable advance assembles immediately after the final report stage", async () => {
+  const harness = pipelineHarness("writing_report");
+
+  const advanced = await advanceAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(advanced.status, "ready");
+  assert.equal(advanced.result, fakeResult);
+  assert.deepEqual(harness.calls, [
+    "lock",
     "p04",
     "assemble",
     "unlock:lock-token",

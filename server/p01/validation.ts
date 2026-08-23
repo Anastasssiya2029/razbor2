@@ -17,6 +17,7 @@ import {
   TARGET_RULE_CODE_SET,
 } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { SEVEN_K_ELEMENT_IDS } from "@/server/7k/types";
+import type { DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 import type { P01ResultV1_4_2 } from "./types";
 
 export type P01ValidationIssue = {
@@ -91,10 +92,62 @@ function inferUnambiguousTargetModelFamily(value: string) {
   return matches.length === 1 ? matches[0].modelFamily : null;
 }
 
+function upsertTargetCapability(
+  result: P01ResultV1_4_2,
+  capability: P01ResultV1_4_2["targetIntent"]["activatedCapabilities"][number],
+): void {
+  if (!result.targetIntent.activatedCapabilities.some((item) => item.code === capability.code)) {
+    result.targetIntent.activatedCapabilities.push(capability);
+  }
+}
+
+function canonicalizePackageOneToOneTarget(
+  result: P01ResultV1_4_2,
+  input: DiagnosticInputV1_2,
+): void {
+  if (result.targetIntent.normalizedModelFamily !== "package_1to1") return;
+
+  const targetModel = normalizeTargetModelText(input.target.businessModel);
+  const explicitlyTargetsContent = ["блог", "контент", "медиа", "соцсет"].some((phrase) =>
+    targetModel.includes(phrase),
+  );
+  if (!explicitlyTargetsContent) {
+    result.targetIntent.activatedCapabilities = result.targetIntent.activatedCapabilities.filter(
+      (capability) => capability.code !== "content_for_audience",
+    );
+  }
+
+  const sales = normalizeTargetModelText(input.project.sales);
+  const lacksSalesTechnology = [
+    "отдельной технологии нет",
+    "нет технологии",
+    "без технологии",
+    "интуитивно",
+  ].some((phrase) => sales.includes(phrase));
+  const revenueGrowthRequired =
+    input.current.monthlyRevenueRub !== null &&
+    input.target.monthlyRevenueRub !== null &&
+    input.target.monthlyRevenueRub > input.current.monthlyRevenueRub;
+  if (lacksSalesTechnology && revenueGrowthRequired) {
+    upsertTargetCapability(result, {
+      code: "regular_personal_sales",
+      reason:
+        "Для роста пакетной программы 1:1 нужна регулярно применяемая личная технология продаж вместо интуитивной продажи.",
+      source_fields: [
+        "project.sales",
+        "target.monthlyRevenueRub",
+        "target.businessModel",
+      ],
+    });
+  }
+}
+
 export function normalizeP01CanonicalFields(
   result: P01ResultV1_4_2,
-  sourceTargetBusinessModel?: string,
+  source?: string | DiagnosticInputV1_2,
 ): P01ResultV1_4_2 {
+  const sourceTargetBusinessModel =
+    typeof source === "string" ? source : source?.target.businessModel;
   const target = result.targetIntent;
   if (target.normalizedModelFamily === null) {
     const inferred =
@@ -114,6 +167,10 @@ export function normalizeP01CanonicalFields(
     target.secondaryModelFamilies.length === 0
   ) {
     target.primaryModelFamily = target.normalizedModelFamily;
+  }
+
+  if (typeof source === "object") {
+    canonicalizePackageOneToOneTarget(result, source);
   }
 
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));

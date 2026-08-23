@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { ANNA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
@@ -231,6 +232,31 @@ test("P-01 target family fallback does not downgrade an explicit premium 1:1 tar
 
   assert.equal(normalized.targetIntent.normalizedModelFamily, null);
   assert.equal(normalized.targetIntent.primaryModelFamily, null);
+});
+
+test("P-01 package 1:1 target keeps blog out and requires regular personal sales when evidence demands it", () => {
+  const fixture = validP01Fixture();
+  fixture.targetIntent.activatedCapabilities.push({
+    code: "content_for_audience",
+    reason: "Добавлено моделью без прямого target-требования.",
+    source_fields: ["target.delegation"],
+  });
+  const input = structuredClone(ANNA_GOLDEN_CASE.input);
+
+  const normalized = normalizeP01CanonicalFields(fixture, input);
+
+  assert.equal(
+    normalized.targetIntent.activatedCapabilities.some(
+      (capability) => capability.code === "content_for_audience",
+    ),
+    false,
+  );
+  assert.equal(
+    normalized.targetIntent.activatedCapabilities.some(
+      (capability) => capability.code === "regular_personal_sales",
+    ),
+    true,
+  );
 });
 
 test("P-01 fails closed unsupported money-now facts instead of accepting wrong evidence scope", () => {

@@ -11,7 +11,7 @@ import { runTargetAndArchetypeStage } from "@/server/stage4";
 import { runTaskResolverStage } from "@/server/task-resolver";
 import { and, eq, lte } from "drizzle-orm";
 
-const PIPELINE_LOCK_SECONDS = 15 * 60;
+const PIPELINE_LOCK_SECONDS = 9 * 60;
 
 export type AnalysisPipelineStatus =
   | "draft"
@@ -196,6 +196,74 @@ export async function runAnalysisPipeline(
     }
     const assembled = await dependencies.assemble(analysisRunId);
     return { status: "ready", ...assembled };
+  } finally {
+    await dependencies.releaseLock(analysisRunId, lockToken);
+  }
+}
+
+export async function advanceAnalysisPipeline(
+  analysisRunId: string,
+  dependencies: AnalysisPipelineDependencies = defaultAnalysisPipelineDependencies,
+): Promise<{
+  status: Exclude<AnalysisPipelineStatus, "draft">;
+  result: AnalysisResultV1 | null;
+  idempotentReplay: boolean;
+}> {
+  let snapshot = await dependencies.loadRun(analysisRunId);
+  if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
+  if (snapshot.status === "draft") {
+    throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_SUBMITTED", 409, "Сначала отправьте анкету на анализ.");
+  }
+  if (snapshot.status === "analysis_failed") {
+    throw new AnalysisPipelineError("ANALYSIS_RUN_FAILED", 422, "Разбор завершился ошибкой.");
+  }
+
+  const lockToken = await dependencies.acquireLock(analysisRunId);
+  if (!lockToken) throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Разбор уже выполняется.");
+  try {
+    snapshot = await dependencies.loadRun(analysisRunId);
+    if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
+    if (snapshot.status === "scoring") {
+      throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Предыдущий запуск P‑01 ещё не завершён.");
+    }
+    if (snapshot.status === "queued") {
+      const executed = await dependencies.runP01(snapshot);
+      assertStage(executed.status, "targeting", "P‑01");
+      return { status: "targeting", result: null, idempotentReplay: false };
+    }
+    if (snapshot.status === "targeting") {
+      const executed = await dependencies.runTarget(analysisRunId);
+      assertStage(executed.status, "strategizing", "целевой конфигурации");
+      return { status: "strategizing", result: null, idempotentReplay: false };
+    }
+    if (snapshot.status === "strategizing") {
+      const executed = await dependencies.runP02(analysisRunId);
+      assertStage(executed.status, "resolving_tasks", "P‑02");
+      return { status: "resolving_tasks", result: null, idempotentReplay: false };
+    }
+    if (snapshot.status === "resolving_tasks") {
+      const executed = await dependencies.resolveTasks(analysisRunId);
+      assertStage(executed.status, "money_now", "подбора задач");
+      return { status: "money_now", result: null, idempotentReplay: false };
+    }
+    if (snapshot.status === "money_now") {
+      const selected = await dependencies.selectMoneyNow(analysisRunId);
+      assertStage(selected.status, "money_now", "денежного сценария");
+      const prescribed = await dependencies.runP03(analysisRunId);
+      assertStage(prescribed.status, "writing_report", "P‑03");
+      return { status: "writing_report", result: null, idempotentReplay: false };
+    }
+    if (snapshot.status === "writing_report") {
+      const executed = await dependencies.runP04(analysisRunId);
+      assertStage(executed.status, "ready", "P‑04");
+      const assembled = await dependencies.assemble(analysisRunId);
+      return { status: "ready", ...assembled };
+    }
+    if (snapshot.status === "ready") {
+      const assembled = await dependencies.assemble(analysisRunId);
+      return { status: "ready", ...assembled };
+    }
+    throw new AnalysisPipelineError("ANALYSIS_PIPELINE_STATE_INVALID", 409, "Разбор находится в неизвестном состоянии.");
   } finally {
     await dependencies.releaseLock(analysisRunId, lockToken);
   }

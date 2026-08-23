@@ -291,7 +291,7 @@ export async function completeOpenRouterJson(options: {
     ? options.systemPrompt
     : `${options.systemPrompt}\n\n<OUTPUT_JSON_SCHEMA>\n${JSON.stringify(options.outputSchema)}\n</OUTPUT_JSON_SCHEMA>\nВерни только JSON, который точно соответствует OUTPUT_JSON_SCHEMA.`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 300_000);
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 210_000);
   let response: Response;
   try {
     response = await fetchImpl(`${baseUrl}/chat/completions`, {

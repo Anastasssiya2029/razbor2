@@ -2,9 +2,9 @@ import { getDb } from "@/db";
 import { analysisRuns, p01AnalysisResults } from "@/db/schema";
 import {
   AnalysisPipelineError,
+  advanceAnalysisPipeline,
   analysisRunAccessErrorResponse,
   requireAnalysisRunAccess,
-  runAnalysisPipeline,
 } from "@/server/analysis-runs";
 import { syncAnalysisToGoogleSheet } from "@/server/google-sheets";
 import {
@@ -63,14 +63,16 @@ export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
     await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
-    const execution = await runAnalysisPipeline(analysisRunId);
-    const sheetSync = await syncAnalysisToGoogleSheet(analysisRunId);
+    const execution = await advanceAnalysisPipeline(analysisRunId);
+    const sheetSync = execution.status === "ready"
+      ? await syncAnalysisToGoogleSheet(analysisRunId)
+      : null;
     return Response.json({
       analysisRunId,
       status: execution.status,
       idempotentReplay: execution.idempotentReplay,
       result: execution.result,
-      sheetSync: sheetSync.status,
+      sheetSync: sheetSync?.status ?? "not_ready",
     }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const accessResponse = analysisRunAccessErrorResponse(error);
