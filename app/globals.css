@@ -680,7 +680,7 @@ button {
   border: 1px solid rgba(109, 47, 182, 0.16);
   border-radius: 10px;
   outline: none;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.45;
   resize: vertical;
@@ -689,6 +689,7 @@ button {
 
 .field-number textarea {
   color: var(--ink);
+  font-size: 16px;
   font-weight: 600;
 }
 

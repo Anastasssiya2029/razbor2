@@ -44,3 +44,15 @@ test("money fields lift as one control without a second focused rectangle", () =
   assert.match(styles, /:not\(\.money-input-control\)/u);
   assert.match(styles, /\.money-input-wrap:focus-within/u);
 });
+
+test("text answers match label size without inheriting label emphasis", () => {
+  const styles = readFileSync("app/globals.css", "utf8");
+  assert.match(
+    styles,
+    /\.field textarea,\s*\.money-input-wrap\s*\{[\s\S]*?font-size:\s*12px;[\s\S]*?font-weight:\s*400;/u,
+  );
+  assert.match(
+    styles,
+    /\.field-number textarea\s*\{[\s\S]*?font-size:\s*16px;[\s\S]*?font-weight:\s*600;/u,
+  );
+});
