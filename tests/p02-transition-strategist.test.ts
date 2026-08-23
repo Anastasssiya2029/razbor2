@@ -143,6 +143,18 @@ test("19. unknown ID and legacy products_method are rejected", () => { const val
 test("20. explicit desiredRoleSummary conflict returns TARGET_CONFIG_INCONSISTENCY", () => { const input = prepared(); assert.throws(() => assertDesiredRoleConsistency("Передать продажи менеджеру", input.targetConfig), (error: unknown) => error instanceof P02Error && error.code === "TARGET_CONFIG_INCONSISTENCY"); });
 test("21. transport failure gets at most one technical retry", async () => { const provider = new QueueProvider([new Error("network"), output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.technicalRetryCount, 1); });
 test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.businessValidation.checkpoint_after_order = 2; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
+test("final P-02 validation failure persists only safe issue codes and paths", async () => {
+  const broken = output();
+  broken.businessValidation.checkpoint_after_order = 2;
+  const provider = new QueueProvider([broken, broken]);
+  await assert.rejects(
+    () => runP02TransitionStrategist(prepared(), { provider }),
+    (error: unknown) =>
+      error instanceof Error &&
+      /checkpoint_outside_sequence@\/businessValidation\/checkpoint_after_order/u.test(error.message) &&
+      !error.message.includes(broken.businessValidation.if_signal_absent),
+  );
+});
 test("selected candidate has null tie-break step and rejection reason", () => { const selected = output().candidateAudit.find((candidate) => candidate.decision === "selected"); assert.equal(selected?.tie_break_step, null); assert.equal(selected?.rejection_reason, null); assert.doesNotThrow(() => validateP02Invariants(output(), prepared())); });
 test("rejected candidate without tie-break step is rejected", () => { const value = output(); const rejected = value.candidateAudit.find((candidate) => candidate.decision === "rejected")!; rejected.tie_break_step = null; assert.throws(() => validateP02Invariants(value, prepared()), P02InvariantError); });
 test("selected candidate with a tie-break step is rejected", () => { const value = output(); const selected = value.candidateAudit.find((candidate) => candidate.decision === "selected")!; selected.tie_break_step = 0; assert.throws(() => validateP02Invariants(value, prepared()), P02InvariantError); });

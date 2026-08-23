@@ -76,6 +76,17 @@ function correctionFor(title: string, issues: readonly P02ValidationIssue[]): st
   ].join("\n");
 }
 
+function safeValidationSummary(
+  prefix: string,
+  error: P02SchemaValidationError | P02InvariantError,
+): string {
+  const issues = error.issues
+    .slice(0, 24)
+    .map((issue) => `${issue.code}@${issue.path}`)
+    .join(", ");
+  return issues ? `${prefix}: ${issues}` : prefix;
+}
+
 async function defaultProvider(): Promise<P02Provider> {
   const { env } = await import("cloudflare:workers");
   return createConfiguredP02Provider(env as unknown as Record<string, string | undefined>);
@@ -146,7 +157,13 @@ export async function runP02TransitionStrategist(
         correction = correctionFor("Нарушена JSON Schema", error.issues);
         continue;
       }
-      throw executionError("P02_SCHEMA_VALIDATION_FAILED", "P-02 output schema validation failed", error);
+      throw executionError(
+        "P02_SCHEMA_VALIDATION_FAILED",
+        error instanceof P02SchemaValidationError
+          ? safeValidationSummary("P-02 output schema validation failed", error)
+          : "P-02 output schema validation failed",
+        error,
+      );
     }
 
     try {
@@ -157,7 +174,13 @@ export async function runP02TransitionStrategist(
         correction = correctionFor("Нарушены backend semantic invariants", error.issues);
         continue;
       }
-      throw executionError("P02_INVARIANT_FAILED", "P-02 semantic invariants failed", error);
+      throw executionError(
+        "P02_INVARIANT_FAILED",
+        error instanceof P02InvariantError
+          ? safeValidationSummary("P-02 semantic invariants failed", error)
+          : "P-02 semantic invariants failed",
+        error,
+      );
     }
 
     const metadata = metadataFor(provider.provider, provider.model, inputHash, started, now(), technicalRetryCount, reevaluationRetryCount, usage, input.ruleVersions);
@@ -212,4 +235,3 @@ function metadataFor(
     usage,
   };
 }
-
