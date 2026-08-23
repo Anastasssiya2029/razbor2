@@ -277,6 +277,23 @@ test("33. runner performs one semantic retry with invariant feedback", async () 
   assert.match(provider.requests[1].correction ?? "", /long_dash_forbidden/u);
 });
 
+test("runner normalizes presentation-only drift after the bounded semantic retry", async () => {
+  const input = await prepared();
+  const drifted = makeValidP04Output(input);
+  drifted.businessValidation.explanation = "Сигнал — это проверка результата.";
+  drifted.targetConfiguration.key_shifts[0].shift = "Переход — без смены маршрута.";
+  drifted.finalFocus.headline = "Запустите придуманную задачу";
+  const provider = new QueueProvider([drifted, drifted]);
+
+  const result = await runP04ReportWriter(input, { provider });
+
+  assert.equal(provider.requests.length, 2);
+  assert.equal(result.result.finalFocus.headline, "Первый шаг");
+  assert.doesNotMatch(JSON.stringify(result.result), /[—–]/u);
+  assert.equal(result.result.finalFocus.first_task_id, input.reportPolicy.firstTask.taskId);
+  assert.equal(result.result.finalFocus.first_action, input.reportPolicy.firstTask.task);
+});
+
 test("runner replaces model-controlled immutable echoes with backend policy values", async () => {
   const input = await prepared();
   const output = makeValidP04Output(input);
@@ -310,7 +327,7 @@ test("runner replaces model-controlled immutable echoes with backend policy valu
 test("34. a second semantic failure terminates without an unbounded retry", async () => {
   const input = await prepared();
   const invalid = makeValidP04Output(input);
-  invalid.opening.summary += " Новый тезис — без основания.";
+  invalid.opening.summary += " Рекомендуется новый тезис без основания.";
   const provider = new QueueProvider([invalid, invalid]);
   await assert.rejects(
     () => runP04ReportWriter(input, { provider }),

@@ -186,6 +186,54 @@ export function canonicalizeP04ImmutableEchoes(
   return result;
 }
 
+function safeNarrativeTypography(value: string): string {
+  return value.replace(/[—–]/gu, "-");
+}
+
+export function canonicalizeP04NarrativePresentation(
+  value: P04ResultV1_2,
+): P04ResultV1_2 {
+  const result = structuredClone(value);
+  const clean = safeNarrativeTypography;
+
+  result.opening.headline = clean(result.opening.headline);
+  result.opening.summary = clean(result.opening.summary);
+  result.currentConfiguration.summary = clean(result.currentConfiguration.summary);
+  result.currentConfiguration.strengths = result.currentConfiguration.strengths.map(clean);
+  result.currentConfiguration.fragilities = result.currentConfiguration.fragilities.map(clean);
+  result.targetConfiguration.summary = clean(result.targetConfiguration.summary);
+  result.targetConfiguration.key_shifts = result.targetConfiguration.key_shifts.map((item) => ({
+    ...item,
+    shift: clean(item.shift),
+  }));
+  result.archetype.summary = clean(result.archetype.summary);
+  result.growthPoint.title = clean(result.growthPoint.title);
+  result.growthPoint.coach_explanation = clean(result.growthPoint.coach_explanation);
+  result.growthPoint.what_it_unlocks = result.growthPoint.what_it_unlocks.map(clean);
+  result.whyNotNow = result.whyNotNow.map((item) => ({ ...item, text: clean(item.text) }));
+  result.routeCards = result.routeCards.map((card) => ({
+    ...card,
+    card_title: clean(card.card_title),
+    why_now: clean(card.why_now),
+    what_changes_in_business: clean(card.what_changes_in_business),
+    connection_to_next_stage: card.connection_to_next_stage === null
+      ? null
+      : clean(card.connection_to_next_stage),
+  }));
+  result.businessValidation.explanation = clean(result.businessValidation.explanation);
+  result.moneyNow.headline = clean(result.moneyNow.headline);
+  result.moneyNow.narrative = result.moneyNow.narrative === null
+    ? null
+    : clean(result.moneyNow.narrative);
+  result.finalFocus.headline = "Первый шаг";
+  result.finalFocus.text = clean(result.finalFocus.text);
+  result.sanityChecks = result.sanityChecks.map((check) => ({
+    ...check,
+    message: clean(check.message),
+  }));
+  return result;
+}
+
 function normalized(value: string): string {
   return value.trim().toLocaleLowerCase("ru-RU").replace(/\s+/gu, " ");
 }

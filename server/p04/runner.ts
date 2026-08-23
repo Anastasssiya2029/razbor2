@@ -7,6 +7,7 @@ import type { P04Provider, P04RunMetadata, P04RunOutcome } from "./types";
 import { P04_OUTPUT_SCHEMA_VERSION } from "./types";
 import {
   canonicalizeP04ImmutableEchoes,
+  canonicalizeP04NarrativePresentation,
   finalizeAndValidateP04Output,
   P04InvariantError,
   P04SchemaValidationError,
@@ -132,9 +133,12 @@ export async function runP04ReportWriter(
     }
 
     try {
+      const canonical = canonicalizeP04ImmutableEchoes(parsed, input);
       return {
         result: finalizeAndValidateP04Output(
-          canonicalizeP04ImmutableEchoes(parsed, input),
+          reevaluationRetryCount > 0
+            ? canonicalizeP04NarrativePresentation(canonical)
+            : canonical,
           input,
         ),
         metadata: metadataFor(
