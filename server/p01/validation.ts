@@ -12,7 +12,10 @@ import {
 import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
 import { MODEL_FAMILIES, BASE_MODEL_FAMILIES } from "@/server/7k/config/target-rules.v2.2";
 import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
-import { TARGET_RULE_CODE_SET } from "@/server/7k/config/target-model-dictionary.v2.2";
+import {
+  TARGET_MODEL_TEXT_RULES,
+  TARGET_RULE_CODE_SET,
+} from "@/server/7k/config/target-model-dictionary.v2.2";
 import { SEVEN_K_ELEMENT_IDS } from "@/server/7k/types";
 import type { P01ResultV1_4_2 } from "./types";
 
@@ -70,7 +73,49 @@ export function validateP01Schema(value: unknown): P01ResultV1_4_2 {
   return value as P01ResultV1_4_2;
 }
 
-export function normalizeP01CanonicalFields(result: P01ResultV1_4_2): P01ResultV1_4_2 {
+function normalizeTargetModelText(value: string): string {
+  return value
+    .toLocaleLowerCase("ru-RU")
+    .replaceAll("ё", "е")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+function inferUnambiguousTargetModelFamily(value: string) {
+  const normalized = normalizeTargetModelText(value);
+  const matches = TARGET_MODEL_TEXT_RULES.filter(
+    (rule) =>
+      rule.requiredAny.some((phrase) => normalized.includes(phrase)) &&
+      !rule.forbiddenAny.some((phrase) => normalized.includes(phrase)),
+  );
+  return matches.length === 1 ? matches[0].modelFamily : null;
+}
+
+export function normalizeP01CanonicalFields(
+  result: P01ResultV1_4_2,
+  sourceTargetBusinessModel?: string,
+): P01ResultV1_4_2 {
+  const target = result.targetIntent;
+  if (target.normalizedModelFamily === null) {
+    const inferred =
+      target.primaryModelFamily !== null && target.secondaryModelFamilies.length === 0
+        ? target.primaryModelFamily
+        : sourceTargetBusinessModel
+          ? inferUnambiguousTargetModelFamily(sourceTargetBusinessModel)
+          : null;
+    if (inferred !== null) {
+      target.normalizedModelFamily = inferred;
+      target.primaryModelFamily = inferred;
+      target.secondaryModelFamilies = [];
+    }
+  } else if (
+    target.normalizedModelFamily !== "hybrid" &&
+    target.primaryModelFamily === null &&
+    target.secondaryModelFamilies.length === 0
+  ) {
+    target.primaryModelFamily = target.normalizedModelFamily;
+  }
+
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));
 
   for (const factCode of MONEY_NOW_FACT_CODES) {

@@ -220,7 +220,10 @@ export async function runP01EvidenceScorer(
 
     let result;
     try {
-      result = normalizeP01CanonicalFields(validateP01Schema(parsed));
+      result = normalizeP01CanonicalFields(
+        validateP01Schema(parsed),
+        normalizedInput.target.businessModel,
+      );
     } catch (error) {
       if (error instanceof P01SchemaValidationError && technicalRetryCount === 0) {
         technicalRetryCount += 1;

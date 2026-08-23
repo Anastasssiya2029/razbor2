@@ -190,6 +190,49 @@ test("P-01 canonicalizes fields that are forbidden for not-reported history", ()
   assert.equal(validateP01Invariants(normalized), normalized);
 });
 
+test("P-01 restores an unambiguous 1:1 target family from the source input", () => {
+  const fixture = validP01Fixture();
+  fixture.targetIntent.normalizedModelFamily = null;
+  fixture.targetIntent.primaryModelFamily = null;
+
+  const normalized = normalizeP01CanonicalFields(
+    fixture,
+    "Продуманная индивидуальная программа сопровождения 1:1 по поиску предназначения.",
+  );
+
+  assert.equal(normalized.targetIntent.normalizedModelFamily, "package_1to1");
+  assert.equal(normalized.targetIntent.primaryModelFamily, "package_1to1");
+  assert.deepEqual(normalized.targetIntent.secondaryModelFamilies, []);
+});
+
+test("P-01 target family fallback fails closed when source text is ambiguous", () => {
+  const fixture = validP01Fixture();
+  fixture.targetIntent.normalizedModelFamily = null;
+  fixture.targetIntent.primaryModelFamily = null;
+
+  const normalized = normalizeP01CanonicalFields(
+    fixture,
+    "Индивидуальная программа сопровождения 1:1 и продукт в записи.",
+  );
+
+  assert.equal(normalized.targetIntent.normalizedModelFamily, null);
+  assert.equal(normalized.targetIntent.primaryModelFamily, null);
+});
+
+test("P-01 target family fallback does not downgrade an explicit premium 1:1 target", () => {
+  const fixture = validP01Fixture();
+  fixture.targetIntent.normalizedModelFamily = null;
+  fixture.targetIntent.primaryModelFamily = null;
+
+  const normalized = normalizeP01CanonicalFields(
+    fixture,
+    "Премиум-программа сопровождения 1:1.",
+  );
+
+  assert.equal(normalized.targetIntent.normalizedModelFamily, null);
+  assert.equal(normalized.targetIntent.primaryModelFamily, null);
+});
+
 test("P-01 fails closed unsupported money-now facts instead of accepting wrong evidence scope", () => {
   const fixture = validP01Fixture();
   fixture.evidenceLedger.push({
