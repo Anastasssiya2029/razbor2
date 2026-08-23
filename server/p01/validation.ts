@@ -71,6 +71,34 @@ export function validateP01Schema(value: unknown): P01ResultV1_4_2 {
 }
 
 export function normalizeP01CanonicalFields(result: P01ResultV1_4_2): P01ResultV1_4_2 {
+  const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));
+
+  for (const factCode of MONEY_NOW_FACT_CODES) {
+    const fact = result.moneyNowFacts[factCode];
+    if (fact.state !== "confirmed_true") continue;
+
+    const evidencePolicy = MONEY_NOW_FACT_EVIDENCE_POLICIES[factCode];
+    const policyEvidence = fact.evidence_ids
+      .map((id) => evidenceById.get(id))
+      .filter((evidence): evidence is P01ResultV1_4_2["evidenceLedger"][number] =>
+        evidence !== undefined && isAllowedFactEvidenceScope(evidencePolicy, evidence.time_scope),
+      );
+    const hasRequiredEvidence =
+      policyEvidence.length > 0 &&
+      (factCode !== "PRICE_LIMITS_ECONOMICS_CONFIRMED" ||
+        policyEvidence.some(
+          (evidence) =>
+            evidence.evidence_type === "metric_result" && evidence.time_scope === "current",
+        ));
+
+    if (!hasRequiredEvidence) {
+      fact.state = "unknown";
+      fact.confidence = "low";
+      fact.summary = "Недостаточно подтверждающих данных.";
+      fact.evidence_ids = [];
+    }
+  }
+
   for (const scenarioId of MONEY_NOW_SCENARIO_IDS) {
     const history = result.moneyNowHistory[scenarioId];
     if (history.history_status === "not_reported") {

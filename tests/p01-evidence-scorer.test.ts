@@ -190,6 +190,36 @@ test("P-01 canonicalizes fields that are forbidden for not-reported history", ()
   assert.equal(validateP01Invariants(normalized), normalized);
 });
 
+test("P-01 fails closed unsupported money-now facts instead of accepting wrong evidence scope", () => {
+  const fixture = validP01Fixture();
+  fixture.evidenceLedger.push({
+    id: "E02",
+    source_field: "experience.bestPeriod",
+    fact: "Канал работал только в прошлом.",
+    evidence_type: "historical_case",
+    time_scope: "historical_only",
+    valence: "positive",
+    elements: ["funnel"],
+    derived_from: [],
+  });
+  fixture.moneyNowFacts.PROVEN_CHANNEL_CURRENTLY_INACTIVE = {
+    state: "confirmed_true",
+    confidence: "high",
+    summary: "Канал можно включить сейчас.",
+    evidence_ids: ["E02"],
+  };
+
+  const normalized = normalizeP01CanonicalFields(fixture);
+
+  assert.deepEqual(normalized.moneyNowFacts.PROVEN_CHANNEL_CURRENTLY_INACTIVE, {
+    state: "unknown",
+    confidence: "low",
+    summary: "Недостаточно подтверждающих данных.",
+    evidence_ids: [],
+  });
+  assert.equal(validateP01Invariants(normalized), normalized);
+});
+
 function addMoneyNowFactEvidence(
   fixture: P01ResultV1_4_2,
   options: {
