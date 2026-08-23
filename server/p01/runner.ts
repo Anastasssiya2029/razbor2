@@ -136,6 +136,17 @@ function parseJson(text: string): unknown {
   return JSON.parse(text);
 }
 
+function safeValidationSummary(
+  prefix: string,
+  error: P01SchemaValidationError | P01InvariantError,
+): string {
+  const issues = error.issues
+    .slice(0, 20)
+    .map((issue) => `${issue.code}@${issue.path}`)
+    .join(", ");
+  return issues ? `${prefix}: ${issues}` : prefix;
+}
+
 export async function runP01EvidenceScorer(
   input: DiagnosticInputV1_2,
   options: RunP01Options = {},
@@ -215,7 +226,14 @@ export async function runP01EvidenceScorer(
         correction = issuesCorrection("Нарушена JSON Schema", error.issues);
         continue;
       }
-      throw executionError("P01_SCHEMA_VALIDATION_FAILED", error, "P-01 output schema validation failed", latestRaw);
+      throw executionError(
+        "P01_SCHEMA_VALIDATION_FAILED",
+        error,
+        error instanceof P01SchemaValidationError
+          ? safeValidationSummary("P-01 output schema validation failed", error)
+          : "P-01 output schema validation failed",
+        latestRaw,
+      );
     }
 
     try {
@@ -226,7 +244,14 @@ export async function runP01EvidenceScorer(
         correction = issuesCorrection("Нарушены backend invariants", error.issues);
         continue;
       }
-      throw executionError("P01_INVARIANT_FAILED", error, "P-01 semantic invariants failed", latestRaw);
+      throw executionError(
+        "P01_INVARIANT_FAILED",
+        error,
+        error instanceof P01InvariantError
+          ? safeValidationSummary("P-01 semantic invariants failed", error)
+          : "P-01 semantic invariants failed",
+        latestRaw,
+      );
     }
 
     const sanityErrors = p01SanityErrors(result);
