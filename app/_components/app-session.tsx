@@ -19,24 +19,35 @@ export function useAppSession(options: { redirectToLogin?: boolean } = {}) {
       return;
     }
     let active = true;
-    void fetch("/api/auth/session", { cache: "no-store" })
-      .then(async (response) => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          cache: "no-store",
+          credentials: "include",
+        });
         if (!response.ok) throw new Error("UNAUTHENTICATED");
-        return response.json() as Promise<{ user: SessionUser }>;
-      })
-      .then((result) => {
+        const result = await response.json() as { user: SessionUser };
         if (active) setUser(result.user);
-      })
-      .catch(() => {
-        if (active && options.redirectToLogin) {
+      } catch {
+        if (!active) return;
+        setUser(null);
+        if (options.redirectToLogin) {
           const next = `${window.location.pathname}${window.location.search}`;
           window.location.replace(`/login?next=${encodeURIComponent(next)}`);
         }
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
-    return () => { active = false; };
+      }
+    };
+    void checkSession();
+    const interval = window.setInterval(() => void checkSession(), 5 * 60 * 1000);
+    const checkOnFocus = () => void checkSession();
+    window.addEventListener("focus", checkOnFocus);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", checkOnFocus);
+    };
   }, [options.redirectToLogin]);
   return { user, loading };
 }

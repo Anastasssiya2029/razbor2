@@ -14,6 +14,12 @@ import {
   type SystemElementId,
 } from "@/lib/business-analysis";
 import type { ClientsCountPeriod, DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
+import {
+  emptyDiagnosticValues,
+  formatMoneyInput,
+  formatRubles,
+  valuesForSubmission,
+} from "@/lib/diagnostic-form";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { logoutAndRedirect, useAppSession } from "@/app/_components/app-session";
 import { AnalysisResultView } from "@/app/_components/analysis-result-view";
@@ -26,9 +32,12 @@ type FieldProps = {
   multiline?: boolean;
   rows?: number;
   className?: string;
+  variant?: "text" | "number" | "money";
   values: Record<string, string>;
   setValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 };
+
+const FORM_RECOVERY_STORAGE_KEY = "razbor7k.current-diagnostic.v1";
 
 const tabs = [
   { id: 0, label: "Сейчас и цель" },
@@ -1026,23 +1035,96 @@ function Field({
   multiline = false,
   rows = 2,
   className = "",
+  variant = "text",
   values,
   setValues,
 }: FieldProps) {
   const id = `field-${name}`;
+  const value = values[name] ?? "";
+  const displayValue = variant === "money" ? formatMoneyInput(value) : value;
+  const updateValue = (nextValue: string) => {
+    setValues((current) => ({
+      ...current,
+      [name]: variant === "money" ? formatMoneyInput(nextValue) : nextValue,
+    }));
+  };
   const shared = {
     id,
     name,
-    value: values[name] ?? "",
+    value: displayValue,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setValues((current) => ({ ...current, [name]: event.target.value })),
+      updateValue(event.target.value),
   };
 
   return (
-    <label className={`field ${multiline ? "multiline-field" : ""} ${className}`} htmlFor={id}>
+    <label className={`field field-${variant} ${multiline ? "multiline-field" : ""} ${className}`} htmlFor={id}>
       <span>{label}</span>
-      <textarea {...shared} rows={multiline ? rows : 1} />
+      {variant === "money" ? (
+        <span className="money-input-wrap">
+          <input {...shared} inputMode="numeric" autoComplete="off" placeholder="0" />
+          <span aria-hidden="true">₽</span>
+        </span>
+      ) : (
+        <textarea {...shared} inputMode={variant === "number" ? "numeric" : undefined} rows={multiline ? rows : 1} />
+      )}
     </label>
+  );
+}
+
+function HamburgerIcon() {
+  return (
+    <span className="hamburger-icon" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+function HeaderMenu({ onNewDiagnostic }: { onNewDiagnostic: () => void }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const closeOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOutside);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOutside);
+    };
+  }, [open]);
+
+  return (
+    <div className="header-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="header-menu-trigger"
+        aria-label="Открыть меню"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <HamburgerIcon />
+      </button>
+      {open && (
+        <div className="header-menu-popover" role="menu">
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); onNewDiagnostic(); }}>
+            Новый разбор
+          </button>
+          <a role="menuitem" href="/cabinet">Мои разборы</a>
+          <button className="danger" type="button" role="menuitem" onClick={() => void logoutAndRedirect()}>
+            Выйти
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1068,6 +1150,15 @@ type SubmittedDiagnostic = {
   diagnosticId: string;
   analysisRunId: string;
   status: "draft" | "queued";
+};
+
+type DiagnosticFormRecovery = {
+  values: Record<string, string>;
+  deadline: string;
+  clientsCountPeriod: ClientsCountPeriod;
+  desiredSystemHoursApplicable: boolean;
+  activeTab: number;
+  submittedDiagnostic: SubmittedDiagnostic | null;
 };
 
 type CreateDiagnosticResponse = {
@@ -1130,7 +1221,7 @@ export default function Home() {
   const [currentStage, setCurrentStage] = useState(0);
   const [maxUnlockedStage, setMaxUnlockedStage] = useState(0);
   const [analysisSlide, setAnalysisSlide] = useState(0);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() => emptyDiagnosticValues());
   const [deadline, setDeadline] = useState("6 месяцев");
   const [clientsCountPeriod, setClientsCountPeriod] = useState<ClientsCountPeriod>("month");
   const [desiredSystemHoursApplicable, setDesiredSystemHoursApplicable] = useState(false);
@@ -1141,16 +1232,89 @@ export default function Home() {
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BusinessAnalysisResult | null>(null);
   const [realAnalysisResult, setRealAnalysisResult] = useState<AnalysisResultV1 | null>(null);
+  const [recoveryReady, setRecoveryReady] = useState(false);
 
-  const formula = useMemo(() => {
-    const goal = values.goalIncome?.trim() || "_____";
+  const situationParagraphs = useMemo(() => {
+    const goal = formatRubles(values.goalIncome);
     const model = values.goalModel?.trim() || "_____";
-    const now = values.currentIncome?.trim() || "_____";
+    const now = formatRubles(values.currentIncome);
     const struggles = values.struggles?.trim() || "_____";
     const bestPeriod = values.bestPeriod?.trim() || "_____";
     const failures = values.failures?.trim() || "_____";
-    return `Вы хотите прийти к ${goal}, выстроив такую модель бизнеса: ${model}. Сейчас у вас ${now}. Почему пока не получается прийти к цели: ${struggles}. Ваш лучший период: ${bestPeriod}. Ошибки и провалы, которые важно учесть при построении новой системы: ${failures}.`;
+    return [
+      <>Вы хотите прийти к <strong>{goal}</strong>, выстроив такую модель бизнеса: {model}. Сейчас у вас <strong>{now}</strong>.</>,
+      <><strong>Почему пока не получается прийти к цели:</strong> {struggles}.</>,
+      <><strong>Ваш лучший период:</strong> {bestPeriod}.</>,
+      <><strong>Ошибки и провалы:</strong> {failures}.</>,
+    ];
   }, [values]);
+
+  useEffect(() => {
+    let recovered: Partial<DiagnosticFormRecovery> | null = null;
+    try {
+      const stored = window.sessionStorage.getItem(FORM_RECOVERY_STORAGE_KEY);
+      if (stored) recovered = JSON.parse(stored) as Partial<DiagnosticFormRecovery>;
+    } catch {
+      window.sessionStorage.removeItem(FORM_RECOVERY_STORAGE_KEY);
+    }
+    window.queueMicrotask(() => {
+      if (recovered) {
+        if (recovered.values && typeof recovered.values === "object") {
+          setValues({ ...emptyDiagnosticValues(), ...recovered.values });
+        }
+        if (typeof recovered.deadline === "string") setDeadline(recovered.deadline);
+        if (recovered.clientsCountPeriod === "month" || recovered.clientsCountPeriod === "launch") {
+          setClientsCountPeriod(recovered.clientsCountPeriod);
+        }
+        if (typeof recovered.desiredSystemHoursApplicable === "boolean") {
+          setDesiredSystemHoursApplicable(recovered.desiredSystemHoursApplicable);
+        }
+        if (Number.isInteger(recovered.activeTab) && Number(recovered.activeTab) >= 0 && Number(recovered.activeTab) <= 2) {
+          setActiveTab(Number(recovered.activeTab));
+        }
+        if (recovered.submittedDiagnostic?.diagnosticId && recovered.submittedDiagnostic.analysisRunId) {
+          setSubmittedDiagnostic(recovered.submittedDiagnostic);
+          setMaxUnlockedStage(3);
+        }
+      }
+      setRecoveryReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!recoveryReady) return;
+    const snapshot: DiagnosticFormRecovery = {
+      values,
+      deadline,
+      clientsCountPeriod,
+      desiredSystemHoursApplicable,
+      activeTab,
+      submittedDiagnostic,
+    };
+    window.sessionStorage.setItem(FORM_RECOVERY_STORAGE_KEY, JSON.stringify(snapshot));
+  }, [activeTab, clientsCountPeriod, deadline, desiredSystemHoursApplicable, recoveryReady, submittedDiagnostic, values]);
+
+  const startNewDiagnostic = () => {
+    const hasEnteredAnswers = Object.entries(values).some(([key, value]) =>
+      key !== "clientPath" && Boolean(value.trim()),
+    );
+    if (hasEnteredAnswers && !window.confirm("Начать новый разбор? Текущая незавершённая форма будет очищена.")) return;
+    window.sessionStorage.removeItem(FORM_RECOVERY_STORAGE_KEY);
+    setValues(emptyDiagnosticValues());
+    setDeadline("6 месяцев");
+    setClientsCountPeriod("month");
+    setDesiredSystemHoursApplicable(false);
+    setActiveTab(0);
+    setCurrentStage(0);
+    setMaxUnlockedStage(0);
+    setAnalysisSlide(0);
+    setSubmittedDiagnostic(null);
+    setAnalysisResult(null);
+    setRealAnalysisResult(null);
+    setSubmissionError(null);
+    setLoadingTarget(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const goToTab = (tab: number) => {
     setLoadingTarget(null);
@@ -1163,12 +1327,19 @@ export default function Home() {
     ...(intent ? { intent } : {}),
     sourceSchemaVersion: "diagnostic-flat-form.v1.2",
     rawAnswers: {
-      values: rawValues,
+      values: valuesForSubmission(rawValues),
       deadline,
       clientsCountPeriod,
       desiredSystemWeeklyHoursApplicable: desiredSystemHoursApplicable,
     },
   });
+
+  const redirectToLoginAfterExpiredSession = (response: Response): boolean => {
+    if (response.status !== 401) return false;
+    const next = `${window.location.pathname}${window.location.search}`;
+    window.location.replace(`/login?next=${encodeURIComponent(next)}`);
+    return true;
+  };
 
   const saveStartAndOpenProject = async () => {
     setSubmissionError(null);
@@ -1178,14 +1349,19 @@ export default function Home() {
       const response = submittedDiagnostic
         ? await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}`, {
             method: "PATCH",
+            credentials: "include",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(diagnosticPayload(rawValues, "draft")),
           })
         : await fetch("/api/diagnostics", {
             method: "POST",
+            credentials: "include",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(diagnosticPayload(rawValues, "draft")),
           });
+      if (redirectToLoginAfterExpiredSession(response)) {
+        throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+      }
       const result = (await response.json()) as CreateDiagnosticResponse;
       if (!response.ok) {
         throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось сохранить начало разбора.");
@@ -1216,9 +1392,13 @@ export default function Home() {
       if (submittedDiagnostic?.status === "draft") {
         const response = await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}/submit`, {
           method: "POST",
+          credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(diagnosticPayload(rawValues)),
         });
+        if (redirectToLoginAfterExpiredSession(response)) {
+          throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+        }
         const result = (await response.json()) as CreateDiagnosticResponse;
         if (!response.ok) {
           throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось завершить сохранение диагностики.");
@@ -1237,9 +1417,13 @@ export default function Home() {
       } else {
         const response = await fetch("/api/diagnostics", {
           method: "POST",
+          credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(diagnosticPayload(rawValues)),
         });
+        if (redirectToLoginAfterExpiredSession(response)) {
+          throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+        }
         const result = (await response.json()) as CreateDiagnosticResponse;
         if (!response.ok) {
           throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось сохранить диагностику.");
@@ -1265,28 +1449,40 @@ export default function Home() {
         try {
           const analysisResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
             method: "POST",
+            credentials: "include",
           });
+          if (redirectToLoginAfterExpiredSession(analysisResponse)) {
+            throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+          }
           analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
           if (analysisResponse.ok && analysis?.result) break;
           if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
             throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
           }
         } catch (error) {
-          if (error instanceof Error && /завершился ошибкой/u.test(error.message)) throw error;
+          if (error instanceof Error && /завершился ошибкой|Сессия входа завершилась/u.test(error.message)) throw error;
         }
 
         const statusResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
           method: "GET",
+          credentials: "include",
           headers: { accept: "application/json" },
         });
+        if (redirectToLoginAfterExpiredSession(statusResponse)) {
+          throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+        }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
         if (status?.status === "analysis_failed") {
           throw new Error(`Разбор завершился ошибкой${status.errorCode ? ` (${status.errorCode})` : ""}. Ответы сохранены в кабинете.`);
         }
         if (status?.status === "ready") {
           const resultResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/result`, {
+            credentials: "include",
             headers: { accept: "application/json" },
           });
+          if (redirectToLoginAfterExpiredSession(resultResponse)) {
+            throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+          }
           const ready = await readJsonObject<RunAnalysisResponse>(resultResponse);
           if (resultResponse.ok && ready?.result) {
             analysis = ready;
@@ -1302,6 +1498,7 @@ export default function Home() {
       setCurrentStage(1);
       setMaxUnlockedStage(2);
       setLoadingTarget(null);
+      window.sessionStorage.removeItem(FORM_RECOVERY_STORAGE_KEY);
     } catch (error) {
       setLoadingTarget(null);
       setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить диагностику.");
@@ -1351,10 +1548,7 @@ export default function Home() {
     <main className={`site-shell ${loadingTarget ? "is-neuro-loading" : ""}`}>
       {!loadingTarget && <header className="site-header">
         <Brand />
-        <nav className="admin-actions" aria-label="Навигация кабинета">
-          <a className="admin-button" href="/cabinet">Мои разборы</a>
-          <button className="admin-button danger" type="button" onClick={() => void logoutAndRedirect()}>Выйти</button>
-        </nav>
+        <HeaderMenu onNewDiagnostic={startNewDiagnostic} />
       </header>}
 
       {!loadingTarget && <section className="hero" aria-labelledby="page-title">
@@ -1416,8 +1610,8 @@ export default function Home() {
                 <h2>1. СЕЙЧАС</h2>
                 <div className="current-grid">
                   <div className="current-fields">
-                    <Field label="Доход в месяц" name="currentIncome" values={values} setValues={setValues} />
-                    <Field label="Количество клиентов" name="clientsCount" values={values} setValues={setValues} />
+                    <Field label="Доход в месяц" name="currentIncome" variant="money" values={values} setValues={setValues} />
+                    <Field label="Количество клиентов" name="clientsCount" variant="number" values={values} setValues={setValues} />
                     <fieldset className="choice-fieldset clients-period-fieldset">
                       <legend>Количество указано</legend>
                       <div className="clients-period-options">
@@ -1437,7 +1631,7 @@ export default function Home() {
                         ))}
                       </div>
                     </fieldset>
-                    <Field label="Время на проект в неделю" name="weeklyTime" values={values} setValues={setValues} />
+                    <Field label="Время на проект в неделю" name="weeklyTime" variant="number" values={values} setValues={setValues} />
                   </div>
                   <div className="products-box">
                     <h3>Продукты</h3>
@@ -1451,7 +1645,7 @@ export default function Home() {
               <section className="form-section goal-section">
                 <h2>2. ЦЕЛЬ</h2>
                 <div className="goal-top-grid">
-                  <Field label="Доход в месяц" name="goalIncome" values={values} setValues={setValues} />
+                  <Field label="Доход в месяц" name="goalIncome" variant="money" values={values} setValues={setValues} />
                   <Field label="На чём хотите зарабатывать (модель)" name="goalModel" values={values} setValues={setValues} />
                 </div>
                 <fieldset className="choice-fieldset deadline-fieldset">
@@ -1485,7 +1679,7 @@ export default function Home() {
                       </span>
                     </label>
                     {desiredSystemHoursApplicable && (
-                      <Field label="Время на проект (система есть)" name="systemTime" values={values} setValues={setValues} />
+                      <Field label="Время на проект (система есть)" name="systemTime" variant="number" values={values} setValues={setValues} />
                     )}
                   </div>
                 </div>
@@ -1507,7 +1701,7 @@ export default function Home() {
                     <Field label="Кто клиенты" name="clients" multiline rows={2} values={values} setValues={setValues} />
                     <Field label="Результат" name="result" multiline rows={2} values={values} setValues={setValues} />
                     <Field label="Откуда приходят" name="sources" values={values} setValues={setValues} />
-                    <Field label="Путь клиента" name="clientPath" values={values} setValues={setValues} />
+                    <Field className="client-path-field" label="Путь клиента" name="clientPath" multiline rows={3} values={values} setValues={setValues} />
                     <Field label="Продажи" name="sales" values={values} setValues={setValues} />
                   </div>
                   <div className="project-column project-assets-column">
@@ -1541,7 +1735,9 @@ export default function Home() {
                 <h3>Ваша ситуация</h3>
                 <div className="formula-card">
                   <span className="quote-mark">“</span>
-                  <p>{formula}</p>
+                  <div className="formula-paragraphs">
+                    {situationParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+                  </div>
                 </div>
               </section>
 

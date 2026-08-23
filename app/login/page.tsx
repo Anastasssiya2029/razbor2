@@ -11,8 +11,11 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetch("/api/auth/session", { cache: "no-store" }).then((response) => {
-      if (response.ok) window.location.replace("/cabinet");
+    void fetch("/api/auth/session", { cache: "no-store", credentials: "include" }).then((response) => {
+      if (response.ok) {
+        const next = new URLSearchParams(window.location.search).get("next");
+        window.location.replace(next?.startsWith("/") ? next : "/cabinet");
+      }
     });
   }, []);
 
@@ -23,6 +26,7 @@ export default function LoginPage() {
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       });

@@ -1,5 +1,7 @@
 export const APP_SESSION_COOKIE = "razbor_session";
-export const APP_SESSION_TTL_SECONDS = 60 * 60 * 12;
+// Managers may prepare a long diagnostic over several working sessions. The
+// explicit logout action still revokes the server-side session immediately.
+export const APP_SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 export function createSessionToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));

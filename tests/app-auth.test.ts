@@ -10,6 +10,7 @@ import {
 } from "../server/auth/policy";
 import {
   APP_SESSION_COOKIE,
+  APP_SESSION_TTL_SECONDS,
   createSessionToken,
   hashSessionToken,
   readSessionToken,
@@ -58,6 +59,10 @@ test("session tokens are random, hashed and read only from the named cookie", as
   assert.doesNotMatch(cookie, /Secure/u);
   const request = new Request("http://localhost", { headers: { cookie: `other=x; ${cookie}` } });
   assert.equal(readSessionToken(request), first);
+});
+
+test("manager sessions cover a full working week", () => {
+  assert.equal(APP_SESSION_TTL_SECONDS, 60 * 60 * 24 * 7);
 });
 
 test("Supabase password login sends credentials only to configured HTTPS provider", async () => {
