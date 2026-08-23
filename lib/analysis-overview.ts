@@ -8,6 +8,7 @@ export type AnalysisOverview = {
     evidence: string[];
   };
   systemScores: SystemScore[];
+  modelTransitionNote?: string | null;
 };
 
 const presentationElementIds: Record<SevenKElementId, SystemElementId> = {
@@ -36,5 +37,6 @@ export function buildAnalysisOverview(input: {
       targetScore: input.target.targetScores[elementId],
       reasoning: "Уровни рассчитаны по данным диагностики и правилам целевой конфигурации 7К.",
     })),
+    modelTransitionNote: input.target.modelTransitionNote ?? null,
   };
 }

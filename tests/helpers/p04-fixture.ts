@@ -167,6 +167,9 @@ function targetProjection(target: ReturnType<typeof calculateTargetConfiguration
   return {
     modelFamily: target.modelFamily,
     modelComponents: target.modelComponents,
+    visionModelFamily: target.visionModelFamily,
+    visionModelComponents: target.visionModelComponents,
+    modelTransitionNote: target.modelTransitionNote,
     requiredMinimum: target.requiredMinimum,
     targetScores: target.targetScores,
     gap: target.gap,

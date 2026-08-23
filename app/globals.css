@@ -173,6 +173,9 @@ body {
 .result-model-column > small { min-height: 34px; margin-top: 7px; color: #55465b; font-size: 10px; font-weight: 800; line-height: 1.2; }
 .result-model-legend { justify-content: center; }
 .target-calculation-note { margin: 18px auto 24px; max-width: 820px; text-align: center; font-size: 13px; }
+.target-horizon-note { max-width: 860px; margin: 18px auto 24px; padding: 17px 20px; color: #5a4261; background: linear-gradient(145deg, #fffaf4, #fbf3fc); border: 1px solid rgba(162,91,127,.13); border-radius: 15px; text-align: left; }
+.target-horizon-note strong { display: block; margin-bottom: 6px; color: #702273; font-size: 14px; }
+.target-horizon-note p { margin: 0; color: #6f5c74; font-size: 13px; line-height: 1.55; }
 .configuration-decisions { margin-top: 26px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .configuration-decisions > section { padding: 18px; background: #fbf6fc; border: 1px solid rgba(109,47,182,.1); border-radius: 17px; }
 .configuration-decisions > section > div { margin-top: 11px; display: grid; gap: 9px; }
@@ -188,6 +191,28 @@ body {
 .money-card h2,
 .money-card p { color: #fff; }
 .money-card .admin-eyebrow { color: #f8bce7; }
+.analysis-strategy-summary { display: grid; gap: 24px; }
+.growth-bundle-line { display: flex; align-items: stretch; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.growth-bundle-item { display: flex; align-items: center; gap: 12px; }
+.growth-bundle-item > span { color: #b12b8d; font-family: var(--display-font); font-size: 30px; font-weight: 800; }
+.growth-bundle-item article { min-width: 190px; padding: 17px 20px; display: grid; gap: 5px; background: linear-gradient(145deg, #fff, #fbf2fc); border: 1px solid rgba(109,47,182,.13); border-radius: 17px; box-shadow: 0 12px 28px rgba(73,23,89,.08); }
+.growth-bundle-item small { color: #9b6398; font-size: 10px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.growth-bundle-item strong { color: #47204e; font-family: var(--display-font); font-size: 18px; }
+.growth-bundle-item em { color: #7d2a84; font-size: 13px; font-style: normal; font-weight: 800; }
+.growth-bundle-explanation { margin-top: 22px; padding: 22px; background: #faf5fb; border-radius: 18px; }
+.growth-bundle-explanation h3 { margin: 7px 0 9px; color: #4b1c51; font-family: var(--display-font); font-size: clamp(21px, 2.4vw, 30px); }
+.growth-bundle-explanation p { margin: 0; line-height: 1.65; }
+.why-not-now-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 13px; }
+.why-not-now-grid article { padding: 18px; background: #fffaf4; border: 1px solid rgba(184,123,50,.12); border-radius: 15px; }
+.why-not-now-grid strong { color: #4c254d; }
+.why-not-now-grid p { margin: 8px 0; line-height: 1.55; }
+.why-not-now-grid small { display: block; color: #8a617f; font-weight: 700; line-height: 1.45; }
+.money-now-summary { color: #fff; background: radial-gradient(circle at 90% 12%, rgba(229,56,161,.38), transparent 36%), linear-gradient(145deg, #32133f, #71237b); }
+.money-now-summary.guarded { color: #4e2e51; background: linear-gradient(145deg, #fffaf4, #fbf2fc); }
+.money-now-summary h2,
+.money-now-summary p { color: inherit; }
+.money-now-summary.available .admin-eyebrow { color: #f8bce7; }
+.result-plan-actions { margin-top: 8px; display: flex; justify-content: center; }
 .route-cards { display: grid; gap: 16px; }
 .route-cards > article { padding: 20px; background: #fcf9fd; border: 1px solid rgba(109,47,182,.1); border-radius: 17px; }
 .route-cards header { display: flex; gap: 14px; align-items: center; }
@@ -239,7 +264,12 @@ body {
   .score-grid,
   .result-columns,
   .marketer-grid,
-  .configuration-decisions { grid-template-columns: 1fr; }
+  .configuration-decisions,
+  .why-not-now-grid { grid-template-columns: 1fr; }
+  .growth-bundle-line { align-items: stretch; flex-direction: column; }
+  .growth-bundle-item { width: 100%; }
+  .growth-bundle-item > span { align-self: center; }
+  .growth-bundle-item article { width: 100%; }
   .result-system-model { grid-template-columns: repeat(7, minmax(62px, 1fr)); overflow-x: auto; padding-bottom: 8px; }
   .gift-wheel-layout { grid-template-columns: 1fr; }
   .gift-prizes { grid-template-columns: 1fr; }
@@ -260,6 +290,11 @@ body {
   .configuration-decisions > section { break-inside: avoid; }
   .transition-checklist-section { break-before: page; break-inside: auto; }
   .result-columns { break-inside: avoid; }
+  .analysis-strategy-summary { gap: 8mm; }
+  .growth-bundle-item article,
+  .why-not-now-grid article,
+  .money-now-summary { break-inside: avoid; box-shadow: none; }
+  .result-plan-actions { display: none !important; }
 }
 
 button,

@@ -154,6 +154,9 @@ export function prepareP02Input(source: P02UpstreamSource): P02PreparedInput {
   const targetConfig: TargetConfigProjection = {
     modelFamily: stage4.target.modelFamily,
     modelComponents: stage4.target.modelComponents,
+    visionModelFamily: stage4.target.visionModelFamily,
+    visionModelComponents: stage4.target.visionModelComponents,
+    modelTransitionNote: stage4.target.modelTransitionNote,
     requiredMinimum: stage4.target.requiredMinimum,
     targetScores: stage4.target.targetScores,
     gap: stage4.target.gap,

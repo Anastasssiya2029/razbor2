@@ -13,6 +13,18 @@ const runRoute = readFileSync(join(
   "run",
   "route.ts",
 ), "utf8");
+const strategySummary = readFileSync(join(
+  process.cwd(),
+  "app",
+  "_components",
+  "analysis-strategy-summary.tsx",
+), "utf8");
+const resultView = readFileSync(join(
+  process.cwd(),
+  "app",
+  "_components",
+  "analysis-result-view.tsx",
+), "utf8");
 
 test("interactive Step 2 opens from the persisted overview before the full report is ready", () => {
   assert.match(runRoute, /overview,\s*\n\s*result: execution\.result/u);
@@ -31,4 +43,34 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.match(page, /<EvolutionMap currentArchetypeId=\{analysis\.archetype\.id\} \/>/u);
   assert.doesNotMatch(page, /<BusinessAnalysis analysis=\{analysis\}/u);
   assert.doesNotMatch(page, /setLoadingTarget\("plan"\)/u);
+});
+
+test("Step 2 adds the key money bundle and Money Now only after the final result is available", () => {
+  assert.match(page, /result && <AnalysisStrategySummary result=\{result\} \/>/u);
+  assert.match(strategySummary, /Связка для перехода к денежной цели/u);
+  assert.match(strategySummary, /Почему именно эта связка/u);
+  assert.match(strategySummary, /Почему не другие элементы/u);
+  assert.match(strategySummary, /Где деньги сейчас/u);
+  for (const status of [
+    "available",
+    "no_eligible_scenario",
+    "blocked_insufficient_evidence",
+    "blocked_inconsistency",
+  ]) {
+    assert.match(strategySummary, new RegExp(`case "${status}"`, "u"));
+  }
+});
+
+test("Step 3 uses resolved route tasks and only neuromarketers for routed elements", () => {
+  assert.match(resultView, /result\.route\.cards\.map/u);
+  assert.match(resultView, /card\.tasks\.map/u);
+  assert.match(resultView, /const routeElementIds = result\.route\.cards/u);
+  assert.match(resultView, /ELEMENT_NEUROMARKETERS\[element\.id\]/u);
+  assert.doesNotMatch(resultView, /prototypePlanTasks|prototypePlanCriteria/u);
+});
+
+test("client-facing progress copy does not expose internal pipeline names or raw failure codes", () => {
+  assert.doesNotMatch(page, /AI-конвейер продолжает работу/u);
+  assert.doesNotMatch(page, /status\.errorCode \?/u);
+  assert.match(page, /План продолжает собираться/u);
 });

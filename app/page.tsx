@@ -24,6 +24,7 @@ import {
 import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { logoutAndRedirect, useAppSession } from "@/app/_components/app-session";
 import { AnalysisResultView } from "@/app/_components/analysis-result-view";
+import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { GiftWheel } from "@/app/_components/gift-wheel";
 import type { AnalysisOverview } from "@/lib/analysis-overview";
@@ -707,44 +708,44 @@ const analysisProgressByStatus: Record<AnalysisProgressStatus, {
   queued: {
     step: 1,
     percent: 8,
-    title: "Оцениваю 7 элементов системы",
-    detail: "Сопоставляю ответы с матрицей 7К и проверяю доказательства для каждого балла.",
+    title: "Алекс изучает вашу ситуацию",
+    detail: "Собираю из ответов цельную картину бизнеса и его текущих опор.",
   },
   scoring: {
     step: 1,
     percent: 12,
-    title: "Оцениваю 7 элементов системы",
-    detail: "Сопоставляю ответы с матрицей 7К и проверяю доказательства для каждого балла.",
+    title: "Алекс изучает вашу ситуацию",
+    detail: "Собираю из ответов цельную картину бизнеса и его текущих опор.",
   },
   targeting: {
     step: 2,
     percent: 28,
-    title: "Рассчитываю архетип и цель",
-    detail: "Программно рассчитываю текущий архетип и допустимую целевую конфигурацию.",
+    title: "Собираю картину роста",
+    detail: "Определяю, на что уже можно опереться и какой уровень нужен для вашей цели.",
   },
   strategizing: {
     step: 3,
     percent: 42,
     title: "Ищу главную связку роста",
-    detail: "Определяю ограничение и элементы, которые должны усиливаться вместе.",
+    detail: "Выбираю элементы, которые важно усиливать вместе, чтобы не распылять ресурс.",
   },
   resolving_tasks: {
     step: 4,
     percent: 60,
-    title: "Подбираю задачи перехода",
-    detail: "Сверяю связку роста с матрицей переходов и формирую последовательность действий.",
+    title: "Собираю последовательность действий",
+    detail: "Выстраиваю понятный маршрут от текущей ситуации к ближайшему результату.",
   },
   money_now: {
     step: 5,
     percent: 72,
-    title: "Определяю денежные действия",
-    detail: "Проверяю, какое действие может быстрее всего дать деньги в текущей ситуации.",
+    title: "Ищу ближайший денежный фокус",
+    detail: "Проверяю, на какой существующий актив можно опереться уже сейчас.",
   },
   writing_report: {
     step: 6,
     percent: 88,
     title: "Собираю индивидуальный план",
-    detail: "Объединяю расчёты, задачи и рекомендации в итоговый разбор.",
+    detail: "Соединяю выводы и действия в понятный план для разговора с клиентом.",
   },
   ready: {
     step: 6,
@@ -819,8 +820,8 @@ function NeuroAnalysisScreen({
             <span style={{ width: `${progress.percent}%` }} />
           </div>
           <p className="neuro-duration-note">
-            Полный разбор обычно занимает 3–6 минут: четыре AI‑этапа выполняются последовательно.
-            Анкета уже сохранена — повторно отправлять её не нужно.
+            Первая часть разбора откроется сразу после оценки текущей системы. Полный план продолжит собираться в фоне.
+            Анкета уже сохранена, повторно отправлять её не нужно.
           </p>
         </>
       )}
@@ -1011,6 +1012,7 @@ function AnalysisSection({
   planReady,
   progressStatus,
   backgroundError,
+  result,
 }: {
   analysis: AnalysisOverview;
   activeSlide: number;
@@ -1020,6 +1022,7 @@ function AnalysisSection({
   planReady: boolean;
   progressStatus: AnalysisProgressStatus;
   backgroundError: string | null;
+  result: AnalysisResultV1 | null;
 }) {
   const pointerStart = useRef<number | null>(null);
   const [archetypeOpen, setArchetypeOpen] = useState(false);
@@ -1110,6 +1113,12 @@ function AnalysisSection({
               </div>
               <ModelLegend />
               <SystemModel elements={systemElements} target />
+              {analysis.modelTransitionNote && (
+                <aside className="target-horizon-note">
+                  <strong>Почему не строим всю далёкую модель сразу</strong>
+                  <p>{analysis.modelTransitionNote}</p>
+                </aside>
+              )}
             </article>
           </div>
         </div>
@@ -1141,8 +1150,10 @@ function AnalysisSection({
 
       <EvolutionMap currentArchetypeId={analysis.archetype.id} />
 
+      {result && <AnalysisStrategySummary result={result} />}
+
       <div className={`route-action-wrap ${planReady ? "is-ready" : "is-building"}`} aria-live="polite">
-        <span>{backgroundError ? "Нужна повторная попытка" : planReady ? "Следующий шаг" : "AI-конвейер продолжает работу"}</span>
+        <span>{backgroundError ? "Нужна повторная попытка" : planReady ? "Следующий шаг" : "План продолжает собираться"}</span>
         <h3>
           {backgroundError
             ? "Разбор уже сохранён, но план перехода пока не собран"
@@ -1152,7 +1163,7 @@ function AnalysisSection({
         </h3>
         <p>
           {backgroundError
-            ? backgroundError
+            ? "Ответы и первая часть разбора сохранены. План можно собрать повторно, не заполняя анкету заново."
             : planReady
               ? "Все рекомендации и задачи готовы."
               : "Текущая и целевая модели уже готовы — их можно обсуждать с клиентом, пока система собирает рекомендации."}
@@ -1706,7 +1717,7 @@ export default function Home() {
         }
         if (status?.status === "analysis_failed") {
           setSubmittedDiagnostic(null);
-          throw new Error(`Разбор завершился ошибкой${status.errorCode ? ` (${status.errorCode})` : ""}. Ответы сохранены в кабинете.`);
+          throw new Error("Разбор не удалось завершить. Ответы сохранены в кабинете.");
         }
         if (status?.status === "ready") {
           const resultResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/result`, {
@@ -2006,6 +2017,7 @@ export default function Home() {
           planReady={Boolean(realAnalysisResult)}
           progressStatus={realAnalysisResult ? "ready" : analysisProgressStatus}
           backgroundError={analysisBackgroundError}
+          result={realAnalysisResult}
         />
       ) : realAnalysisResult ? (
         <section className="embedded-result">
@@ -2020,7 +2032,7 @@ export default function Home() {
       ) : (
         <section className="embedded-result">
           <div className="route-action-wrap is-building">
-            <span>AI-конвейер продолжает работу</span>
+            <span>План продолжает собираться</span>
             <h3>План перехода появится здесь сразу после завершения рекомендаций</h3>
           </div>
         </section>

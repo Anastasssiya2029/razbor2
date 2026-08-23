@@ -19,6 +19,9 @@ export type TargetConfigProjection = Pick<
   TargetConfigurationResult,
   | "modelFamily"
   | "modelComponents"
+  | "visionModelFamily"
+  | "visionModelComponents"
+  | "modelTransitionNote"
   | "requiredMinimum"
   | "targetScores"
   | "gap"
@@ -162,4 +165,3 @@ export type P02RunOutcome =
       metadata: P02RunMetadata;
       providerRawResponse: unknown;
     };
-

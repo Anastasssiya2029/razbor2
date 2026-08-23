@@ -298,6 +298,9 @@ export async function prepareP04Input(source: P04Source): Promise<P04PreparedInp
     target: {
       modelFamily: target.target.modelFamily,
       modelComponents: structuredClone(target.target.modelComponents),
+      visionModelFamily: target.target.visionModelFamily,
+      visionModelComponents: structuredClone(target.target.visionModelComponents),
+      modelTransitionNote: target.target.modelTransitionNote,
       requiredMinimum: structuredClone(target.target.requiredMinimum),
       targetScores: structuredClone(target.target.targetScores),
       gap: structuredClone(target.target.gap),

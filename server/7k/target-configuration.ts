@@ -29,6 +29,9 @@ export type TargetConfigurationInput = {
   currentScores: SevenKScores;
   modelFamily: ModelFamily;
   hybridComponents?: readonly BaseModelFamily[];
+  visionModelFamily?: ModelFamily;
+  visionModelComponents?: readonly BaseModelFamily[];
+  modelTransitionNote?: string | null;
   activatedCapabilities?: readonly CapabilityCode[];
   targetModifiers?: readonly TargetModifierCode[];
   targetDelegation?: readonly TargetDelegationCode[];
@@ -51,6 +54,9 @@ export type TargetConfigurationResult = {
   resourceVersion: typeof TARGET_RULES_RESOURCE_VERSION;
   modelFamily: ModelFamily;
   modelComponents: readonly BaseModelFamily[];
+  visionModelFamily?: ModelFamily;
+  visionModelComponents?: readonly BaseModelFamily[];
+  modelTransitionNote?: string | null;
   capabilities: readonly CapabilityCode[];
   appliedModifiers: readonly TargetModifierCode[];
   desiredOwnerRole: DesiredOwnerRole | null;
@@ -219,8 +225,9 @@ export function calculateTargetConfiguration(
 
   for (const modifier of modifiers) {
     const definition = TARGET_MODIFIER_FLOORS[modifier];
+    const floors: Partial<Record<SevenKElementId, number>> = definition.floors;
     for (const elementId of SEVEN_K_ELEMENT_IDS) {
-      const floor = definition.floors[elementId];
+      const floor = floors[elementId];
       if (floor !== undefined) {
         applyFloor(
           requiredMinimum,
@@ -288,6 +295,9 @@ export function calculateTargetConfiguration(
     resourceVersion: TARGET_RULES_RESOURCE_VERSION,
     modelFamily: input.modelFamily,
     modelComponents,
+    visionModelFamily: input.visionModelFamily ?? input.modelFamily,
+    visionModelComponents: input.visionModelComponents ?? modelComponents,
+    modelTransitionNote: input.modelTransitionNote ?? null,
     capabilities,
     appliedModifiers: [...modifiers],
     desiredOwnerRole,

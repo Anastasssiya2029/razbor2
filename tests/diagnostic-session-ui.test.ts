@@ -62,7 +62,7 @@ test("long analysis shows real pipeline progress and immediately advances comple
   const styles = readFileSync("app/globals.css", "utf8");
   assert.match(page, /analysisProgressByStatus/u);
   assert.match(page, /Шаг \$\{progress\.step\} из 6/u);
-  assert.match(page, /обычно занимает 3–6 минут/u);
+  assert.match(page, /Первая часть разбора откроется сразу после оценки текущей системы/u);
   assert.match(page, /analysis\.status !== "ready"\) \{\s*continue;/u);
   assert.match(styles, /\.neuro-progress-meter/u);
 });

@@ -8,6 +8,7 @@ import { ELEMENT_NEUROMARKETERS, NEUROMARKETERS } from "@/lib/neuromarketers";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { systemScoreTone } from "@/lib/business-analysis";
 import type { SevenKElementId } from "@/server/7k/types";
+import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
 
 type Props = {
   result: AnalysisResultV1;
@@ -66,9 +67,13 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
   for (const item of result.strategy.bundle.later_elements) pauseReason.set(item.element_id, item.reason);
   const showAnalysis = view !== "plan";
   const showPlan = view !== "analysis";
+  const showPlanCover = view === "plan";
+  const routeElementIds = result.route.cards
+    .map((card) => card.elementId)
+    .filter((elementId, index, all) => all.indexOf(elementId) === index);
   return (
     <div className="result-view">
-      {showAnalysis && <section className="result-cover">
+      {(showAnalysis || showPlanCover) && <section className="result-cover">
         <span className="admin-eyebrow">Персональная стратегия 7К</span>
         <h1>Индивидуальный план системного роста проекта для {clientNameGenitive}</h1>
         {currentRevenueRub != null && targetRevenueRub != null && (
@@ -80,6 +85,8 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
         {deadlineLabel && (currentRevenueRub == null || targetRevenueRub == null) && <strong>Плановый срок: {deadlineLabel}</strong>}
       </section>}
 
+      {showPlanCover && <AnalysisStrategySummary result={result} showMoneyNow={false} startNumber={1} />}
+
       {showAnalysis && <section className="result-section target-configuration-section">
         <div className="result-section-heading"><span>01</span><div><h2>Целевая конфигурация системы</h2><p>{result.report.targetConfiguration.summary}</p></div></div>
         <div className="configuration-total"><span>Сейчас <strong>{currentTotal}</strong></span><i aria-hidden="true">→</i><span>Целевая конфигурация <strong>{targetTotal}</strong></span></div>
@@ -90,6 +97,10 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
           <span><i className="legend-swatch empty-swatch" />Потенциал роста</span>
         </div>
         <p className="target-calculation-note">Целевые баллы рассчитаны программно: система сохраняет уже достигнутый уровень и добавляет только минимумы, необходимые выбранной модели и цели.</p>
+        {result.target.modelTransitionNote && <aside className="target-horizon-note">
+          <strong>Ближайшая конфигурация, а не далёкий финал</strong>
+          <p>{result.target.modelTransitionNote}</p>
+        </aside>}
         <div className="score-grid">
           {SEVEN_K_ELEMENTS.map((element) => {
             const current = result.current.scores[element.id];
@@ -131,7 +142,7 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
       </section>}
 
       {showPlan && <section className="result-section transition-checklist-section">
-        <div className="result-section-heading"><span>02</span><div><h2>Чек‑лист перехода</h2><p>Двигайтесь по порядку: следующая связка опирается на результат предыдущей.</p></div></div>
+        <div className="result-section-heading"><span>{showPlanCover ? "03" : "02"}</span><div><h2>Чек‑лист перехода</h2><p>Двигайтесь по порядку: следующая связка опирается на результат предыдущей.</p></div></div>
         <div className="route-cards">
           {result.route.cards.map((card) => {
             const name = SEVEN_K_ELEMENTS.find((item) => item.id === card.elementId)?.name ?? card.elementId;
@@ -146,17 +157,26 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
       </section>}
 
       {showPlan && <section className="result-section">
-        <div className="result-section-heading"><span>03</span><div><h2>Нейромаркетологи для реализации</h2><p>За каждым элементом закреплён профильный помощник. Для элемента «Команда» используется вся связка.</p></div></div>
+        <div className="result-section-heading"><span>{showPlanCover ? "04" : "03"}</span><div><h2>Нейромаркетологи для реализации</h2><p>Показываем только помощников для элементов текущего маршрута. Для элемента «Команда» используется вся связка.</p></div></div>
         <div className="marketer-grid">
-          {SEVEN_K_ELEMENTS.map((element) => <article key={element.id}>
+          {routeElementIds.map((elementId) => {
+            const element = SEVEN_K_ELEMENTS.find((item) => item.id === elementId)!;
+            return <article key={element.id}>
             <h3>{element.name}</h3>
             <div>{ELEMENT_NEUROMARKETERS[element.id].map((marketerId) => {
               const marketer = NEUROMARKETERS[marketerId];
               return <section key={marketerId}><Image src={marketer.image} alt="" width={48} height={48} /><p><strong>{marketer.name}</strong><small>{marketer.description}</small></p></section>;
             })}</div>
-          </article>)}
+          </article>;
+          })}
         </div>
       </section>}
+
+      {showPlanCover && <div className="plan-actions result-plan-actions">
+        <button type="button" className="primary-button compact" onClick={() => window.print()}>
+          Сохранить план в PDF
+        </button>
+      </div>}
 
       {view === "full" && <section className="result-columns">
         <article className="result-section money-card"><span className="admin-eyebrow">Где деньги сейчас</span><h2>{result.report.moneyNow.headline}</h2><p>{result.report.moneyNow.narrative ?? result.report.moneyNow.locked_teaser}</p></article>

@@ -181,8 +181,11 @@ function source(p01 = p01Fixture()): Stage4Source {
 class MemoryRepository implements TargetArchetypeRepository {
   stored: StoredTargetArchetypeResult | null = null;
   updates: Array<{ status: "strategizing" | "analysis_failed"; errorCode: string | null }> = [];
+  source: Stage4Source;
 
-  constructor(public source: Stage4Source) {}
+  constructor(source: Stage4Source) {
+    this.source = source;
+  }
 
   async loadSource() {
     return this.source;
@@ -378,7 +381,7 @@ test("Hero, Magician and Ruler downgrade through existing gates", () => {
   }
 });
 
-test("high target scores never promote the current business archetype", () => {
+test("a distant product model is kept as vision while the scored target stays on the nearest sellable step", () => {
   const current = distributeTotal(11);
   const p01 = p01Fixture(current);
   p01.targetIntent.normalizedModelFamily = "school_licensing";
@@ -386,7 +389,30 @@ test("high target scores never promote the current business archetype", () => {
   const result = computeTargetAndArchetype(source(p01));
   assert.equal(result.archetype.totalScore, 11);
   assert.equal(result.archetype.finalArchetype, "explorer");
-  assert.ok(Object.values(result.target.targetScores).some((score) => score >= 9));
+  assert.equal(result.target.modelFamily, "package_1to1");
+  assert.equal(result.target.visionModelFamily, "school_licensing");
+  assert.deepEqual(result.target.visionModelComponents, ["school_licensing"]);
+  assert.equal(result.target.targetScores.product_method, 3);
+  assert.ok(result.target.modelTransitionNote);
+});
+
+test("a mature product system keeps the selected autonomous product model as the scored target", () => {
+  const p01 = p01Fixture({
+    authenticity: 5,
+    audience: 6,
+    product_method: 6,
+    sales_technology: 5,
+    funnel: 5,
+    blog: 4,
+    team: 3,
+  });
+  p01.targetIntent.normalizedModelFamily = "autoproduct";
+  p01.targetIntent.primaryModelFamily = "autoproduct";
+  const target = computeTargetAndArchetype(source(p01)).target;
+  assert.equal(target.modelFamily, "autoproduct");
+  assert.equal(target.visionModelFamily, "autoproduct");
+  assert.equal(target.targetScores.product_method, 8);
+  assert.equal(target.modelTransitionNote, null);
 });
 
 test("blocked or incomplete P-01 never runs Target/Archetype calculators", async () => {

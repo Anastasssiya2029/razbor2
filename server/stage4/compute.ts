@@ -94,6 +94,39 @@ function resolveModel(
   return { modelFamily, hybridComponents: [...new Set(components)] };
 }
 
+function resolveNearTermModel(
+  vision: { modelFamily: ModelFamily; hybridComponents: BaseModelFamily[] },
+  currentScores: SevenKScores,
+): {
+  modelFamily: ModelFamily;
+  hybridComponents: BaseModelFamily[];
+  modelTransitionNote: string | null;
+} {
+  if (vision.modelFamily === "hybrid") {
+    return { ...vision, modelTransitionNote: null };
+  }
+
+  const productScore = currentScores.product_method;
+  const packageFirstModels = new Set<ModelFamily>([
+    "group_live",
+    "membership",
+    "autoproduct",
+    "retreat_event",
+    "school_licensing",
+    "product_company",
+  ]);
+  if (packageFirstModels.has(vision.modelFamily) && productScore < 5) {
+    return {
+      modelFamily: "package_1to1",
+      hybridComponents: [],
+      modelTransitionNote:
+        "Выбранная модель требует более зрелой продуктовой системы. Ближайшая конфигурация показывает первый обязательный этап: собрать, продать и подтвердить результат флагманского продукта, а затем переводить его в более автономный формат.",
+    };
+  }
+
+  return { ...vision, modelTransitionNote: null };
+}
+
 function splitTargetCodes(source: Stage4Source): {
   capabilities: CapabilityCode[];
   modifiers: TargetModifierCode[];
@@ -201,13 +234,23 @@ export function mapP01ToTargetConfigurationInput(source: Stage4Source): {
 } {
   assertP01Ready(source);
   const currentScores = extractCurrentScores(source);
-  const { modelFamily, hybridComponents } = resolveModel(source);
+  const visionModel = resolveModel(source);
+  const { modelFamily, hybridComponents, modelTransitionNote } = resolveNearTermModel(
+    visionModel,
+    currentScores,
+  );
   const { capabilities, modifiers } = splitTargetCodes(source);
   const ownerRole = deriveDesiredOwnerRole(modifiers);
   const targetInput: TargetArchetypeComputation["targetInput"] = {
     currentScores,
     modelFamily,
     ...(modelFamily === "hybrid" ? { hybridComponents } : {}),
+    visionModelFamily: visionModel.modelFamily,
+    visionModelComponents:
+      visionModel.modelFamily === "hybrid"
+        ? visionModel.hybridComponents
+        : [visionModel.modelFamily],
+    modelTransitionNote,
     activatedCapabilities: capabilities,
     targetModifiers: modifiers,
     desiredOwnerRole: ownerRole.role,
