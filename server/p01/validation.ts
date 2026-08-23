@@ -75,7 +75,7 @@ export function normalizeP01CanonicalFields(result: P01ResultV1_4_2): P01ResultV
 
   for (const factCode of MONEY_NOW_FACT_CODES) {
     const fact = result.moneyNowFacts[factCode];
-    if (fact.state !== "confirmed_true") continue;
+    if (fact.state === "unknown") continue;
 
     const evidencePolicy = MONEY_NOW_FACT_EVIDENCE_POLICIES[factCode];
     const policyEvidence = fact.evidence_ids
@@ -85,7 +85,10 @@ export function normalizeP01CanonicalFields(result: P01ResultV1_4_2): P01ResultV
       );
     const hasRequiredEvidence =
       policyEvidence.length > 0 &&
+      (fact.state !== "confirmed_false" ||
+        policyEvidence.some((evidence) => evidence.valence === "negative")) &&
       (factCode !== "PRICE_LIMITS_ECONOMICS_CONFIRMED" ||
+        fact.state !== "confirmed_true" ||
         policyEvidence.some(
           (evidence) =>
             evidence.evidence_type === "metric_result" && evidence.time_scope === "current",

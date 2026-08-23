@@ -811,7 +811,7 @@ test("runner retries technical/schema failures once and invariant failures once"
   assert.match(invariantProvider.requests[1].correction ?? "", /score_above_cap/u);
 });
 
-test("runner sends a targeted confirmed_false correction for valence/evidence", async () => {
+test("runner fails closed a confirmed_false fact without negative evidence", async () => {
   const invalid = validP01Fixture();
   addMoneyNowFactEvidence(invalid, {
     factCode: "HAS_WARM_LEADS",
@@ -821,15 +821,19 @@ test("runner sends a targeted confirmed_false correction for valence/evidence", 
     evidenceType: "metric_result",
     state: "confirmed_false",
   });
-  const provider = new QueueProvider(invalid, validP01Fixture());
+  const provider = new QueueProvider(invalid);
   const outcome = await runP01EvidenceScorer(diagnosticInput(), {
     provider,
     hashInput: async () => "hash",
   });
-  assert.equal(outcome.metadata.reevaluationRetryCount, 1);
-  assert.match(provider.requests[1].correction ?? "", /TARGETED_FIX/u);
-  assert.match(provider.requests[1].correction ?? "", /valence=negative/u);
-  assert.match(provider.requests[1].correction ?? "", /metric_result/u);
+  assert.equal(outcome.metadata.reevaluationRetryCount, 0);
+  assert.equal(provider.requests.length, 1);
+  assert.deepEqual(outcome.result.moneyNowFacts.HAS_WARM_LEADS, {
+    state: "unknown",
+    confidence: "low",
+    summary: "Недостаточно подтверждающих данных.",
+    evidence_ids: [],
+  });
 });
 
 test("runner never retries the same technical failure more than once", async () => {
