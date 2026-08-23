@@ -38,6 +38,10 @@ export function normalizeP02CanonicalFields(
   result: P02ResultV1_3,
   input: { targetConfig: TargetConfigProjection; currentScores: SevenKScores },
 ): P02ResultV1_3 {
+  const priority = result.bundle.priority_element;
+  result.bundle.build_elements = [...new Set(result.bundle.build_elements)].filter(
+    (elementId) => elementId !== priority,
+  );
   const zeroGapBuild = new Set(
     result.bundle.build_elements.filter(
       (elementId) => input.targetConfig.targetScores[elementId] <= input.currentScores[elementId],
@@ -47,20 +51,22 @@ export function normalizeP02CanonicalFields(
     (elementId) => !zeroGapBuild.has(elementId),
   );
   for (const elementId of zeroGapBuild) {
-    const isLater = result.bundle.later_elements.some((item) => item.element_id === elementId);
-    if (
-      elementId !== result.bundle.priority_element &&
-      !isLater &&
-      !result.bundle.maintain_elements.includes(elementId)
-    ) {
-      result.bundle.maintain_elements.push(elementId);
-    }
+    if (!result.bundle.maintain_elements.includes(elementId)) result.bundle.maintain_elements.push(elementId);
   }
 
   const active = new Set<SevenKElementId>([
-    ...(result.bundle.priority_element ? [result.bundle.priority_element] : []),
+    ...(priority ? [priority] : []),
     ...result.bundle.build_elements,
   ]);
+  const laterIds = new Set<SevenKElementId>();
+  result.bundle.later_elements = result.bundle.later_elements.filter((item) => {
+    if (active.has(item.element_id) || laterIds.has(item.element_id)) return false;
+    laterIds.add(item.element_id);
+    return true;
+  });
+  result.bundle.maintain_elements = SEVEN_K_ELEMENT_IDS.filter(
+    (elementId) => !active.has(elementId) && !laterIds.has(elementId),
+  );
   const previousTo = new Map<SevenKElementId, number>();
   const sequence: P02ResultV1_3["elementSequence"] = [];
   for (const step of result.elementSequence) {
@@ -71,7 +77,7 @@ export function normalizeP02CanonicalFields(
     sequence.push({
       ...step,
       order: sequence.length + 1,
-      role: step.element_id === result.bundle.priority_element ? "priority" : "build",
+      role: step.element_id === priority ? "priority" : "build",
       from_score: fromScore,
       to_score: toScore,
     });

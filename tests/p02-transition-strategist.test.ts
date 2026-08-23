@@ -177,6 +177,37 @@ test("P-02 canonicalizes zero-gap build elements and clamps milestones to persis
   assert.equal(normalized.businessValidation.checkpoint_after_order, 1);
   assert.equal(validateP02Invariants(normalized, input), normalized);
 });
+test("P-02 canonicalizes duplicate and missing bundle roles into one exact 7K partition", () => {
+  const input = prepared();
+  const value = output();
+  value.bundle.build_elements = ["sales_technology", "sales_technology"];
+  value.bundle.maintain_elements = ["authenticity", "sales_technology"];
+  value.bundle.later_elements = [
+    { element_id: "audience", reason: "Позже", return_trigger: "После проверки" },
+    { element_id: "audience", reason: "Дубликат", return_trigger: "Позже" },
+    { element_id: "sales_technology", reason: "Конфликт", return_trigger: "Позже" },
+  ];
+  value.elementSequence.push({
+    ...value.elementSequence[0],
+    order: 2,
+    element_id: "sales_technology",
+    role: "build",
+    from_score: input.currentScores.sales_technology,
+    to_score: input.currentScores.sales_technology + 1,
+  });
+
+  const normalized = normalizeP02CanonicalFields(value, input);
+  const roles = [
+    normalized.bundle.priority_element,
+    ...normalized.bundle.build_elements,
+    ...normalized.bundle.maintain_elements,
+    ...normalized.bundle.later_elements.map((item) => item.element_id),
+  ];
+
+  assert.deepEqual([...roles].sort(), [...SEVEN_K_ELEMENT_IDS].sort());
+  assert.equal(new Set(roles).size, SEVEN_K_ELEMENT_IDS.length);
+  assert.equal(validateP02Invariants(normalized, input), normalized);
+});
 test("final P-02 validation failure persists only safe issue codes and paths", async () => {
   const broken = output();
   broken.constraint.root_evidence_ids = ["E99"];
