@@ -4,6 +4,7 @@ import type {
   P01ProviderResponse,
 } from "./types";
 import { completeOpenRouterJson } from "@/server/ai/openrouter-json";
+import type { OpenRouterReasoningMode } from "@/server/ai/openrouter-json";
 
 export type P01ProviderEnvironment = Record<string, string | undefined>;
 
@@ -27,6 +28,7 @@ export class OpenRouterP01Provider implements P01Provider {
   private readonly appTitle: string;
   private readonly fetchImpl: FetchLike;
   private readonly structuredOutput: boolean;
+  private readonly reasoningMode: OpenRouterReasoningMode;
 
   constructor(options: {
     apiKey: string;
@@ -35,6 +37,7 @@ export class OpenRouterP01Provider implements P01Provider {
     appUrl?: string | null;
     appTitle?: string;
     structuredOutput?: boolean;
+    reasoningMode?: OpenRouterReasoningMode;
     fetchImpl?: FetchLike;
   }) {
     this.apiKey = options.apiKey;
@@ -43,6 +46,7 @@ export class OpenRouterP01Provider implements P01Provider {
     this.appUrl = options.appUrl ?? null;
     this.appTitle = options.appTitle ?? "7K Business Diagnostic";
     this.structuredOutput = options.structuredOutput ?? true;
+    this.reasoningMode = options.reasoningMode ?? "none";
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
@@ -58,6 +62,7 @@ export class OpenRouterP01Provider implements P01Provider {
       outputSchema: request.outputSchema,
       systemPrompt: request.systemPrompt,
       fetchImpl: this.fetchImpl,
+      reasoningMode: this.reasoningMode,
     });
   }
 }
@@ -82,6 +87,7 @@ export function createConfiguredP01Provider(
     appUrl: environment.P01_APP_URL?.trim() || null,
     appTitle: environment.P01_APP_TITLE?.trim() || "7K Business Diagnostic",
     structuredOutput: environment.P01_STRUCTURED_OUTPUT !== "false",
+    reasoningMode: (environment.P01_AI_REASONING_MODE?.trim() || "none") as OpenRouterReasoningMode,
     fetchImpl: options.fetchImpl,
   });
 }

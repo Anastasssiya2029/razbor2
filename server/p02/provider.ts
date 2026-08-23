@@ -1,4 +1,4 @@
-import { completeOpenRouterJson } from "@/server/ai/openrouter-json";
+import { completeOpenRouterJson, type OpenRouterReasoningMode } from "@/server/ai/openrouter-json";
 import type { P02Provider, P02ProviderRequest, P02ProviderResponse } from "./types";
 
 export type P02ProviderEnvironment = Record<string, string | undefined>;
@@ -22,6 +22,7 @@ export class OpenRouterP02Provider implements P02Provider {
     appUrl?: string | null;
     appTitle?: string;
     structuredOutput?: boolean;
+    reasoningMode?: OpenRouterReasoningMode;
     fetchImpl?: FetchLike;
   }) {
     this.model = options.model;
@@ -39,6 +40,7 @@ export class OpenRouterP02Provider implements P02Provider {
       outputSchema: request.outputSchema,
       systemPrompt: request.systemPrompt,
       fetchImpl: this.options.fetchImpl,
+      reasoningMode: this.options.reasoningMode ?? "none",
     });
   }
 }
@@ -60,7 +62,7 @@ export function createConfiguredP02Provider(
     appUrl: environment.P02_APP_URL?.trim() || null,
     appTitle: environment.P02_APP_TITLE?.trim() || "7K Business Diagnostic",
     structuredOutput: environment.P02_STRUCTURED_OUTPUT !== "false",
+    reasoningMode: (environment.P02_AI_REASONING_MODE?.trim() || "none") as OpenRouterReasoningMode,
     fetchImpl: options.fetchImpl,
   });
 }
-

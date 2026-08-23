@@ -11,6 +11,16 @@ export type OpenRouterJsonResponse = {
   usage: AiProviderUsage;
 };
 
+export type OpenRouterReasoningMode =
+  | "provider_default"
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+
 export type OpenRouterErrorStage =
   | "routing"
   | "rate_limit"
@@ -278,6 +288,7 @@ export async function completeOpenRouterJson(options: {
   systemPrompt: string;
   fetchImpl?: FetchLike;
   timeoutMs?: number;
+  reasoningMode?: OpenRouterReasoningMode;
 }): Promise<OpenRouterJsonResponse> {
   const headers: Record<string, string> = {
     authorization: `Bearer ${options.apiKey}`,
@@ -300,7 +311,9 @@ export async function completeOpenRouterJson(options: {
       signal: controller.signal,
       body: JSON.stringify({
         model: options.model,
-        reasoning: { effort: "none", exclude: true },
+        reasoning: options.reasoningMode === "provider_default"
+          ? { exclude: true }
+          : { effort: options.reasoningMode ?? "none", exclude: true },
         messages: [{ role: "system", content: systemPrompt }],
         response_format: options.structuredOutput
           ? {

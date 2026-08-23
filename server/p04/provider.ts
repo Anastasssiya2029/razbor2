@@ -1,4 +1,4 @@
-import { completeOpenRouterJson } from "@/server/ai/openrouter-json";
+import { completeOpenRouterJson, type OpenRouterReasoningMode } from "@/server/ai/openrouter-json";
 import type { P04Provider, P04ProviderRequest, P04ProviderResponse } from "./types";
 
 export type P04ProviderEnvironment = Record<string, string | undefined>;
@@ -22,6 +22,7 @@ export class OpenRouterP04Provider implements P04Provider {
     appUrl?: string | null;
     appTitle?: string;
     structuredOutput?: boolean;
+    reasoningMode?: OpenRouterReasoningMode;
     fetchImpl?: FetchLike;
   }) {
     this.model = options.model;
@@ -39,6 +40,7 @@ export class OpenRouterP04Provider implements P04Provider {
       outputSchema: request.outputSchema,
       systemPrompt: request.systemPrompt,
       fetchImpl: this.options.fetchImpl,
+      reasoningMode: this.options.reasoningMode ?? "none",
     });
   }
 }
@@ -62,6 +64,7 @@ export function createConfiguredP04Provider(
     appUrl: environment.P04_APP_URL?.trim() || null,
     appTitle: environment.P04_APP_TITLE?.trim() || "7K Business Diagnostic",
     structuredOutput: environment.P04_STRUCTURED_OUTPUT !== "false",
+    reasoningMode: (environment.P04_AI_REASONING_MODE?.trim() || "none") as OpenRouterReasoningMode,
     fetchImpl: options.fetchImpl,
   });
 }

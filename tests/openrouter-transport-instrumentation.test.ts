@@ -396,6 +396,24 @@ test("mocked successful transport retains the frozen parsed response path", asyn
   });
 });
 
+test("transport applies explicit reasoning modes without changing provider attempts", async () => {
+  const bodies: Array<Record<string, unknown>> = [];
+  const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  await completeOpenRouterJson({ ...transportOptions(fetchImpl), reasoningMode: "medium" });
+  await completeOpenRouterJson({ ...transportOptions(fetchImpl), reasoningMode: "provider_default" });
+
+  assert.equal(bodies.length, 2);
+  assert.deepEqual(bodies[0]?.reasoning, { effort: "medium", exclude: true });
+  assert.deepEqual(bodies[1]?.reasoning, { exclude: true });
+});
+
 test("JSON-object fallback receives the exact local output schema without extra requests", async () => {
   let calls = 0;
   let capturedBody: Record<string, unknown> | null = null;
