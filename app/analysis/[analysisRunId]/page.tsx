@@ -6,7 +6,6 @@ import { AppBrand } from "@/app/_components/brand";
 import { useAppSession } from "@/app/_components/app-session";
 import { AnalysisResultView } from "@/app/_components/analysis-result-view";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
-import { GiftWheel } from "@/app/_components/gift-wheel";
 import type { AnalysisCoverContext } from "@/server/analyses";
 
 function deadlineLabel(months: number | null): string | null {
@@ -38,6 +37,6 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   if (sessionLoading || !user) return <main className="admin-loading">Проверяю доступ…</main>;
   return <main className="result-shell">
     <header className="admin-header no-print"><AppBrand /><nav className="admin-actions"><Link className="admin-button" href="/cabinet">К разборам</Link>{result && <button className="admin-button primary" type="button" onClick={() => window.print()}>Распечатать / PDF</button>}</nav></header>
-    {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <><AnalysisResultView result={result} currentRevenueRub={cover?.currentRevenueRub} targetRevenueRub={cover?.targetRevenueRub} deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)} /><GiftWheel analysisRunId={analysisRunId} /></> : <section className="result-state"><h1>Открываю результат…</h1></section>}
+    {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <AnalysisResultView result={result} currentRevenueRub={cover?.currentRevenueRub} targetRevenueRub={cover?.targetRevenueRub} deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)} /> : <section className="result-state"><h1>Открываю результат…</h1></section>}
   </main>;
 }

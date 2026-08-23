@@ -14,6 +14,7 @@ import {
   type SystemElementId,
 } from "@/lib/business-analysis";
 import type { ClientsCountPeriod, DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
+import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { logoutAndRedirect, useAppSession } from "@/app/_components/app-session";
 import { AnalysisResultView } from "@/app/_components/analysis-result-view";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
@@ -35,7 +36,7 @@ const tabs = [
   { id: 2, label: "Опыт" },
 ];
 
-const stages = ["Диагностика", "Разбор", "План перехода", ""];
+const stages = ["Диагностика", "Разбор", "План перехода", "Колесо возможностей"];
 
 type ArchetypeKind = ArchetypeId;
 
@@ -701,23 +702,6 @@ function NeuroAnalysisScreen({ mode }: { mode: "analysis" | "plan" }) {
   );
 }
 
-function declineClientName(name: string) {
-  const clean = name.trim();
-  if (!clean) return "Екатерины";
-  return clean
-    .split(/\s+/)
-    .map((part) => {
-      if (/ова$/i.test(part)) return `${part.slice(0, -3)}овой`;
-      if (/ева$/i.test(part)) return `${part.slice(0, -3)}евой`;
-      if (/ина$/i.test(part) && part.length > 5) return `${part.slice(0, -1)}ой`;
-      if (/я$/i.test(part)) return `${part.slice(0, -1)}и`;
-      if (/[гкхжчшщ]а$/i.test(part)) return `${part.slice(0, -1)}и`;
-      if (/а$/i.test(part)) return `${part.slice(0, -1)}ы`;
-      return part;
-    })
-    .join(" ");
-}
-
 function formatIncome(value: string) {
   const cleaned = value.trim();
   if (!cleaned || cleaned === "не указан" || /(?:₽|руб)/i.test(cleaned)) return cleaned || "не указан";
@@ -814,7 +798,7 @@ function TransitionPlan({
     <section className="diagnostic-card transition-plan" aria-labelledby="transition-plan-title">
       <div className="plan-heading">
         <span className="analysis-kicker">Шаг 3 · План перехода</span>
-        <h2 id="transition-plan-title">Индивидуальный план перехода <span>для {declineClientName(expertName)}</span></h2>
+        <h2 id="transition-plan-title">Индивидуальный план перехода <span>для {declineRussianNameGenitive(expertName)}</span></h2>
         <p>Чек-лист показывает порядок усиления 7К. В работу попадают только элементы, которые действительно влияют на выбранную цель.</p>
       </div>
 
@@ -1083,12 +1067,13 @@ type SubmittedDiagnostic = {
   input: DiagnosticInputV1_2;
   diagnosticId: string;
   analysisRunId: string;
+  status: "draft" | "queued";
 };
 
 type CreateDiagnosticResponse = {
   diagnosticId: string;
   analysisRunId: string;
-  status: "queued";
+  status: "draft" | "queued";
   input: DiagnosticInputV1_2;
   issues?: Array<{ message?: string }>;
   message?: string;
@@ -1150,6 +1135,7 @@ export default function Home() {
   const [clientsCountPeriod, setClientsCountPeriod] = useState<ClientsCountPeriod>("month");
   const [desiredSystemHoursApplicable, setDesiredSystemHoursApplicable] = useState(false);
   const [isSubmittingDiagnostic, setIsSubmittingDiagnostic] = useState(false);
+  const [isSavingStart, setIsSavingStart] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [loadingTarget, setLoadingTarget] = useState<"analysis" | "plan" | null>(null);
   const [submittedDiagnostic, setSubmittedDiagnostic] = useState<SubmittedDiagnostic | null>(null);
@@ -1173,26 +1159,86 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const diagnosticPayload = (rawValues: Record<string, string>, intent?: "draft") => ({
+    ...(intent ? { intent } : {}),
+    sourceSchemaVersion: "diagnostic-flat-form.v1.2",
+    rawAnswers: {
+      values: rawValues,
+      deadline,
+      clientsCountPeriod,
+      desiredSystemWeeklyHoursApplicable: desiredSystemHoursApplicable,
+    },
+  });
+
+  const saveStartAndOpenProject = async () => {
+    setSubmissionError(null);
+    setIsSavingStart(true);
+    const rawValues = { ...values };
+    try {
+      const response = submittedDiagnostic
+        ? await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(diagnosticPayload(rawValues, "draft")),
+          })
+        : await fetch("/api/diagnostics", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(diagnosticPayload(rawValues, "draft")),
+          });
+      const result = (await response.json()) as CreateDiagnosticResponse;
+      if (!response.ok) {
+        throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось сохранить начало разбора.");
+      }
+      setSubmittedDiagnostic({
+        values: rawValues,
+        deadline,
+        input: result.input,
+        diagnosticId: result.diagnosticId,
+        analysisRunId: result.analysisRunId,
+        status: result.status,
+      });
+      goToTab(1);
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить начало разбора.");
+    } finally {
+      setIsSavingStart(false);
+    }
+  };
+
   const openAnalysis = async () => {
     setSubmissionError(null);
     setIsSubmittingDiagnostic(true);
     const rawValues = { ...values };
 
     try {
-      let diagnostic = submittedDiagnostic;
-      if (!diagnostic) {
+      let diagnostic: SubmittedDiagnostic;
+      if (submittedDiagnostic?.status === "draft") {
+        const response = await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}/submit`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(diagnosticPayload(rawValues)),
+        });
+        const result = (await response.json()) as CreateDiagnosticResponse;
+        if (!response.ok) {
+          throw new Error(result.issues?.[0]?.message ?? result.message ?? "Не удалось завершить сохранение диагностики.");
+        }
+        diagnostic = {
+          values: rawValues,
+          deadline,
+          input: result.input,
+          diagnosticId: result.diagnosticId,
+          analysisRunId: result.analysisRunId,
+          status: result.status,
+        };
+        setSubmittedDiagnostic(diagnostic);
+      } else if (submittedDiagnostic) {
+        diagnostic = submittedDiagnostic;
+      } else {
         const response = await fetch("/api/diagnostics", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            sourceSchemaVersion: "diagnostic-flat-form.v1.2",
-            rawAnswers: {
-              values: rawValues,
-              deadline,
-              clientsCountPeriod,
-              desiredSystemWeeklyHoursApplicable: desiredSystemHoursApplicable,
-            },
-          }),
+          body: JSON.stringify(diagnosticPayload(rawValues)),
         });
         const result = (await response.json()) as CreateDiagnosticResponse;
         if (!response.ok) {
@@ -1205,6 +1251,7 @@ export default function Home() {
           input: result.input,
           diagnosticId: result.diagnosticId,
           analysisRunId: result.analysisRunId,
+          status: result.status,
         };
         setSubmittedDiagnostic(diagnostic);
       }
@@ -1282,7 +1329,12 @@ export default function Home() {
   }, [loadingTarget]);
 
   const showJourneyStage = (stage: number) => {
-    if (stage > maxUnlockedStage || stage > 2 || loadingTarget) return;
+    if (loadingTarget) return;
+    if (stage === 3) {
+      if (!submittedDiagnostic) return;
+    } else if (stage > maxUnlockedStage) {
+      return;
+    }
     setCurrentStage(stage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -1439,9 +1491,10 @@ export default function Home() {
                 </div>
               </section>
 
-              <button type="button" className="primary-button" onClick={() => goToTab(1)}>
-                Заполнить инфо о проекте <ArrowIcon />
+              <button type="button" className="primary-button" onClick={() => void saveStartAndOpenProject()} disabled={isSavingStart}>
+                {isSavingStart ? "Сохраняю…" : "Заполнить инфо о проекте"} {!isSavingStart && <ArrowIcon />}
               </button>
+              {submissionError && <p className="diagnostic-submit-error" role="alert">{submissionError}</p>}
             </div>
           )}
 
@@ -1510,15 +1563,19 @@ export default function Home() {
           )}
         </div>
       </section>
+      ) : currentStage === 3 && submittedDiagnostic ? (
+        <section className="embedded-result wheel-stage">
+          <GiftWheel analysisRunId={submittedDiagnostic.analysisRunId} />
+        </section>
       ) : realAnalysisResult ? (
         <section className="embedded-result">
           <AnalysisResultView
             result={realAnalysisResult}
+            view={currentStage === 2 ? "plan" : "analysis"}
             deadlineLabel={submittedDiagnostic?.deadline ?? deadline}
             currentRevenueRub={submittedDiagnostic?.input.current.monthlyRevenueRub}
             targetRevenueRub={submittedDiagnostic?.input.target.monthlyRevenueRub}
           />
-          {submittedDiagnostic && <GiftWheel analysisRunId={submittedDiagnostic.analysisRunId} />}
         </section>
       ) : currentStage === 1 ? (
         // При подключении ИИ buildPrototypeAnalysis заменяется серверным ответом business_analysis_v1.
@@ -1542,10 +1599,10 @@ export default function Home() {
         {stages.map((stage, index) => (
           <button
             type="button"
-            aria-label={stage || "Следующий этап"}
+            aria-label={stage}
             className={`journey-stage ${index === currentStage ? "active" : ""}`}
             aria-current={index === currentStage ? "step" : undefined}
-            disabled={Boolean(loadingTarget) || index > maxUnlockedStage || index > 2}
+            disabled={Boolean(loadingTarget) || (index === 3 ? !submittedDiagnostic : index > maxUnlockedStage)}
             onClick={() => showJourneyStage(index)}
             key={stage}
           >
