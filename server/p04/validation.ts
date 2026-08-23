@@ -189,6 +189,15 @@ export function canonicalizeP04ImmutableEchoes(
 function safeNarrativeTypography(value: string): string {
   return value
     .replace(/[—–]/gu, "-")
+    .replace(/рекомендуется/giu, "можно")
+    .replace(/целесообразно/giu, "стоит")
+    .replace(/оптимизировать/giu, "настроить")
+    .replace(/повысить эффективность/giu, "улучшить результат")
+    .replace(/в рамках данного направления/giu, "в этом направлении")
+    .replace(/выявлено/giu, "видно")
+    .replace(/анализ показывает/giu, "данные показывают")
+    .replace(/алгоритм определил/giu, "выбран")
+    .replace(/нейросеть считает/giu, "данные показывают")
     .replace(/(^|[^\p{L}])(?:готова|готов)(?=$|[^\p{L}])/giu, "$1готовы")
     .replace(/(^|[^\p{L}])(?:сделала|сделал)(?=$|[^\p{L}])/giu, "$1сделали")
     .replace(/(^|[^\p{L}])(?:начала|начал)(?=$|[^\p{L}])/giu, "$1начали")

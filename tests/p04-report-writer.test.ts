@@ -304,6 +304,28 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   assert.equal(result.result.finalFocus.first_action, input.reportPolicy.firstTask.task);
 });
 
+test("runner keeps immutable return trigger but removes bureaucratic wording from its narrative echo", async () => {
+  const input = await prepared();
+  const drifted = makeValidP04Output(input);
+  const whyNotNowWithTrigger = 0;
+  const exactTrigger = "Оптимизировать процесс и повысить эффективность после контрольной точки";
+  input.reportPolicy.whyNotNowExpected[whyNotNowWithTrigger].return_trigger = exactTrigger;
+  drifted.whyNotNow[whyNotNowWithTrigger].return_trigger = exactTrigger;
+  drifted.whyNotNow[whyNotNowWithTrigger].text = "Анализ показывает, что это целесообразно сделать позже.";
+  const provider = new QueueProvider([drifted, drifted]);
+
+  const result = await runP04ReportWriter(input, { provider });
+
+  assert.equal(provider.requests.length, 2);
+  assert.equal(result.result.whyNotNow[whyNotNowWithTrigger].return_trigger, exactTrigger);
+  assert.doesNotMatch(
+    result.result.whyNotNow[whyNotNowWithTrigger].text,
+    /(?:рекомендуется|целесообразно|оптимизировать|повысить эффективность|в рамках данного направления|выявлено|анализ показывает|алгоритм определил|нейросеть считает)/iu,
+  );
+  assert.match(result.result.whyNotNow[whyNotNowWithTrigger].text, /настроить процесс/u);
+  assert.match(result.result.whyNotNow[whyNotNowWithTrigger].text, /улучшить результат/u);
+});
+
 test("runner replaces model-controlled immutable echoes with backend policy values", async () => {
   const input = await prepared();
   const output = makeValidP04Output(input);
@@ -337,7 +359,7 @@ test("runner replaces model-controlled immutable echoes with backend policy valu
 test("34. a second semantic failure terminates without an unbounded retry", async () => {
   const input = await prepared();
   const invalid = makeValidP04Output(input);
-  invalid.opening.summary += " Рекомендуется новый тезис без основания.";
+  invalid.opening.summary += " Этот маршрут точно принесёт доход.";
   const provider = new QueueProvider([invalid, invalid]);
   await assert.rejects(
     () => runP04ReportWriter(input, { provider }),
