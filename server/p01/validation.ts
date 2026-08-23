@@ -265,6 +265,14 @@ export function normalizeP01CanonicalFields(
     canonicalizeAudienceKnowledge(result, source);
   }
 
+  const seenEvidenceById = new Map<string, string>();
+  result.evidenceLedger = result.evidenceLedger.filter((evidence) => {
+    const serialized = JSON.stringify(evidence);
+    const first = seenEvidenceById.get(evidence.id);
+    if (first !== undefined) return first !== serialized;
+    seenEvidenceById.set(evidence.id, serialized);
+    return true;
+  });
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));
 
   for (const factCode of MONEY_NOW_FACT_CODES) {
@@ -308,7 +316,17 @@ export function normalizeP01CanonicalFields(
       history.condition_codes = [];
       history.new_condition_evidence_ids = [];
     } else if (history.history_status === "unclear") {
-      history.new_material_condition = "unknown";
+      history.evidence_ids = history.evidence_ids.filter((id) => evidenceById.has(id));
+      if (history.evidence_ids.length === 0) {
+        history.history_status = "not_reported";
+        history.new_material_condition = "not_applicable";
+        history.condition_codes = [];
+        history.summary = null;
+        history.new_condition_evidence_ids = [];
+        history.confidence = "low";
+      } else {
+        history.new_material_condition = "unknown";
+      }
     }
   }
   return result;

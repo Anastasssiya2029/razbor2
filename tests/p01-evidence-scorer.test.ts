@@ -191,6 +191,52 @@ test("P-01 canonicalizes fields that are forbidden for not-reported history", ()
   assert.equal(validateP01Invariants(normalized), normalized);
 });
 
+test("P-01 deduplicates repeated evidence IDs without changing their references", () => {
+  const fixture = validP01Fixture();
+  fixture.evidenceLedger.push(structuredClone(fixture.evidenceLedger[0]));
+
+  const normalized = normalizeP01CanonicalFields(fixture);
+
+  assert.equal(normalized.evidenceLedger.length, 1);
+  assert.equal(normalized.evidenceLedger[0].id, "E01");
+  assert.equal(validateP01Invariants(normalized), normalized);
+});
+
+test("P-01 keeps conflicting duplicate evidence fail-closed", () => {
+  const fixture = validP01Fixture();
+  fixture.evidenceLedger.push({
+    ...structuredClone(fixture.evidenceLedger[0]),
+    fact: "Другой факт с тем же идентификатором.",
+  });
+
+  const normalized = normalizeP01CanonicalFields(fixture);
+
+  assert.equal(normalized.evidenceLedger.length, 2);
+  assert.throws(() => validateP01Invariants(normalized), hasInvariantCode("duplicate_evidence_id"));
+});
+
+test("P-01 treats unsupported unclear history as not reported", () => {
+  const fixture = validP01Fixture();
+  fixture.moneyNowHistory.MN01.history_status = "unclear";
+  fixture.moneyNowHistory.MN01.new_material_condition = "unknown";
+  fixture.moneyNowHistory.MN01.evidence_ids = [];
+  fixture.moneyNowHistory.MN01.condition_codes = ["AUDIENCE"];
+  fixture.moneyNowHistory.MN01.new_condition_evidence_ids = ["E01"];
+
+  const normalized = normalizeP01CanonicalFields(fixture);
+
+  assert.deepEqual(normalized.moneyNowHistory.MN01, {
+    history_status: "not_reported",
+    new_material_condition: "not_applicable",
+    condition_codes: [],
+    summary: null,
+    evidence_ids: [],
+    new_condition_evidence_ids: [],
+    confidence: "low",
+  });
+  assert.equal(validateP01Invariants(normalized), normalized);
+});
+
 test("P-01 restores an unambiguous 1:1 target family from the source input", () => {
   const fixture = validP01Fixture();
   fixture.targetIntent.normalizedModelFamily = null;
