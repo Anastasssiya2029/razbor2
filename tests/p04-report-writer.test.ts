@@ -251,6 +251,12 @@ test("29. invented client gender is rejected", async () => {
   await expectInvariant((output) => { output.opening.summary = "Она начала работу с системой, но подтверждённых фактов для изменения маршрута пока недостаточно."; });
 });
 
+test("grammatical gender of an inanimate business noun is not treated as client gender", async () => {
+  const { input, output } = await valid();
+  output.opening.summary = "Система начала повторять результат, а команда выстроила процесс вокруг общей метрики.";
+  assert.doesNotThrow(() => finalizeAndValidateP04Output(output, input));
+});
+
 test("30. income guarantees are rejected", async () => {
   await expectInvariant((output) => { output.opening.summary = "Этот маршрут точно принесёт доход и позволит получить нужную сумму после выполнения первого этапа."; });
 });
@@ -297,6 +303,7 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   assert.doesNotMatch(JSON.stringify(result.result), /[—–]/u);
   assert.doesNotMatch(result.result.opening.summary, /начала/u);
   assert.doesNotMatch(JSON.stringify(result.result), /начала/u);
+  assert.match(result.result.opening.summary, /Вы начали/u);
   assert.doesNotMatch(result.result.whyNotNow[whyNotNowWithTrigger].text, /готова/u);
   assert.match(result.result.whyNotNow[whyNotNowWithTrigger].text, /готовы вернуться/u);
   assert.match(result.result.businessValidation.explanation, /Контрольная точка/u);
