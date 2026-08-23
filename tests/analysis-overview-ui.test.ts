@@ -43,6 +43,9 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.match(page, /<EvolutionMap currentArchetypeId=\{analysis\.archetype\.id\} \/>/u);
   assert.doesNotMatch(page, /<BusinessAnalysis analysis=\{analysis\}/u);
   assert.doesNotMatch(page, /setLoadingTarget\("plan"\)/u);
+  assert.match(page, /Почему сейчас такие баллы/u);
+  assert.match(page, /analysis\.currentScoreArguments\.map/u);
+  assert.match(page, /Почему не выше:/u);
 });
 
 test("Step 2 adds the key money bundle and Money Now only after the final result is available", () => {

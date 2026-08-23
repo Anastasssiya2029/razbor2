@@ -10,6 +10,7 @@ test("the first form block is persisted as a draft before opening project info",
   assert.match(page, /\{ label: "", accessibleLabel: "Бонусный этап" \}/u);
   assert.doesNotMatch(page, /label: "Колесо возможностей"/u);
   assert.match(page, /currentStage === 3 && submittedDiagnostic/u);
+  assert.match(page, /index === 3 \? !submittedDiagnostic : index > maxUnlockedStage/u);
 });
 
 test("an owned draft can draw a gift without waiting for AI analysis", () => {

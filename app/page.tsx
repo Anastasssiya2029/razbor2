@@ -1104,6 +1104,25 @@ function AnalysisSection({
                 <h3>Текущая модель 7К</h3>
               </div>
               <SystemModel elements={systemElements} />
+              <aside className="current-score-rationale" aria-label="Обоснование текущих баллов">
+                <div className="current-score-rationale-heading">
+                  <strong>Почему сейчас такие баллы</strong>
+                  <p>Оценка опирается на факты из ответов, а не на общее впечатление о проекте.</p>
+                </div>
+                <div className="current-score-argument-grid">
+                  {analysis.currentScoreArguments.map((argument) => {
+                    const element = systemElements.find((item) => item.id === argument.id);
+                    const evidenceText = argument.evidence.join(" ");
+                    return (
+                      <article className={`current-score-argument ${argument.kind}`} key={argument.id}>
+                        <strong>{element?.name ?? argument.id} · {argument.score}/10</strong>
+                        <p>{evidenceText || "В ответах пока нет подтверждённого действующего механизма."}</p>
+                        {argument.whyNotHigher && <small><b>Почему не выше:</b> {argument.whyNotHigher}</small>}
+                      </article>
+                    );
+                  })}
+                </div>
+              </aside>
             </article>
 
             <article className="analysis-slide" aria-hidden={activeSlide !== 1}>
@@ -1778,7 +1797,17 @@ export default function Home() {
 
   const submittedValues = submittedDiagnostic?.values ?? values;
   const submittedFieldCount = Object.values(submittedValues).filter((value) => value.trim()).length + 2;
-  const visibleAnalysis = analysisResult ?? demoBusinessAnalysis;
+  const visibleAnalysis: AnalysisOverview = analysisResult ?? {
+    archetype: demoBusinessAnalysis.archetype,
+    systemScores: demoBusinessAnalysis.systemScores,
+    currentScoreArguments: demoBusinessAnalysis.systemScores.map((score) => ({
+      id: score.id,
+      score: score.currentScore,
+      evidence: [],
+      whyNotHigher: null,
+      kind: score.id === "authenticity" || score.id === "audience" ? "soft" : "hard",
+    })),
+  };
 
   if (sessionLoading || !user) {
     return <main className="admin-loading">Проверяю доступ…</main>;

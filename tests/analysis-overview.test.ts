@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildAnalysisOverview } from "../lib/analysis-overview";
 import type { BusinessArchetypeResult, TargetConfigurationResult } from "../server/7k";
 import type { SevenKScores } from "../server/7k/types";
+import type { P01ResultV1_4_2 } from "../server/p01/types";
 
 const currentScores: SevenKScores = {
   authenticity: 4,
@@ -25,10 +26,23 @@ const targetScores: SevenKScores = {
 };
 
 test("analysis overview exposes persisted 7K scores and canonical archetype for the interactive result", () => {
+  const p01 = {
+    evidenceLedger: [
+      { id: "E1", fact: "Эксперт описывает сильные стороны, но пока не связал их в ясную систему." },
+      { id: "E2", fact: "Есть общее описание аудитории без подтверждённых сегментов." },
+    ],
+    current7k: Object.fromEntries(Object.keys(currentScores).map((id) => [id, {
+      evidence_ids: id === "authenticity" ? ["E1"] : id === "audience" ? ["E2"] : [],
+      counterevidence_ids: [],
+      why_not_higher: `Не подтверждён следующий уровень ${id}.`,
+      cap_reason: null,
+    }])),
+  } as unknown as Pick<P01ResultV1_4_2, "current7k" | "evidenceLedger">;
   const overview = buildAnalysisOverview({
     currentScores,
     target: { targetScores } as TargetConfigurationResult,
     archetype: { finalArchetype: "creator" } as BusinessArchetypeResult,
+    p01,
   });
 
   assert.equal(overview.archetype.id, "creator");
@@ -44,4 +58,13 @@ test("analysis overview exposes persisted 7K scores and canonical archetype for 
       { id: "team", currentScore: 1, targetScore: 2 },
     ],
   );
+  assert.deepEqual(overview.currentScoreArguments[0], {
+    id: "authenticity",
+    score: 4,
+    evidence: ["Эксперт описывает сильные стороны, но пока не связал их в ясную систему."],
+    whyNotHigher: "Не подтверждён следующий уровень authenticity.",
+    kind: "soft",
+  });
+  assert.equal(overview.currentScoreArguments[1].kind, "soft");
+  assert.equal(overview.currentScoreArguments[2].kind, "hard");
 });

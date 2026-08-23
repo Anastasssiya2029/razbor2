@@ -14,7 +14,7 @@ import type { Stage4Source, StoredTargetArchetypeResult } from "../server/stage4
 import { P02Error } from "../server/p02/errors";
 import { assertDesiredRoleConsistency, prepareP02Input, type P02UpstreamSource } from "../server/p02/projections";
 import { buildP02SystemPrompt } from "../server/p02/request";
-import { runP02TransitionStrategist } from "../server/p02/runner";
+import { P02RunExecutionError, runP02TransitionStrategist } from "../server/p02/runner";
 import { runP02Stage } from "../server/p02/stage-runner";
 import type { P02Repository, StoredP02Result } from "../server/p02/stage-types";
 import type { P02Provider, P02ProviderRequest, P02ProviderResponse, P02ResultV1_3 } from "../server/p02/types";
@@ -169,6 +169,8 @@ test("18. broken 7K partition is rejected", () => { const value = output(); valu
 test("19. unknown ID and legacy products_method are rejected", () => { const value = output() as unknown as { bundle: { priority_element: string } }; value.bundle.priority_element = "products_method"; assert.throws(() => validateP02Schema(value), P02SchemaValidationError); });
 test("20. explicit desiredRoleSummary conflict returns TARGET_CONFIG_INCONSISTENCY", () => { const input = prepared(); assert.throws(() => assertDesiredRoleConsistency("Передать продажи менеджеру", input.targetConfig), (error: unknown) => error instanceof P02Error && error.code === "TARGET_CONFIG_INCONSISTENCY"); });
 test("21. transport failure gets at most one technical retry", async () => { const provider = new QueueProvider([new Error("network"), output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.technicalRetryCount, 1); });
+test("21a. an exact markdown JSON fence is accepted without a paid retry", async () => { const provider = new QueueProvider([`\`\`\`json\n${JSON.stringify(output())}\n\`\`\``]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.technicalRetryCount, 0); assert.equal(provider.requests.length, 1); });
+test("21b. prose around JSON is not repaired and still gets at most one retry", async () => { const provider = new QueueProvider(["Ответ: {}", "Ответ: {}"]); await assert.rejects(() => runP02TransitionStrategist(prepared(), { provider }), (error: unknown) => error instanceof P02RunExecutionError && error.failureCode === "P02_MALFORMED_JSON"); assert.equal(provider.requests.length, 2); });
 test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.constraint.root_evidence_ids = ["E99"]; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
 test("P-02 canonicalizes zero-gap build elements and clamps milestones to persisted target", () => {
   const input = prepared();

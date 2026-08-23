@@ -2,10 +2,17 @@ import { buildAnalysisOverview, type AnalysisOverview } from "@/lib/analysis-ove
 import { createD1TargetArchetypeRepository } from "@/server/stage4";
 
 export async function getAnalysisOverview(analysisRunId: string): Promise<AnalysisOverview | null> {
-  const stored = await createD1TargetArchetypeRepository().loadResult(analysisRunId);
+  const repository = createD1TargetArchetypeRepository();
+  const [stored, source] = await Promise.all([
+    repository.loadResult(analysisRunId),
+    repository.loadSource(analysisRunId),
+  ]);
   if (
     !stored
+    || !source
     || stored.failureCode
+    || source.p01FailureCode
+    || !source.p01Result
     || !stored.currentScores
     || !stored.target
     || !stored.archetype
@@ -16,6 +23,7 @@ export async function getAnalysisOverview(analysisRunId: string): Promise<Analys
     currentScores: stored.currentScores,
     target: stored.target,
     archetype: stored.archetype,
+    p01: source.p01Result,
   });
 }
 
