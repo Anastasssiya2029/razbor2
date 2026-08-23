@@ -111,7 +111,9 @@ function assertResolvedMatchesSource(
         canonical.to_score !== transition.to_score ||
         canonical.task !== transition.task ||
         canonical.done_when !== transition.done_when ||
-        canonical.version !== transition.version
+        canonical.version !== transition.version ||
+        canonical.revenue_lever !== transition.revenue_lever ||
+        canonical.revenue_mechanism !== transition.revenue_mechanism
       ) {
         fail("TASK_RESOLVER_REGISTRY_CONTENT_MISMATCH", `Task ${transition.task_id} does not exactly match the runtime registry.`);
       }

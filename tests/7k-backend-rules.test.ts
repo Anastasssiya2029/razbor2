@@ -74,11 +74,11 @@ test("imports exactly 70 unique sequential transitions with complete 0→10 cove
     transitionsPerElement: Object.fromEntries(SEVEN_K_ELEMENT_IDS.map((id) => [id, 10])),
   });
   assert.equal(TRANSITIONS_70_RESOURCE.source.sheet, "Переходы_70");
-  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v2");
+  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v4");
 
   const content = JSON.stringify(
     TRANSITIONS_70.map(
-      ({ task_id, element_id, from_score, to_score, current_state, task, done_when, version }) => ({
+      ({
         task_id,
         element_id,
         from_score,
@@ -87,12 +87,39 @@ test("imports exactly 70 unique sequential transitions with complete 0→10 cove
         task,
         done_when,
         version,
+        revenue_lever,
+        revenue_mechanism,
+      }) => ({
+        task_id,
+        element_id,
+        from_score,
+        to_score,
+        current_state,
+        task,
+        done_when,
+        version,
+        revenue_lever,
+        revenue_mechanism,
       }),
     ),
   );
   assert.equal(
     createHash("sha256").update(content).digest("hex"),
     TRANSITIONS_70_RESOURCE.source.contentSha256,
+  );
+});
+
+test("transition registry requires a causal revenue lever and mechanism for every step", () => {
+  const missingLever = TRANSITIONS_70.map((transition, index) =>
+    index === 0 ? { ...transition, revenue_lever: "" } : transition,
+  );
+  assert.throws(
+    () => validateTransitionRegistry(missingLever),
+    (error: unknown) =>
+      error instanceof SevenKValidationError &&
+      error.issues.some(
+        (issue) => issue.path === "/transitions/0/revenue_lever" && issue.code === "missing_transition_text",
+      ),
   );
 });
 

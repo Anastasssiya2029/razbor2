@@ -4,6 +4,10 @@ import test from "node:test";
 import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
+import {
+  projectTransitionLevers,
+  TRANSITION_LEVER_POLICY,
+} from "../server/7k/config/p02-strategy-rules.v2.1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId, type SevenKScores } from "../server/7k/types";
 import { computeTargetAndArchetype } from "../server/stage4/compute";
 import type { Stage4Source, StoredTargetArchetypeResult } from "../server/stage4/types";
@@ -127,6 +131,29 @@ test("3. Product root precedes Sales when it is unclear what is sold", () => { c
 test("4. non-target meetings route Audience or Funnel before automatic Sales", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /нецелевые встречи → audience и\/или funnel/u));
 test("5. gratitude alone never proves overconsulting", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /Благодарность сама по себе недостаточна/u));
 test("6. normal sales plus low-owner-time target allows owner_dependency/team priority", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /constraint может быть `owner_dependency\/team`/u));
+test("P-02 receives fail-closed transition levers without task text", () => {
+  const current = { ...SCORES, authenticity: 2 };
+  const target = { ...current, authenticity: 3 };
+  const levers = projectTransitionLevers(current, target);
+  assert.deepEqual(levers.elements.authenticity, [{
+    from_score: 2,
+    to_score: 3,
+    revenue_lever: "Доверие к эксперту",
+    revenue_mechanism: "Связывает уникальность эксперта с результатом клиента и усиливает доказательность предложения.",
+  }]);
+  assert.ok(SEVEN_K_ELEMENT_IDS.filter((elementId) => elementId !== "authenticity").every(
+    (elementId) => levers.elements[elementId].length === 0,
+  ));
+  assert.equal(TRANSITION_LEVER_POLICY.isRevenuePromise, false);
+  assert.equal(TRANSITION_LEVER_POLICY.taskTextAvailableToP02, false);
+  const input = prepared();
+  input.strategyContext.current7k.authenticity.score = 2;
+  input.targetConfig.targetScores.authenticity = 3;
+  const prompt = buildP02SystemPrompt(input.strategyContext, input.targetConfig);
+  assert.match(prompt, /relevantTransitionLevers/u);
+  assert.match(prompt, /Доверие к эксперту/u);
+  assert.doesNotMatch(prompt, /Сформулировать своё «почему я»/u);
+});
 test("7. perceived ads need may differ from evidenced offer→payment leak", () => assert.equal(output().perceivedVsEvidenced.relation, "differs"));
 test("8. perceived struggles may honestly match evidence", () => { const value = output(); value.perceivedVsEvidenced.relation = "matches"; assert.doesNotThrow(() => validateP02Invariants(value, prepared())); });
 test("9. repeated-break pattern requires repeated persisted attempts", () => { const result = p01(); result.businessMap.experience.attempts.push({ ...result.businessMap.experience.attempts[0], attempt: "Партнёрский запуск" }); const value = output(); value.previousAttemptsAnalysis!.repeated_break_pattern = "Две попытки дали встречи без оплат"; assert.doesNotThrow(() => validateP02Invariants(value, prepared(result))); });

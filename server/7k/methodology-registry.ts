@@ -26,6 +26,7 @@ import {
 import {
   TRANSITIONS_70_INTEGRITY,
   TRANSITIONS_70_RESOURCE,
+  TRANSITION_LEVERS_RESOURCE_VERSION,
   TRANSITIONS_RESOURCE_VERSION,
 } from "./transition-resolver";
 import {
@@ -78,6 +79,7 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
         constraintRules: CONSTRAINT_RULES_RESOURCE_VERSION,
         dependencyRules: DEPENDENCY_RULES_RESOURCE_VERSION,
         targetRules: TARGET_RULES_RESOURCE_VERSION,
+        transitionLevers: TRANSITION_LEVERS_RESOURCE_VERSION,
       },
     },
     p03: {

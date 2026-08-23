@@ -8,6 +8,7 @@ import {
 } from "./types";
 
 export const TRANSITIONS_RESOURCE_VERSION = "transitions-70.v1" as const;
+export const TRANSITION_LEVERS_RESOURCE_VERSION = "transition-levers.v1" as const;
 
 export type TransitionTask = {
   task_id: string;
@@ -18,6 +19,8 @@ export type TransitionTask = {
   task: string;
   done_when: string;
   version: string;
+  revenue_lever: string;
+  revenue_mechanism: string;
 };
 
 type TransitionsResource = {
@@ -94,7 +97,14 @@ export function validateTransitionRegistry(
     } else {
       coverage.get(transition.element_id)?.add(transition.from_score);
     }
-    for (const field of ["current_state", "task", "done_when", "version"] as const) {
+    for (const field of [
+      "current_state",
+      "task",
+      "done_when",
+      "version",
+      "revenue_lever",
+      "revenue_mechanism",
+    ] as const) {
       if (typeof transition[field] !== "string" || transition[field].trim() === "") {
         issues.push({ path: `${path}/${field}`, code: "missing_transition_text", message: `${field} обязателен.` });
       }

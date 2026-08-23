@@ -205,7 +205,7 @@ async function sourceWith(sequence = [milestone(1, "audience", 2, 5)]): Promise<
     targetResultHash: targetHash,
     promptVersion: "P-02.v1.3",
     outputSchemaVersion: "1.3",
-    ruleVersions: { elements: "elements.v1", levelCapabilities: "scoring-rules.v2.0", constraintRules: "constraint-rules.v2.1", dependencyRules: "dependency-rules.v2.1", targetRules: "target-rules.v2.2" },
+    ruleVersions: { elements: "elements.v1", levelCapabilities: "scoring-rules.v2.0", constraintRules: "constraint-rules.v2.1", dependencyRules: "dependency-rules.v2.1", targetRules: "target-rules.v2.2", transitionLevers: "transition-levers.v1" },
     inputHash: "p02-input",
     strategyContext,
     targetConfig,

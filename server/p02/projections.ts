@@ -6,6 +6,7 @@ import {
 } from "@/server/7k/config/p02-strategy-rules.v2.1";
 import { TARGET_RULES_RESOURCE_VERSION, type DesiredOwnerRole, type TargetModifierCode } from "@/server/7k/config/target-rules.v2.2";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "@/server/7k/types";
+import { TRANSITION_LEVERS_RESOURCE_VERSION } from "@/server/7k/transition-resolver";
 import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { StoredTargetArchetypeResult } from "@/server/stage4/types";
 import { validateP01Invariants, validateP01Schema } from "@/server/p01/validation";
@@ -18,6 +19,7 @@ export const P02_RULE_VERSIONS: P02RuleVersions = {
   constraintRules: CONSTRAINT_RULES_RESOURCE_VERSION,
   dependencyRules: DEPENDENCY_RULES_RESOURCE_VERSION,
   targetRules: TARGET_RULES_RESOURCE_VERSION,
+  transitionLevers: TRANSITION_LEVERS_RESOURCE_VERSION,
 };
 
 export type P02UpstreamSource = {

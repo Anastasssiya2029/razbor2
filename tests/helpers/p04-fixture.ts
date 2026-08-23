@@ -398,6 +398,7 @@ export async function makeP04Source(
       constraintRules: "constraint-rules.v2.1",
       dependencyRules: "dependency-rules.v2.1",
       targetRules: "target-rules.v2.2",
+      transitionLevers: "transition-levers.v1",
     },
     inputHash: "p02-input",
     strategyContext,

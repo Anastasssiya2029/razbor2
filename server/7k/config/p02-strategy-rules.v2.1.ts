@@ -1,9 +1,62 @@
 import { SCORING_RULES, SCORING_RULES_RESOURCE_VERSION } from "./scoring-rules.v2.0";
-import { SEVEN_K_ELEMENT_IDS } from "../types";
+import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "../types";
+import {
+  TRANSITIONS_70,
+  TRANSITION_LEVERS_RESOURCE_VERSION,
+} from "../transition-resolver";
 
 export const CONSTRAINT_RULES_RESOURCE_VERSION = "constraint-rules.v2.1" as const;
 export const DEPENDENCY_RULES_RESOURCE_VERSION = "dependency-rules.v2.1" as const;
 export const LEVEL_CAPABILITIES_RESOURCE_VERSION = SCORING_RULES_RESOURCE_VERSION;
+
+const TRANSITION_BY_LEVEL = new Map(
+  TRANSITIONS_70.map((transition) => [
+    `${transition.element_id}:${transition.from_score}`,
+    transition,
+  ]),
+);
+
+function transitionLever(elementId: (typeof SEVEN_K_ELEMENT_IDS)[number], fromScore: number) {
+  const transition = TRANSITION_BY_LEVEL.get(`${elementId}:${fromScore}`);
+  if (!transition) {
+    throw new Error(`Missing transition lever for ${elementId} ${fromScore}→${fromScore + 1}.`);
+  }
+  return {
+    from_score: transition.from_score,
+    to_score: transition.to_score,
+    revenue_lever: transition.revenue_lever,
+    revenue_mechanism: transition.revenue_mechanism,
+  };
+}
+
+export const TRANSITION_LEVER_POLICY = {
+  role: "causal_hint_for_business_effect_and_fastest_test",
+  mayInform: ["unlock_effect", "fastest_business_test", "milestone_why_now"],
+  mustNotOverride: [
+    "persisted_evidence",
+    "dependency_precedence",
+    "target_necessity",
+    "founder_model_fit",
+  ],
+  isRevenuePromise: false,
+  taskTextAvailableToP02: false,
+} as const;
+
+export function projectTransitionLevers(currentScores: SevenKScores, targetScores: SevenKScores) {
+  return {
+    version: TRANSITION_LEVERS_RESOURCE_VERSION,
+    policy: TRANSITION_LEVER_POLICY,
+    elements: Object.fromEntries(
+      SEVEN_K_ELEMENT_IDS.map((elementId) => [
+        elementId,
+        Array.from(
+          { length: Math.max(0, targetScores[elementId] - currentScores[elementId]) },
+          (_, offset) => transitionLever(elementId, currentScores[elementId] + offset),
+        ),
+      ]),
+    ),
+  } as const;
+}
 
 export const CONSTRAINT_RULES = {
   version: CONSTRAINT_RULES_RESOURCE_VERSION,
@@ -73,4 +126,3 @@ export const LEVEL_CAPABILITIES = {
     ]),
   ),
 } as const;
-
