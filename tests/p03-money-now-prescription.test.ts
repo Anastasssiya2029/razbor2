@@ -33,7 +33,7 @@ import { prepareP03Input, type P03SelectedPreparedInput } from "../server/p03/pr
 import { buildP03SystemPrompt } from "../server/p03/request";
 import { buildP03BackendMetrics } from "../server/p03/metrics";
 import { authorizeP03PublicRequest } from "../server/p03/public-guard";
-import { runP03MoneyNowPrescription } from "../server/p03/runner";
+import { P03RunExecutionError, runP03MoneyNowPrescription } from "../server/p03/runner";
 import { runP03Stage } from "../server/p03/stage-runner";
 import type { P03Repository, P03Source, StoredP03Result } from "../server/p03/stage-types";
 import {
@@ -718,6 +718,22 @@ test("metric-only task title triggers targeted semantic reevaluation", async () 
   const outcome = await runP03MoneyNowPrescription(prepared, { provider });
   assert.equal(outcome.metadata.reevaluationRetryCount, 1);
   assert.match(provider.requests[1].correction ?? "", /metric_only_task_title/u);
+});
+
+test("final P-03 validation failure persists only safe issue codes and paths", async () => {
+  const prepared = await prepareP03Input(await source()) as P03SelectedPreparedInput;
+  const broken = validOutput(prepared);
+  broken.businessPrescription!.client_task_title = "Повысить конверсию продаж";
+  const provider = new QueueProvider([broken, broken]);
+
+  await assert.rejects(
+    () => runP03MoneyNowPrescription(prepared, { provider }),
+    (error: unknown) =>
+      error instanceof P03RunExecutionError &&
+      error.failureCode === "P03_INVARIANT_FAILED" &&
+      /metric_only_task_title@\/businessPrescription\/client_task_title/u.test(error.message) &&
+      !error.message.includes(broken.diagnosis.money_leak),
+  );
 });
 
 test("repeated intervention without new condition gets one targeted reevaluation then blocks", async () => {

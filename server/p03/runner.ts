@@ -59,6 +59,17 @@ function correctionFor(title: string, issues: readonly P03ValidationIssue[]): st
   ].join("\n");
 }
 
+function safeValidationSummary(
+  prefix: string,
+  error: P03SchemaValidationError | P03InvariantError,
+): string {
+  const issues = error.issues
+    .slice(0, 28)
+    .map((issue) => `${issue.code}@${issue.path}`)
+    .join(", ");
+  return issues ? `${prefix}: ${issues}` : prefix;
+}
+
 async function defaultProvider(): Promise<P03Provider> {
   const { env } = await import("cloudflare:workers");
   return createConfiguredP03Provider(env as unknown as Record<string, string | undefined>);
@@ -153,7 +164,11 @@ export async function runP03MoneyNowPrescription(
           correction = correctionFor("Нарушена JSON Schema 1.5", error.issues);
           continue;
         }
-        throw executionError("P03_SCHEMA_VALIDATION_FAILED", "P-03 output schema validation failed", error);
+        throw executionError(
+          "P03_SCHEMA_VALIDATION_FAILED",
+          safeValidationSummary("P-03 output schema validation failed", error),
+          error,
+        );
       }
       if (error instanceof P03InvariantError) {
         if (reevaluationRetryCount === 0) {
@@ -161,7 +176,11 @@ export async function runP03MoneyNowPrescription(
           correction = correctionFor("Нарушены backend semantic invariants", error.issues);
           continue;
         }
-        throw executionError("P03_INVARIANT_FAILED", "P-03 semantic invariants failed", error);
+        throw executionError(
+          "P03_INVARIANT_FAILED",
+          safeValidationSummary("P-03 semantic invariants failed", error),
+          error,
+        );
       }
       throw error;
     }
