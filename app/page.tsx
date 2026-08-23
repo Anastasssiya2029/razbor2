@@ -1061,7 +1061,7 @@ function Field({
       <span>{label}</span>
       {variant === "money" ? (
         <span className="money-input-wrap">
-          <input {...shared} inputMode="numeric" autoComplete="off" placeholder="0" />
+          <input {...shared} className="money-input-control" inputMode="numeric" autoComplete="off" placeholder="0" />
           <span aria-hidden="true">₽</span>
         </span>
       ) : (

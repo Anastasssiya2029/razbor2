@@ -744,7 +744,7 @@ button {
 }
 
 body :is(
-  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(.money-input-control),
   textarea,
   select
 ):focus {

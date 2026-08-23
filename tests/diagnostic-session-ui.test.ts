@@ -36,3 +36,11 @@ test("the situation summary is split into four paragraphs and rubles are formatt
   assert.match(page, /formatRubles\(values\.goalIncome\)/u);
   assert.match(page, /formatRubles\(values\.currentIncome\)/u);
 });
+
+test("money fields lift as one control without a second focused rectangle", () => {
+  const page = readFileSync("app/page.tsx", "utf8");
+  const styles = readFileSync("app/globals.css", "utf8");
+  assert.match(page, /className="money-input-control"/u);
+  assert.match(styles, /:not\(\.money-input-control\)/u);
+  assert.match(styles, /\.money-input-wrap:focus-within/u);
+});
