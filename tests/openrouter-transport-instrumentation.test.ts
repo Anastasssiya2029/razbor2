@@ -34,12 +34,15 @@ test("provider schema is compacted without weakening local validation", () => {
     $schema: "https://json-schema.org/draft/2020-12/schema",
     type: "object",
     properties: { first: repeated, second: repeated },
+    oneOf: [{ required: ["first"] }, { required: ["second"] }],
     required: ["first", "second"],
     additionalProperties: false,
   });
   const serialized = JSON.stringify(compacted);
   assert.doesNotMatch(serialized, /\$schema|uniqueItems/u);
   assert.match(serialized, /maxLength|minimum|maximum/u);
+  assert.doesNotMatch(serialized, /oneOf/u);
+  assert.match(serialized, /anyOf/u);
   assert.match(serialized, /#\/\$defs\/shared_1/u);
   assert.ok(isRecordForTest(compacted.$defs));
 });

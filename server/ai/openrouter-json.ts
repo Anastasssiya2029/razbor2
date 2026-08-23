@@ -73,6 +73,10 @@ function sanitizeProviderSchema(value: unknown): unknown {
       result.enum = [sanitizeProviderSchema(child)];
       continue;
     }
+    if (key === "oneOf") {
+      result.anyOf = sanitizeProviderSchema(child);
+      continue;
+    }
     result[key] = sanitizeProviderSchema(child);
   }
   return result;
