@@ -277,6 +277,7 @@ export async function completeOpenRouterJson(options: {
   outputSchema: Record<string, unknown>;
   systemPrompt: string;
   fetchImpl?: FetchLike;
+  timeoutMs?: number;
 }): Promise<OpenRouterJsonResponse> {
   const headers: Record<string, string> = {
     authorization: `Bearer ${options.apiKey}`,
@@ -289,25 +290,33 @@ export async function completeOpenRouterJson(options: {
   const systemPrompt = options.structuredOutput
     ? options.systemPrompt
     : `${options.systemPrompt}\n\n<OUTPUT_JSON_SCHEMA>\n${JSON.stringify(options.outputSchema)}\n</OUTPUT_JSON_SCHEMA>\nВерни только JSON, который точно соответствует OUTPUT_JSON_SCHEMA.`;
-  const response = await fetchImpl(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model: options.model,
-      reasoning: { effort: "none", exclude: true },
-      messages: [{ role: "system", content: systemPrompt }],
-      response_format: options.structuredOutput
-        ? {
-            type: "json_schema",
-            json_schema: {
-              name: options.schemaName,
-              strict: true,
-              schema: prepareOpenRouterStructuredSchema(options.outputSchema),
-            },
-          }
-        : { type: "json_object" },
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 300_000);
+  let response: Response;
+  try {
+    response = await fetchImpl(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: options.model,
+        reasoning: { effort: "none", exclude: true },
+        messages: [{ role: "system", content: systemPrompt }],
+        response_format: options.structuredOutput
+          ? {
+              type: "json_schema",
+              json_schema: {
+                name: options.schemaName,
+                strict: true,
+                schema: prepareOpenRouterStructuredSchema(options.outputSchema),
+              },
+            }
+          : { type: "json_object" },
+      }),
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
   const rawResponse: unknown = await response.json().catch(() => null);
   if (!response.ok) throw openRouterHttpErrorFromResponse(response, rawResponse);
   const body = rawResponse as {

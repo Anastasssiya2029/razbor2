@@ -423,6 +423,30 @@ test("JSON-object fallback receives the exact local output schema without extra 
   assert.deepEqual(capturedBody?.response_format, { type: "json_object" });
 });
 
+test("OpenRouter transport aborts one hung request at the configured deadline", async () => {
+  let fetchCount = 0;
+  await assert.rejects(
+    () => completeOpenRouterJson({
+      apiKey: "test-key",
+      model: "test-model",
+      appTitle: "test",
+      structuredOutput: false,
+      schemaName: "test_schema",
+      outputSchema: { type: "object" },
+      systemPrompt: "test",
+      timeoutMs: 5,
+      fetchImpl: async (_input, init) => {
+        fetchCount += 1;
+        return await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new Error("request aborted")), { once: true });
+        });
+      },
+    }),
+    /request aborted/u,
+  );
+  assert.equal(fetchCount, 1);
+});
+
 class FailingProvider implements P01Provider {
   readonly provider = "mock";
   readonly model = "mock-p01";
