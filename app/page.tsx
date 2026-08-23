@@ -6,6 +6,7 @@ import {
   archetypeDefinitions,
   demoBusinessAnalysis,
   resolveSystemElements,
+  systemScoreTone,
   systemElementDefinitions,
   type ArchetypeId,
   type BusinessAnalysisResult,
@@ -165,15 +166,16 @@ function SystemModel({ elements, target = false }: { elements: ResolvedSystemEle
     <div className="system-model" aria-label={target ? "Модель под вашу цель" : "Текущая бизнес-модель"}>
       {elements.map((element) => {
         const result = element.current + (target ? element.added : 0);
+        const currentTone = systemScoreTone(element.current);
         return (
           <div className="model-column" key={element.id}>
-            <div className={`model-score ${target && element.added ? "target-score" : element.tone}`}>{result}</div>
+            <div className={`model-score ${target && element.added ? "target-score" : currentTone}`}>{result}</div>
             <div className="brick-stack" aria-label={`${element.name}: ${result} из 10`}>
               {Array.from({ length: 10 }, (_, index) => {
                 const level = 10 - index;
                 const state =
                   level <= element.current
-                    ? `current ${element.tone}`
+                    ? `current ${currentTone}`
                     : target && level <= element.current + element.added
                       ? "added"
                       : "empty";

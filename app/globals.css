@@ -1288,12 +1288,16 @@ body :is(
   line-height: 1;
 }
 
-.model-score.gold {
-  color: #d66d00;
+.model-score.low {
+  color: #dc2626;
 }
 
-.model-score.coral {
-  color: #df292f;
+.model-score.medium {
+  color: #d97706;
+}
+
+.model-score.high {
+  color: #16a34a;
 }
 
 .model-score.target-score {
@@ -1319,12 +1323,16 @@ body :is(
   background: #e2e7ef;
 }
 
-.system-brick.current.gold {
-  background: #fbbb22;
+.system-brick.current.low {
+  background: #f87171;
 }
 
-.system-brick.current.coral {
-  background: #f67075;
+.system-brick.current.medium {
+  background: #fbbf24;
+}
+
+.system-brick.current.high {
+  background: #4ade80;
 }
 
 .system-brick.added {

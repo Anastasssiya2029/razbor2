@@ -209,6 +209,14 @@ export type ResolvedSystemElement = SystemElementDefinition & {
   added: number;
 };
 
+export type SystemScoreTone = "low" | "medium" | "high";
+
+export function systemScoreTone(score: number): SystemScoreTone {
+  if (score <= 3) return "low";
+  if (score <= 6) return "medium";
+  return "high";
+}
+
 export function resolveSystemElements(scores: SystemScore[]): ResolvedSystemElement[] {
   const scoresById = new Map(scores.map((score) => [score.id, score]));
 

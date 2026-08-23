@@ -6,6 +6,7 @@ import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
 import { ELEMENT_NEUROMARKETERS, NEUROMARKETERS } from "@/lib/neuromarketers";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
+import { systemScoreTone } from "@/lib/business-analysis";
 import type { SevenKElementId } from "@/server/7k/types";
 
 type Props = {
@@ -31,7 +32,7 @@ function ResultSystemModel({ result }: { result: AnalysisResultV1 }) {
           {Array.from({ length: 10 }, (_, index) => {
             const level = 10 - index;
             const state = level <= current
-              ? `current ${current >= 4 ? "gold" : "coral"}`
+              ? `current ${systemScoreTone(current)}`
               : level <= target
                 ? "added"
                 : "empty";
