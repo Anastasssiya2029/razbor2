@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { ANNA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
+import { ALINA_GOLDEN_CASE, ANNA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
@@ -291,6 +291,40 @@ test("P-01 does not mistake first-session to core-package flow for a post-packag
     assert.equal(normalized.moneyNowFacts[factCode].state, "unknown");
     assert.deepEqual(normalized.moneyNowFacts[factCode].evidence_ids, []);
   }
+});
+
+test("P-01 caps audience at 3 when deeper client knowledge is not evidenced", () => {
+  const fixture = validP01Fixture();
+  fixture.current7k.audience.score = 4;
+  fixture.current7k.audience.evidence_cap = 5;
+  fixture.current7k.audience.matched_level_rule_id = "SR2-AUDIENCE-04";
+  fixture.current7k.audience.next_level_rule_id = "SR2-AUDIENCE-05";
+
+  const normalized = normalizeP01CanonicalFields(
+    fixture,
+    structuredClone(ANNA_GOLDEN_CASE.input),
+  );
+
+  assert.equal(normalized.current7k.audience.score, 3);
+  assert.equal(normalized.current7k.audience.evidence_cap, 3);
+  assert.equal(normalized.current7k.audience.matched_level_rule_id, "SR2-AUDIENCE-03");
+  assert.equal(normalized.current7k.audience.next_level_rule_id, "SR2-AUDIENCE-04");
+});
+
+test("P-01 preserves advanced audience evidence when current qualification is explicit", () => {
+  const fixture = validP01Fixture();
+  fixture.current7k.audience.score = 6;
+  fixture.current7k.audience.evidence_cap = 7;
+  fixture.current7k.audience.matched_level_rule_id = "SR2-AUDIENCE-06";
+  fixture.current7k.audience.next_level_rule_id = "SR2-AUDIENCE-07";
+
+  const normalized = normalizeP01CanonicalFields(
+    fixture,
+    structuredClone(ALINA_GOLDEN_CASE.input),
+  );
+
+  assert.equal(normalized.current7k.audience.score, 6);
+  assert.equal(normalized.current7k.audience.matched_level_rule_id, "SR2-AUDIENCE-06");
 });
 
 test("P-01 fails closed unsupported money-now facts instead of accepting wrong evidence scope", () => {

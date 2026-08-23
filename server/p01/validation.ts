@@ -193,6 +193,45 @@ function canonicalizePackageOneToOneCurrentFlowFacts(
   }
 }
 
+function canonicalizeAudienceKnowledge(
+  result: P01ResultV1_4_2,
+  input: DiagnosticInputV1_2,
+): void {
+  const audience = result.current7k.audience;
+  if (audience.score === null || audience.score < 4) return;
+
+  const audienceText = normalizeTargetModelText(
+    `${input.project.clients ?? ""} ${input.project.result ?? ""}`,
+  );
+  const processText = normalizeTargetModelText(
+    `${input.project.sales ?? ""} ${input.project.clientPath ?? ""}`,
+  );
+  const hasFormalQualification =
+    /квалификац|критери.{0,40}(?:клиент|свой|подход)|свой.{0,20}не\s+свой/iu.test(
+      `${audienceText} ${processText}`,
+    );
+  const deepKnowledgeSignals = [
+    /пробовал|пытал|предыдущ|раньше.{0,30}(?:делал|покупал|обращал)/iu,
+    /страх|боится|опасен|сомнен|возражен/iu,
+    /желан|мечта|хочет|стремит|важно\s+получить/iu,
+    /почему|причин|из-за\s+чего|что\s+мешает|не\s+решен/iu,
+  ].filter((pattern) => pattern.test(audienceText)).length;
+
+  if (hasFormalQualification || deepKnowledgeSignals >= 2) return;
+
+  audience.score = 3;
+  audience.evidence_cap = Math.min(audience.evidence_cap, 3);
+  audience.cap_reason =
+    "Описан типичный клиент и желаемый результат, но не подтверждены его прошлые попытки, страхи, сомнения и причины нерешённой задачи.";
+  audience.matched_level_rule_id = "SR2-AUDIENCE-03";
+  audience.next_level_rule_id = "SR2-AUDIENCE-04";
+  audience.why_not_higher =
+    "Для уровня 4 нужны реальные примеры более глубокого знания клиента: прошлые попытки, страхи, сомнения, желания и причины нерешённой проблемы.";
+  if (!audience.missing_evidence.includes("Глубинные факты о реальных клиентах")) {
+    audience.missing_evidence.push("Глубинные факты о реальных клиентах");
+  }
+}
+
 export function normalizeP01CanonicalFields(
   result: P01ResultV1_4_2,
   source?: string | DiagnosticInputV1_2,
@@ -223,6 +262,7 @@ export function normalizeP01CanonicalFields(
   if (typeof source === "object") {
     canonicalizePackageOneToOneTarget(result, source);
     canonicalizePackageOneToOneCurrentFlowFacts(result, source);
+    canonicalizeAudienceKnowledge(result, source);
   }
 
   const evidenceById = new Map(result.evidenceLedger.map((evidence) => [evidence.id, evidence]));

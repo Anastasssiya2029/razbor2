@@ -480,6 +480,27 @@ test("test30d primary metric is canonicalized to the validated target metric lab
   assert.equal(normalized.test30d!.primary_metric, normalized.targetMetric!.metric_name);
 });
 
+test("qualitative target metric cannot retain model-invented numeric values", async () => {
+  const prepared = await prepareP03Input(await source("MN14")) as P03SelectedPreparedInput;
+  const value = validOutput(prepared);
+  value.targetMetric!.source = "qualitative_rule";
+  value.targetMetric!.baseline_metric_code = "money_chain.0.payment.value";
+  value.targetMetric!.baseline_value = 999;
+  value.targetMetric!.target_metric_code = "money_chain.target.payment.value";
+  value.targetMetric!.target_value = 1000;
+  value.targetMetric!.unit = "count";
+  value.test30d!.baseline = 999;
+
+  const normalized = finalizeAndValidateP03Output(value, prepared);
+
+  assert.equal(normalized.targetMetric!.baseline_metric_code, null);
+  assert.equal(normalized.targetMetric!.baseline_value, null);
+  assert.equal(normalized.targetMetric!.target_metric_code, null);
+  assert.equal(normalized.targetMetric!.target_value, null);
+  assert.equal(normalized.targetMetric!.unit, null);
+  assert.equal(normalized.test30d!.baseline, null);
+});
+
 test("old text-only intervention rules are removed as a second source of truth", () => {
   const legacy = readFileSync("server/7k/config/money-now.v2.2.ts", "utf8");
   assert.doesNotMatch(legacy, /MONEY_NOW_INTERVENTION_RULES|MONEY_NOW_CAUSE_CODES/u);

@@ -58,8 +58,18 @@ function truncate(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, max - 1).trimEnd()}…`;
 }
 
-export function canonicalizeP03SupportingElements(result: P03ResultV1_5): P03ResultV1_5 {
+export function canonicalizeP03SupportingElements(
+  result: P03ResultV1_5,
+): P03ResultV1_5 {
   const normalized = structuredClone(result);
+  if (normalized.targetMetric?.source === "qualitative_rule") {
+    normalized.targetMetric.baseline_metric_code = null;
+    normalized.targetMetric.baseline_value = null;
+    normalized.targetMetric.target_metric_code = null;
+    normalized.targetMetric.target_value = null;
+    normalized.targetMetric.unit = null;
+    if (normalized.test30d) normalized.test30d.baseline = null;
+  }
   if (normalized.targetMetric && normalized.test30d) {
     normalized.test30d.primary_metric = normalized.targetMetric.metric_name;
   }
