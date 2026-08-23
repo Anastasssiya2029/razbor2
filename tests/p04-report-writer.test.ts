@@ -282,6 +282,7 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   const drifted = makeValidP04Output(input);
   drifted.businessValidation.explanation = "Сигнал — это проверка результата.";
   drifted.targetConfiguration.key_shifts[0].shift = "Переход — без смены маршрута.";
+  drifted.whyNotNow[0].text = "Вернитесь к этому, когда будете готова.";
   drifted.finalFocus.headline = "Запустите придуманную задачу";
   const provider = new QueueProvider([drifted, drifted]);
 
@@ -290,6 +291,8 @@ test("runner normalizes presentation-only drift after the bounded semantic retry
   assert.equal(provider.requests.length, 2);
   assert.equal(result.result.finalFocus.headline, "Первый шаг");
   assert.doesNotMatch(JSON.stringify(result.result), /[—–]/u);
+  assert.doesNotMatch(JSON.stringify(result.result), /готова/u);
+  assert.match(result.result.whyNotNow[0].text, /ближайшего маршрута/u);
   assert.equal(result.result.finalFocus.first_task_id, input.reportPolicy.firstTask.taskId);
   assert.equal(result.result.finalFocus.first_action, input.reportPolicy.firstTask.task);
 });

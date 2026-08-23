@@ -210,7 +210,12 @@ export function canonicalizeP04NarrativePresentation(
   result.growthPoint.title = clean(result.growthPoint.title);
   result.growthPoint.coach_explanation = clean(result.growthPoint.coach_explanation);
   result.growthPoint.what_it_unlocks = result.growthPoint.what_it_unlocks.map(clean);
-  result.whyNotNow = result.whyNotNow.map((item) => ({ ...item, text: clean(item.text) }));
+  result.whyNotNow = result.whyNotNow.map((item) => ({
+    ...item,
+    text: item.return_trigger === null
+      ? "Сейчас этот элемент не входит в ближайший маршрут. Вернуться к нему можно после прохождения ближайшего маршрута."
+      : `Сейчас этот элемент не входит в ближайший маршрут. Условие возврата: ${clean(item.return_trigger)}`,
+  }));
   result.routeCards = result.routeCards.map((card) => ({
     ...card,
     card_title: clean(card.card_title),
