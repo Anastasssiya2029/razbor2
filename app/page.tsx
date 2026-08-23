@@ -47,7 +47,12 @@ const tabs = [
   { id: 2, label: "Опыт" },
 ];
 
-const stages = ["Диагностика", "Разбор", "План перехода", "Колесо возможностей"];
+const stages = [
+  { label: "Диагностика", accessibleLabel: "Диагностика" },
+  { label: "Разбор", accessibleLabel: "Разбор" },
+  { label: "План перехода", accessibleLabel: "План перехода" },
+  { label: "", accessibleLabel: "Бонусный этап" },
+];
 
 type ArchetypeKind = ArchetypeId;
 
@@ -2025,15 +2030,15 @@ export default function Home() {
         {stages.map((stage, index) => (
           <button
             type="button"
-            aria-label={stage}
+            aria-label={stage.accessibleLabel}
             className={`journey-stage ${index === currentStage ? "active" : ""}`}
             aria-current={index === currentStage ? "step" : undefined}
             disabled={Boolean(loadingTarget) || (index === 3 ? !submittedDiagnostic : index > maxUnlockedStage)}
             onClick={() => showJourneyStage(index)}
-            key={stage}
+            key={stage.accessibleLabel}
           >
             <span className="journey-number">{index + 1}</span>
-            <span>{stage}</span>
+            {stage.label && <span>{stage.label}</span>}
           </button>
         ))}
       </nav>}
