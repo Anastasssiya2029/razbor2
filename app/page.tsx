@@ -1028,6 +1028,30 @@ function AnalysisSection({
   const [archetypeOpen, setArchetypeOpen] = useState(false);
   const [archetypeFlipped, setArchetypeFlipped] = useState(false);
   const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
+  const currentModelGroups = useMemo(() => {
+    const summarize = (kind: "soft" | "hard") => {
+      const items = analysis.currentScoreArguments.filter((argument) => argument.kind === kind);
+      const scores = items
+        .map((argument) => {
+          const element = systemElements.find((item) => item.id === argument.id);
+          return `${element?.name ?? argument.id} — ${argument.score}/10`;
+        })
+        .join(" · ");
+      const joinedFacts = items
+        .map((argument) => {
+          const element = systemElements.find((item) => item.id === argument.id);
+          const explanation = argument.evidence[0] ?? argument.whyNotHigher;
+          return explanation ? `${element?.name ?? argument.id}: ${explanation}` : null;
+        })
+        .filter((item): item is string => Boolean(item))
+        .join(" ");
+      const facts = joinedFacts.length <= 360
+        ? joinedFacts
+        : `${joinedFacts.slice(0, 359).replace(/\s+\S*$/u, "").trimEnd()}…`;
+      return { scores, facts };
+    };
+    return { soft: summarize("soft"), hard: summarize("hard") };
+  }, [analysis.currentScoreArguments, systemElements]);
   const archetype = archetypeDefinitions[analysis.archetype.id];
   const slideCount = 2;
   const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));
@@ -1108,6 +1132,18 @@ function AnalysisSection({
                 <div className="current-score-rationale-heading">
                   <strong>Почему сейчас такие баллы</strong>
                   <p>Оценка опирается на факты из ответов, а не на общее впечатление о проекте.</p>
+                </div>
+                <div className="current-system-conclusion" aria-label="Вывод о мягких и твёрдых элементах системы">
+                  <article className="soft">
+                    <span>Мягкие элементы системы</span>
+                    <strong>{currentModelGroups.soft.scores}</strong>
+                    <p>Показывают, насколько эксперт понимает и проявляет свою ценность и своего клиента. {currentModelGroups.soft.facts || "В ответах пока недостаточно подтверждённых проявлений."}</p>
+                  </article>
+                  <article className="hard">
+                    <span>Твёрдые элементы системы</span>
+                    <strong>{currentModelGroups.hard.scores}</strong>
+                    <p>Показывают, какие механизмы уже созданы, используются и дают повторяемый результат. {currentModelGroups.hard.facts || "Действующие механизмы пока не подтверждены ответами."}</p>
+                  </article>
                 </div>
                 <div className="current-score-argument-grid">
                   {analysis.currentScoreArguments.map((argument) => {

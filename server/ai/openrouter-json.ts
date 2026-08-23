@@ -311,6 +311,9 @@ export async function completeOpenRouterJson(options: {
       signal: controller.signal,
       body: JSON.stringify({
         model: options.model,
+        provider: options.structuredOutput
+          ? { require_parameters: true }
+          : undefined,
         reasoning: options.reasoningMode === "provider_default"
           ? { exclude: true }
           : { effort: options.reasoningMode ?? "none", exclude: true },

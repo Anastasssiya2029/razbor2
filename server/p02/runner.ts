@@ -142,11 +142,6 @@ export async function runP02TransitionStrategist(
     try {
       parsed = parseProviderJson(response.text);
     } catch (error) {
-      if (technicalRetryCount === 0) {
-        technicalRetryCount += 1;
-        correction = "Предыдущий ответ не был JSON. Верни только JSON по schema 1.3.";
-        continue;
-      }
       throw executionError("P02_MALFORMED_JSON", "P-02 returned malformed JSON", error);
     }
 
@@ -154,11 +149,6 @@ export async function runP02TransitionStrategist(
     try {
       result = normalizeP02CanonicalFields(validateP02Schema(parsed), input);
     } catch (error) {
-      if (error instanceof P02SchemaValidationError && technicalRetryCount === 0) {
-        technicalRetryCount += 1;
-        correction = correctionFor("Нарушена JSON Schema", error.issues);
-        continue;
-      }
       throw executionError(
         "P02_SCHEMA_VALIDATION_FAILED",
         error instanceof P02SchemaValidationError

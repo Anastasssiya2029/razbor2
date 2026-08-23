@@ -354,6 +354,7 @@ test("mocked error transport preserves frozen request semantics and performs one
   assert.equal(calls, 1);
   assert.deepEqual(capturedBody, {
     model: "test/model",
+    provider: { require_parameters: true },
     reasoning: { effort: "none", exclude: true },
     messages: [{ role: "system", content: "SYSTEM_PROMPT_SENT_TO_PROVIDER" }],
     response_format: {
@@ -361,7 +362,6 @@ test("mocked error transport preserves frozen request semantics and performs one
       json_schema: { name: "test_schema", strict: true, schema: OUTPUT_SCHEMA },
     },
   });
-  assert.equal("provider" in (capturedBody as Record<string, unknown>), false);
   assert.equal("temperature" in (capturedBody as Record<string, unknown>), false);
   assert.equal("seed" in (capturedBody as Record<string, unknown>), false);
 
@@ -439,6 +439,7 @@ test("JSON-object fallback receives the exact local output schema without extra 
   assert.match(messages[0]?.content ?? "", /<OUTPUT_JSON_SCHEMA>/u);
   assert.match(messages[0]?.content ?? "", /"required":\["ok"\]/u);
   assert.deepEqual(capturedBody?.response_format, { type: "json_object" });
+  assert.equal("provider" in (capturedBody as Record<string, unknown>), false);
 });
 
 test("OpenRouter transport aborts one hung request at the configured deadline", async () => {

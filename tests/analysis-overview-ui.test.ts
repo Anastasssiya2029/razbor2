@@ -46,6 +46,10 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.match(page, /Почему сейчас такие баллы/u);
   assert.match(page, /analysis\.currentScoreArguments\.map/u);
   assert.match(page, /Почему не выше:/u);
+  assert.match(page, /Мягкие элементы системы/u);
+  assert.match(page, /Твёрдые элементы системы/u);
+  assert.match(page, /currentModelGroups\.soft\.facts/u);
+  assert.match(page, /currentModelGroups\.hard\.facts/u);
 });
 
 test("Step 2 adds the key money bundle and Money Now only after the final result is available", () => {
