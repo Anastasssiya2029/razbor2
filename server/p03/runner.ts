@@ -1,4 +1,5 @@
 import type { AiProviderUsage } from "@/server/ai/openrouter-json";
+import { parseProviderJson } from "@/server/ai/provider-json";
 import { P03_PROMPT_VERSION } from "@/server/7k/prompts/p03.v1.5";
 import { createConfiguredP03Provider } from "./provider";
 import type { P03SelectedPreparedInput } from "./projections";
@@ -131,7 +132,7 @@ export async function runP03MoneyNowPrescription(
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(response.text);
+      parsed = parseProviderJson(response.text);
     } catch (error) {
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;

@@ -6,6 +6,7 @@ import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
 import { openRouterErrorArtifact } from "@/server/ai/openrouter-json";
+import { parseProviderJson } from "@/server/ai/provider-json";
 import { createConfiguredP01Provider } from "./provider";
 import { buildP01SystemPrompt } from "./request";
 import type {
@@ -133,10 +134,6 @@ async function defaultProvider(): Promise<P01Provider> {
   return createConfiguredP01Provider(env as unknown as Record<string, string | undefined>);
 }
 
-function parseJson(text: string): unknown {
-  return JSON.parse(text);
-}
-
 function safeValidationSummary(
   prefix: string,
   error: P01SchemaValidationError | P01InvariantError,
@@ -208,7 +205,7 @@ export async function runP01EvidenceScorer(
 
     let parsed: unknown;
     try {
-      parsed = parseJson(response.text);
+      parsed = parseProviderJson(response.text);
     } catch (error) {
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;

@@ -1,4 +1,5 @@
 import type { AiProviderUsage } from "@/server/ai/openrouter-json";
+import { parseProviderJson } from "@/server/ai/provider-json";
 import { P04_PROMPT_VERSION } from "@/server/7k/prompts/p04.v1.2";
 import { createConfiguredP04Provider } from "./provider";
 import { buildP04SystemPrompt } from "./request";
@@ -122,7 +123,7 @@ export async function runP04ReportWriter(
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(response.text);
+      parsed = parseProviderJson(response.text);
     } catch (error) {
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;

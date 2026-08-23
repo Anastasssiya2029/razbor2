@@ -1,4 +1,5 @@
 import { P02_PROMPT_VERSION } from "@/server/7k/prompts/p02.v1.3";
+import { parseProviderJson } from "@/server/ai/provider-json";
 import { sha256 } from "@/server/stage4/hash";
 import { createConfiguredP02Provider } from "./provider";
 import { buildP02SystemPrompt } from "./request";
@@ -88,16 +89,6 @@ function safeValidationSummary(
   return issues ? `${prefix}: ${issues}` : prefix;
 }
 
-export function parseP02ProviderJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch (initialError) {
-    const fenced = /^```(?:json)?\s*\r?\n([\s\S]*?)\r?\n```$/iu.exec(text.trim());
-    if (!fenced) throw initialError;
-    return JSON.parse(fenced[1].trim());
-  }
-}
-
 async function defaultProvider(): Promise<P02Provider> {
   const { env } = await import("cloudflare:workers");
   return createConfiguredP02Provider(env as unknown as Record<string, string | undefined>);
@@ -149,7 +140,7 @@ export async function runP02TransitionStrategist(
 
     let parsed: unknown;
     try {
-      parsed = parseP02ProviderJson(response.text);
+      parsed = parseProviderJson(response.text);
     } catch (error) {
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;
