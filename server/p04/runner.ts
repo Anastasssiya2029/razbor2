@@ -6,6 +6,7 @@ import type { P04PreparedInput } from "./stage-types";
 import type { P04Provider, P04RunMetadata, P04RunOutcome } from "./types";
 import { P04_OUTPUT_SCHEMA_VERSION } from "./types";
 import {
+  canonicalizeP04ImmutableEchoes,
   finalizeAndValidateP04Output,
   P04InvariantError,
   P04SchemaValidationError,
@@ -132,7 +133,10 @@ export async function runP04ReportWriter(
 
     try {
       return {
-        result: finalizeAndValidateP04Output(parsed, input),
+        result: finalizeAndValidateP04Output(
+          canonicalizeP04ImmutableEchoes(parsed, input),
+          input,
+        ),
         metadata: metadataFor(
           provider.provider,
           provider.model,
@@ -160,7 +164,15 @@ export async function runP04ReportWriter(
           correction = correctionFor("Нарушены backend semantic invariants", error.issues);
           continue;
         }
-        throw executionError("P04_INVARIANT_FAILED", "P-04 semantic invariants failed", error);
+        const safeIssues = error.issues
+          .slice(0, 20)
+          .map((issue) => `${issue.code}@${issue.path}`)
+          .join(", ");
+        throw executionError(
+          "P04_INVARIANT_FAILED",
+          `P-04 semantic invariants failed${safeIssues ? `: ${safeIssues}` : ""}`,
+          error,
+        );
       }
       throw error;
     }

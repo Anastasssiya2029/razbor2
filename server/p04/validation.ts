@@ -45,6 +45,147 @@ function add(issues: P04ValidationIssue[], path: string, code: string, message: 
   issues.push({ path, code, message });
 }
 
+function canonicalSourceRefs(
+  refs: readonly string[],
+  required: readonly string[],
+  input: P04PreparedInput,
+): string[] {
+  const allowed = new Set(input.sourceRegistry.refs);
+  const normalizedRefs = refs.filter((ref) => allowed.has(ref));
+  for (const ref of required) {
+    if (allowed.has(ref) && !normalizedRefs.includes(ref)) normalizedRefs.push(ref);
+  }
+  return normalizedRefs;
+}
+
+export function canonicalizeP04ImmutableEchoes(
+  value: unknown,
+  input: P04PreparedInput,
+): P04ResultV1_2 {
+  const result = structuredClone(validateP04Schema(value));
+  const policy = input.reportPolicy;
+  const context = input.context;
+
+  result.analysisStatus = policy.analysisStatus;
+  result.opening.source_refs = canonicalSourceRefs(
+    result.opening.source_refs,
+    ["P01:businessMap"],
+    input,
+  );
+  result.currentConfiguration.source_refs = canonicalSourceRefs(
+    result.currentConfiguration.source_refs,
+    ["P01:businessMap"],
+    input,
+  );
+  result.targetConfiguration.source_refs = canonicalSourceRefs(
+    result.targetConfiguration.source_refs,
+    ["TARGET:model"],
+    input,
+  );
+
+  if (result.targetConfiguration.key_shifts.length === policy.targetShiftElements.length) {
+    result.targetConfiguration.key_shifts = policy.targetShiftElements.map((expected, index) => {
+      const authored = result.targetConfiguration.key_shifts.find(
+        (item) => item.element_id === expected.element_id,
+      ) ?? result.targetConfiguration.key_shifts[index];
+      return {
+        ...authored,
+        ...expected,
+        source_refs: canonicalSourceRefs(
+          authored.source_refs,
+          [`TARGET:${expected.element_id}`],
+          input,
+        ),
+      };
+    });
+  }
+
+  result.archetype.archetype_name = getExpectedArchetypeName(context);
+  result.archetype.source_refs = canonicalSourceRefs(
+    result.archetype.source_refs,
+    ["ARCHETYPE:current"],
+    input,
+  );
+  result.growthPoint.priority_element = context.strategy.bundle.priority_element;
+  result.growthPoint.build_elements = structuredClone(context.strategy.bundle.build_elements);
+  result.growthPoint.source_refs = canonicalSourceRefs(
+    result.growthPoint.source_refs,
+    ["P02:constraint", "P02:bundle"],
+    input,
+  );
+
+  if (result.whyNotNow.length === policy.whyNotNowExpected.length) {
+    result.whyNotNow = policy.whyNotNowExpected.map((expected, index) => {
+      const authored = result.whyNotNow.find((item) => item.element_id === expected.element_id)
+        ?? result.whyNotNow[index];
+      return {
+        ...authored,
+        ...expected,
+        source_refs: canonicalSourceRefs(authored.source_refs, ["P02:bundle"], input),
+      };
+    });
+  }
+
+  if (result.routeCards.length === policy.routeCardIdentities.length) {
+    result.routeCards = policy.routeCardIdentities.map((expected, index) => {
+      const authored = result.routeCards.find((item) => item.card_id === expected.card_id)
+        ?? result.routeCards[index];
+      return {
+        ...authored,
+        ...expected,
+        task_ids: [...expected.task_ids],
+        source_refs: canonicalSourceRefs(
+          authored.source_refs,
+          [`PLAN:card:${expected.card_id}`],
+          input,
+        ),
+      };
+    });
+  }
+
+  const businessValidation = context.strategy.businessValidation;
+  Object.assign(result.businessValidation, {
+    checkpoint_after_order: businessValidation.checkpoint_after_order,
+    metric_name: businessValidation.metric_name,
+    baseline_value: businessValidation.baseline_value,
+    target_value: businessValidation.target_value,
+    unit: businessValidation.unit,
+    target_rule: businessValidation.target_rule,
+    formula: businessValidation.formula,
+    timeframe_days: businessValidation.timeframe_days,
+    if_signal_absent: businessValidation.if_signal_absent,
+  });
+  result.businessValidation.source_refs = canonicalSourceRefs(
+    result.businessValidation.source_refs,
+    ["P02:validation"],
+    input,
+  );
+
+  result.finalFocus.first_task_id = policy.firstTask.taskId;
+  result.finalFocus.first_action = policy.firstTask.task;
+  result.finalFocus.wait_for_signal = policy.validationSignal;
+  result.finalFocus.source_refs = canonicalSourceRefs(
+    result.finalFocus.source_refs,
+    [`TASK:${policy.firstTask.taskId}`],
+    input,
+  );
+
+  result.moneyNow.status = policy.moneyNowStatus;
+  result.moneyNow.scenario_id = context.moneyNow.selectedScenario?.scenario_id ?? null;
+  result.moneyNow.locked_teaser = context.moneyNow.lockedTeaser;
+  result.moneyNow.source_refs = canonicalSourceRefs(
+    result.moneyNow.source_refs,
+    ["MN:selection"],
+    input,
+  );
+
+  result.sanityChecks = result.sanityChecks.map((check) => ({
+    ...check,
+    source_refs: canonicalSourceRefs(check.source_refs, ["P02:validation"], input),
+  }));
+  return result;
+}
+
 function normalized(value: string): string {
   return value.trim().toLocaleLowerCase("ru-RU").replace(/\s+/gu, " ");
 }

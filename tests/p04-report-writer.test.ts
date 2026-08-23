@@ -277,6 +277,36 @@ test("33. runner performs one semantic retry with invariant feedback", async () 
   assert.match(provider.requests[1].correction ?? "", /long_dash_forbidden/u);
 });
 
+test("runner replaces model-controlled immutable echoes with backend policy values", async () => {
+  const input = await prepared();
+  const output = makeValidP04Output(input);
+  output.analysisStatus = "blocked_by_inconsistency";
+  output.archetype.archetype_name = "Волшебник";
+  output.growthPoint.priority_element = "sales_technology";
+  output.businessValidation.timeframe_days = 30;
+  output.finalFocus.first_task_id = "made-up-task";
+  output.finalFocus.first_action = "Придуманное действие";
+  output.finalFocus.wait_for_signal = "Придуманный сигнал";
+  output.moneyNow.scenario_id = "MN01";
+  output.moneyNow.locked_teaser = "Придуманный длинный тизер для проверки";
+  output.opening.source_refs.push("P01:E999");
+  const provider = new QueueProvider([output]);
+
+  const result = await runP04ReportWriter(input, { provider });
+
+  assert.equal(provider.requests.length, 1);
+  assert.equal(result.result.analysisStatus, input.reportPolicy.analysisStatus);
+  assert.equal(result.result.archetype.archetype_name, "Искатель");
+  assert.equal(result.result.growthPoint.priority_element, input.context.strategy.bundle.priority_element);
+  assert.equal(result.result.businessValidation.timeframe_days, input.context.strategy.businessValidation.timeframe_days);
+  assert.equal(result.result.finalFocus.first_task_id, input.reportPolicy.firstTask.taskId);
+  assert.equal(result.result.finalFocus.first_action, input.reportPolicy.firstTask.task);
+  assert.equal(result.result.finalFocus.wait_for_signal, input.reportPolicy.validationSignal);
+  assert.equal(result.result.moneyNow.scenario_id, input.context.moneyNow.selectedScenario?.scenario_id ?? null);
+  assert.equal(result.result.moneyNow.locked_teaser, input.context.moneyNow.lockedTeaser);
+  assert.doesNotMatch(JSON.stringify(result.result), /P01:E999/u);
+});
+
 test("34. a second semantic failure terminates without an unbounded retry", async () => {
   const input = await prepared();
   const invalid = makeValidP04Output(input);
