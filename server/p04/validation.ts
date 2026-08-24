@@ -380,12 +380,19 @@ function validateTextInvariants(
   const genderAssumption = /(?:^|[^\p{L}])(?:(?:вы|она|он|клиентка|клиент|экспертка|эксперт)\s+(?:готова|готов|сделала|сделал|начала|начал|выстроила|выстроил|решила|решил)|будете\s+(?:готова|готов))(?=$|[^\p{L}])/iu;
   const incomePromise = /(?:гарантир\p{L}*\s+(?:доход|выручк|заработ)|(?:точно|обязательно|непременно)\s+(?:заработ|получ|принес|даст)\p{L}*\s+(?:деньг|доход|выручк))/iu;
   const metricAdvice = /^(?:повысить|увеличить|улучшить|оптимизировать)\s+(?:конверси|доход|выручк|продаж|эффективност)/iu;
+  const reportLanguage = /(?:управленческ(?:ий|ого|им)\s+переход|фиксаци(?:я|и|ей)\s+(?:одного\s+)?(?:понятного\s+)?(?:клиентского\s+)?результата|комплексн(?:ый|ого|ым)\s+результат|главн(?:ый|ая)\s+разрыв\s+находится|продаж(?:а|и)\s+оста(?:ётся|ются)\s+ситуативн)/iu;
   authoredTexts(result).forEach(({ path, value }) => {
     if (/[—–]/u.test(value)) add(issues, path, "long_dash_forbidden", "P-04 narrative cannot contain a long dash.");
     if (bureaucratic.test(value)) add(issues, path, "bureaucratic_phrase", "P-04 narrative contains forbidden bureaucratic/AI wording.");
     if (genderAssumption.test(value)) add(issues, path, "invented_gender", "Client gender was not provided; use neutral grammar.");
     if (incomePromise.test(value)) add(issues, path, "income_promise", "P-04 cannot promise income or revenue.");
     if (metricAdvice.test(value.trim())) add(issues, path, "metric_as_advice", "A metric cannot be presented as a new action.");
+    if (reportLanguage.test(value)) add(issues, path, "report_language", "Перепишите человеческим разговорным языком: коротко, конкретно, без языка доклада.");
+    const longSentence = value
+      .split(/[.!?]+/u)
+      .map((sentence) => sentence.trim().split(/\s+/u).filter(Boolean).length)
+      .some((wordCount) => wordCount > 34);
+    if (longSentence) add(issues, path, "sentence_too_long", "Разделите длинное предложение: одна мысль в одном предложении, без потери фактов.");
   });
 }
 

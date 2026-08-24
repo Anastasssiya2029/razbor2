@@ -52,8 +52,7 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.doesNotMatch(page, /setLoadingTarget\("plan"\)/u);
   assert.match(page, /Мягкие элементы системы/u);
   assert.match(page, /Твёрдые элементы системы/u);
-  assert.match(page, /Развиты по нижней границе/u);
-  assert.match(page, /Находятся на нижних уровнях/u);
+  assert.match(page, /buildCurrentSystemSummary/u);
   assert.doesNotMatch(page, /systemElementDefinitions\[argument\.id\]\.name/u);
   assert.match(page, /currentModelGroups\.soft/u);
   assert.match(page, /currentModelGroups\.hard/u);
@@ -67,18 +66,21 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.doesNotMatch(page, /Проанализировано ответов:/u);
 });
 
-test("Step 2 adds the key bundle, supporting changes, and keeps Money Now hidden for MVP", () => {
+test("Step 2 adds one shared key and supporting bundle and keeps Money Now hidden for MVP", () => {
   assert.match(page, /result && <AnalysisStrategySummary result=\{result\} \/>/u);
   assert.match(strategySummary, /Связка для перехода к денежной цели/u);
   assert.match(strategySummary, /Почему именно эта связка/u);
-  assert.match(strategySummary, /Поддерживающие изменения/u);
+  assert.match(strategySummary, /Ключевая связка/u);
+  assert.match(strategySummary, /Поддерживающие элементы/u);
+  assert.doesNotMatch(strategySummary, /Поддерживающие изменения/u);
   assert.match(strategySummary, /Пока не трогаем как отдельное направление/u);
   assert.doesNotMatch(strategySummary, /Где деньги сейчас/u);
 });
 
 test("Step 3 expands every target gap into printable canonical transition tasks", () => {
   assert.match(resultView, /resolveTransitionSequence/u);
-  assert.match(resultView, /targetScores\[elementId\] > result\.current\.scores\[elementId\]/u);
+  assert.match(resultView, /resolveGrowthPriorityPlan/u);
+  assert.match(resultView, /growthRole/u);
   assert.match(resultView, /card\.transitions\.map/u);
   assert.match(resultView, /route-task-check/u);
   assert.match(resultView, /Готово, когда:/u);
@@ -93,6 +95,7 @@ test("saved result restores the step navigation and separates review from plan",
   assert.match(savedResultPage, /saved-result-journey/u);
   assert.match(savedResultPage, />Разбор</u);
   assert.match(savedResultPage, />План перехода</u);
+  assert.match(savedResultPage, /<GiftWheel analysisRunId=\{analysisRunId\}/u);
 });
 
 test("client-facing progress copy does not expose internal pipeline names or raw failure codes", () => {

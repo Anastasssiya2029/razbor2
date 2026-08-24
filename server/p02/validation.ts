@@ -154,6 +154,9 @@ export function validateP02Invariants(
   const normal = result.analysisStatus === "ok" || result.analysisStatus === "low_confidence";
   const priority = result.bundle.priority_element;
   if (normal && priority === null) add(issues, "/bundle/priority_element", "priority_required", "ok/low_confidence requires one priority element.");
+  if (normal && (priority === "authenticity" || priority === "audience")) {
+    add(issues, "/bundle/priority_element", "soft_priority_forbidden", "Authenticity and audience can support packaging but cannot be the main money-transition element.");
+  }
   if (normal && result.elementSequence.length === 0) add(issues, "/elementSequence", "sequence_required", "ok/low_confidence requires milestones.");
 
   const roles = new Map<SevenKElementId, string[]>();
@@ -169,6 +172,15 @@ export function validateP02Invariants(
   if (result.bundle.build_elements.length > 2) add(issues, "/bundle/build_elements", "too_many_build_elements", "At most two build elements are allowed.");
 
   const active = new Set<SevenKElementId>([...(priority ? [priority] : []), ...result.bundle.build_elements]);
+  if (
+    normal
+    && priority === "product_method"
+    && input.currentScores.sales_technology <= 2
+    && input.targetConfig.targetScores.sales_technology > input.currentScores.sales_technology
+    && !result.bundle.build_elements.includes("sales_technology")
+  ) {
+    add(issues, "/bundle/build_elements", "sales_link_required", "A low sales technology that must grow must accompany a product priority in the nearest money linkage.");
+  }
   active.forEach((id) => {
     if (input.targetConfig.targetScores[id] <= input.currentScores[id]) {
       add(issues, `/bundle/${id}`, "target_gap_zero", `${id} cannot be priority/build when targetScore <= currentScore.`);

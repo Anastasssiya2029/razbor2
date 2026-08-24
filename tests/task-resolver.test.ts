@@ -135,9 +135,9 @@ function p01Result(): P01ResultV1_4_2 {
   };
 }
 
-function p02Result(sequence = [milestone(1, "audience", 2, 5)]): P02ResultV1_3 {
+function p02Result(sequence = [milestone(1, "product_method", 3, 5)]): P02ResultV1_3 {
   const active = new Set(sequence.map((item) => item.element_id));
-  const priority = sequence.find((item) => item.role === "priority")?.element_id ?? "audience";
+  const priority = sequence.find((item) => item.role === "priority")?.element_id ?? "product_method";
   const build = [...active].filter((elementId) => elementId !== priority);
   return {
     promptVersion: "P-02.v1.3",
@@ -177,7 +177,7 @@ function targetConfigProjection(target: ReturnType<typeof calculateTargetConfigu
   };
 }
 
-async function sourceWith(sequence = [milestone(1, "audience", 2, 5)]): Promise<TaskResolverSource> {
+async function sourceWith(sequence = [milestone(1, "product_method", 3, 5)]): Promise<TaskResolverSource> {
   const p01 = p01Result();
   const baseTarget = calculateTargetConfiguration({
     currentScores: CURRENT,

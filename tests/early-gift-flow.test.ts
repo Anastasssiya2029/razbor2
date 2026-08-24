@@ -26,10 +26,11 @@ test("the wheel retains the Replit client-number guard and remains excluded from
   assert.match(wheel, /gift-section no-print/u);
 });
 
-test("the printable result uses the shared name declension and no wheel", () => {
+test("the printable result excludes the wheel while the saved analysis keeps the bonus stage available", () => {
   const resultView = readFileSync("app/_components/analysis-result-view.tsx", "utf8");
   const detailPage = readFileSync("app/analysis/[analysisRunId]/page.tsx", "utf8");
   assert.match(resultView, /declineRussianNameGenitive/u);
   assert.match(resultView, /ResultSystemModel/u);
-  assert.doesNotMatch(detailPage, /GiftWheel/u);
+  assert.doesNotMatch(resultView, /GiftWheel/u);
+  assert.match(detailPage, /GiftWheel/u);
 });

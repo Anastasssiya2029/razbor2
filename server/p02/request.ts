@@ -37,6 +37,8 @@ export function buildP02SystemPrompt(
     "Различие между ближайшей и дальней моделью намеренно и НЕ является TARGET_CONFIG_INCONSISTENCY.",
     "modelTransitionNote объясняет этот поэтапный переход; используй его как контекст, а не как основание блокировки.",
     "Стратегию ближайшего перехода собирай по modelFamily и targetScores; visionModelFamily не подменяет этот маршрут.",
+    "priority_element для клиентского денежного перехода выбирай только из твёрдых элементов: product_method, sales_technology, funnel, blog, team. authenticity и audience могут быть только build/supporting.",
+    "Если product_method выбран priority, sales_technology находится на уровне 0–2 и targetScores требует его роста, включи sales_technology в build_elements: новый продукт и базовая структура продажи проверяются одной связкой, но в elementSequence продукт идёт первым.",
     `Разрешённые точные числа для businessValidation baseline_value: ${JSON.stringify(allowedBusinessNumbers)}.`,
     "baseline_value может быть только одним из этих чисел; если подходящего числа нет, верни null.",
     "Не извлекай baseline_value из свободного текста evidenceLedger, businessMap или описания выручки.",

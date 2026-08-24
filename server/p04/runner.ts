@@ -58,7 +58,7 @@ function correctionFor(title: string, issues: readonly P04ValidationIssue[]): st
   return [
     `${title}:`,
     ...issues.slice(0, 32).map((issue) => `- ${issue.path}: ${issue.code}: ${issue.message}`),
-    "Верни весь JSON заново по schema 1.2. Не меняй upstream decisions, task IDs, route identities, businessValidation, Money Now status или locked teaser. Не добавляй новые действия. Используй только SOURCE_REGISTRY.",
+    "Верни весь JSON заново по schema 1.2. Не меняй upstream decisions, task IDs, route identities, businessValidation, Money Now status или locked teaser. Не добавляй новые действия. Используй только SOURCE_REGISTRY. Клиентские тексты перепиши коротко и разговорно, как понятное объяснение другу.",
   ].join("\n");
 }
 

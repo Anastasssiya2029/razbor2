@@ -9,6 +9,7 @@ import type { SevenKElementId } from "@/server/7k/types";
 import { resolveTransitionSequence } from "@/server/7k/transition-resolver";
 import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
+import { growthRole, orderedGrowthElements, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
 
 type Props = {
   result: AnalysisResultV1;
@@ -51,25 +52,6 @@ function elementName(elementId: SevenKElementId): string {
   return SEVEN_K_ELEMENTS.find((element) => element.id === elementId)?.name ?? elementId;
 }
 
-function checklistElementIds(result: AnalysisResultV1): SevenKElementId[] {
-  const growing = SEVEN_K_ELEMENTS
-    .map((element) => element.id)
-    .filter((elementId) => result.target.targetScores[elementId] > result.current.scores[elementId]);
-  const routed = result.route.cards
-    .map((card) => card.elementId)
-    .filter((elementId, index, all) => growing.includes(elementId) && all.indexOf(elementId) === index);
-
-  if (
-    result.current.scores.product_method <= 2
-    && growing.includes("product_method")
-    && !routed.includes("product_method")
-  ) {
-    routed.splice(Math.min(1, routed.length), 0, "product_method");
-  }
-
-  return [...routed, ...growing].filter((elementId, index, all) => all.indexOf(elementId) === index);
-}
-
 export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, targetRevenueRub, view = "full" }: Props) {
   const clientName = result.clientContext.expertName;
   const clientNameGenitive = clientName ? declineRussianNameGenitive(clientName) : "клиента";
@@ -80,7 +62,8 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
   const showAnalysis = view !== "plan";
   const showPlan = view !== "analysis";
   const showPlanCover = view === "plan";
-  const checklistCards = checklistElementIds(result).map((elementId, index) => {
+  const growthPlan = resolveGrowthPriorityPlan(result);
+  const checklistCards = orderedGrowthElements(growthPlan).map((elementId, index) => {
     const fromScore = result.current.scores[elementId];
     const toScore = result.target.targetScores[elementId];
     const transitions = resolveTransitionSequence([{ element_id: elementId, from_score: fromScore, to_score: toScore }]).tasks;
@@ -92,7 +75,7 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
   });
   return (
     <div className="result-view">
-      {(showAnalysis || showPlanCover) && <section className="result-cover">
+      {(showAnalysis || showPlanCover) && <section className={`result-cover ${showPlanCover ? "plan-cover" : ""}`}>
         <span className="admin-eyebrow">Персональная стратегия 7К</span>
         <h1>Индивидуальный план системного роста проекта для {clientNameGenitive}</h1>
         {currentRevenueRub != null && targetRevenueRub != null && (
@@ -150,24 +133,11 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
         </article>
       </section>}
 
-      {showPlanCover && <section className="result-columns plan-identity-summary">
-        <article className="result-section archetype-card">
-          <span className="admin-eyebrow">Бизнес-архетип</span>
-          <h2>{archetype.name}</h2>
-          <p>{result.report.archetype.summary}</p>
-        </article>
-        <article className="result-section focus-card">
-          <span className="admin-eyebrow">Главная связка роста</span>
-          <h2>{result.report.growthPoint.title}</h2>
-          <p>{result.report.growthPoint.coach_explanation}</p>
-        </article>
-      </section>}
-
       {showPlan && <section className="result-section transition-checklist-section">
         <div className="result-section-heading"><span>{showPlanCover ? "01" : "02"}</span><div><h2>Чек‑лист перехода</h2><p>Карточки расставлены по приоритету. Отмечайте выполненное и переходите к следующему уровню элемента.</p></div></div>
         <div className="route-cards">
           {checklistCards.map((card) => {
-            const role = card.order === 1 ? "Главный элемент" : card.order <= 3 ? "Ключевой элемент" : "Поддерживающий элемент";
+            const role = growthRole(growthPlan, card.elementId);
             return <article key={card.elementId}>
               <header><span>{card.order}</span><div><small>{role}</small><h3>{elementName(card.elementId)}: {card.fromScore} → {card.toScore}</h3><em>{SEVEN_K_BUSINESS_LEVERS[card.elementId]}</em></div></header>
               {card.narrative?.why_now && <p>{card.narrative.why_now}</p>}
@@ -178,6 +148,19 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
             </article>;
           })}
         </div>
+      </section>}
+
+      {showPlanCover && <section className="result-section plan-identity-summary plan-closing-summary">
+        <article className="archetype-card">
+          <span className="admin-eyebrow">Бизнес-архетип</span>
+          <h2>{archetype.name}</h2>
+          <p>{result.report.archetype.summary}</p>
+        </article>
+        <article className="focus-card">
+          <span className="admin-eyebrow">Главная связка роста</span>
+          <h2>{result.report.growthPoint.title}</h2>
+          <p>{result.report.growthPoint.coach_explanation}</p>
+        </article>
       </section>}
 
       {showPlanCover && <div className="plan-actions result-plan-actions">

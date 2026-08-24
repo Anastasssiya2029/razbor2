@@ -162,6 +162,8 @@ test("E2E 6: archetype gate downgrade is preserved exactly", async () => {
 test("E2E 7: repeated milestones for one element remain separate cards", async () => {
   const source = await makeAnalysisResultFixture("available");
   const original = source.p04!.context.strategy.elementSequence[0];
+  source.p04!.context.target.targetScores.product_method = 5;
+  source.p04!.context.target.gap.product_method = 3;
   source.p04!.context.strategy.elementSequence = [
     { ...structuredClone(original), order: 1, from_score: 2, to_score: 3 },
     { ...structuredClone(original), order: 2, role: "build", from_score: 3, to_score: 5 },
@@ -176,8 +178,8 @@ test("E2E 7: repeated milestones for one element remain separate cards", async (
   const result = await assertDeterministicFixture(source);
   assert.equal(result.route.cards.length, 2);
   assert.deepEqual(result.route.cards.map((card) => [card.elementId, card.fromScore, card.toScore]), [
-    ["audience", 2, 3],
-    ["audience", 3, 5],
+    ["product_method", 2, 3],
+    ["product_method", 3, 5],
   ]);
 });
 

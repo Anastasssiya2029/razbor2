@@ -7,6 +7,7 @@ import { P04Error } from "../server/p04/errors";
 import { prepareP04Input, P04_RULE_VERSIONS } from "../server/p04/projections";
 import { authorizeP04PublicRequest, P04_ORCHESTRATOR_HEADER } from "../server/p04/public-guard";
 import { runP04ReportWriter, P04RunExecutionError } from "../server/p04/runner";
+import { buildP04SystemPrompt } from "../server/p04/request";
 import { runP04Stage } from "../server/p04/stage-runner";
 import type {
   P04PreparedInput,
@@ -131,9 +132,9 @@ test("6. REPORT_POLICY is derived on backend with exact immutable identities", a
   const input = await prepared();
   assert.equal(input.reportPolicy.version, "p04-report-policy.v1");
   assert.deepEqual(input.reportPolicy.routeCardIdentities[0].task_ids, [
-    "audience_2_3", "audience_3_4", "audience_4_5",
+    "product_method_2_3",
   ]);
-  assert.equal(input.reportPolicy.firstTask.task, "Собрать первый аватар типичного клиента.");
+  assert.equal(input.reportPolicy.firstTask.task, "Объединить несколько встреч или услуг в пакет, абонемент или тариф.");
 });
 
 test("7. low-confidence upstream cannot be upgraded by P-04", async () => {
@@ -177,7 +178,7 @@ test("14. route cards preserve exact count, order and milestone identity", async
 });
 
 test("15. route task IDs are exact and remain in resolver order", async () => {
-  await expectInvariant((output) => { output.routeCards[0].task_ids.reverse(); });
+  await expectInvariant((output) => { output.routeCards[1].task_ids.reverse(); });
 });
 
 test("16. businessValidation fields are immutable except explanation", async () => {
@@ -245,6 +246,22 @@ test("27. long dash in authored narrative triggers semantic retry", async () => 
 
 test("28. bureaucratic and AI-styled wording is rejected", async () => {
   await expectInvariant((output) => { output.opening.summary = "Анализ показывает, что текущая система требует более подробного последовательного разбора всех элементов."; });
+});
+
+test("client language contract asks for concise human explanations without changing facts", async () => {
+  const input = await prepared();
+  const prompt = buildP04SystemPrompt(input);
+  assert.match(prompt, /как сильный практик объясняет решение другу/u);
+  assert.match(prompt, /Не меняй факты, баллы, роли, порядок, задачи/u);
+});
+
+test("report-like wording and overly long sentences trigger only the bounded semantic repair", async () => {
+  await expectInvariant((output) => {
+    output.archetype.summary = "Следующий управленческий переход связан с фиксацией одного понятного клиентского результата и его проверкой в пакете.";
+  });
+  await expectInvariant((output) => {
+    output.growthPoint.coach_explanation = Array.from({ length: 35 }, (_, index) => `слово${index}`).join(" ") + ".";
+  });
 });
 
 test("29. invented client gender is rejected", async () => {
@@ -456,7 +473,7 @@ test("40. fixed task and done_when text remain byte-equal to the resolved plan c
   const sourceTasks = source.resolvedPlan!.plan!.cards.flatMap((card) => card.tasks);
   const contextTasks = input.context.resolvedPlan.cards.flatMap((card) => card.tasks);
   assert.deepEqual(contextTasks, sourceTasks);
-  assert.equal(contextTasks[0].task, "Собрать первый аватар типичного клиента.");
+  assert.equal(contextTasks[0].task, "Объединить несколько встреч или услуг в пакет, абонемент или тариф.");
   assert.ok(contextTasks[0].doneWhen.length > 0);
 });
 

@@ -131,6 +131,34 @@ test("3. Product root precedes Sales when it is unclear what is sold", () => { c
 test("4. non-target meetings route Audience or Funnel before automatic Sales", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /нецелевые встречи → audience и\/или funnel/u));
 test("5. gratitude alone never proves overconsulting", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /Благодарность сама по себе недостаточна/u));
 test("6. normal sales plus low-owner-time target allows owner_dependency/team priority", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /constraint может быть `owner_dependency\/team`/u));
+test("soft elements cannot become the main money-transition element", () => {
+  const input = prepared();
+  input.targetConfig.targetScores.audience = input.currentScores.audience + 1;
+  const value = withPriority(output(), "audience", input.currentScores.audience, input.targetConfig.targetScores.audience);
+  assert.throws(() => validateP02Invariants(value, input), P02InvariantError);
+  assert.match(buildP02SystemPrompt(input.strategyContext, input.targetConfig), /authenticity и audience могут быть только build\/supporting/u);
+});
+test("a low sales technology accompanies a selected product in the nearest linkage", () => {
+  const input = prepared();
+  input.currentScores.sales_technology = 2;
+  input.strategyContext.current7k.sales_technology.score = 2;
+  const value = output();
+  assert.throws(() => validateP02Invariants(value, input), P02InvariantError);
+  value.bundle.build_elements = ["sales_technology"];
+  value.bundle.later_elements = value.bundle.later_elements.filter((item) => item.element_id !== "sales_technology");
+  value.elementSequence.push({
+    order: 2,
+    element_id: "sales_technology",
+    role: "build",
+    from_score: 2,
+    to_score: 3,
+    why_now: "Нужна простая структура продажи пакета",
+    prerequisite_elements: ["product_method"],
+    unlocks: ["Проверка предложения"],
+    evidence_ids: ["E04"],
+  });
+  assert.doesNotThrow(() => validateP02Invariants(value, input));
+});
 test("P-02 prompt embeds the exact root output contract", () => {
   const prompt = buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig);
   const match = prompt.match(/<P02_OUTPUT_SCHEMA_JSON>\n([\s\S]+?)\n<\/P02_OUTPUT_SCHEMA_JSON>/u);

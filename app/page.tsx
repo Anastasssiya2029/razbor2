@@ -27,6 +27,7 @@ import { AnalysisResultView } from "@/app/_components/analysis-result-view";
 import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { GiftWheel } from "@/app/_components/gift-wheel";
+import { buildCurrentSystemSummary } from "@/lib/current-system-summary";
 import type { AnalysisOverview } from "@/lib/analysis-overview";
 
 type FieldProps = {
@@ -1027,12 +1028,10 @@ function AnalysisSection({
   const [archetypeFlipped, setArchetypeFlipped] = useState(false);
   const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
   const currentTotal = systemElements.reduce((sum, element) => sum + element.current, 0);
-  const currentModelGroups = useMemo(() => {
-    return {
-      soft: "Развиты по нижней границе: ценность эксперта и понимание клиента пока описаны отдельными признаками, но не собраны в ясное «почему я» и подтверждённое понимание типичного клиента.",
-      hard: "Находятся на нижних уровнях: отдельные действия уже есть, но пока не собраны в устойчивую повторяемую систему.",
-    };
-  }, []);
+  const currentModelGroups = useMemo(
+    () => buildCurrentSystemSummary(analysis.systemScores),
+    [analysis.systemScores],
+  );
   const archetype = archetypeDefinitions[analysis.archetype.id];
   const slideCount = 2;
   const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));
@@ -1072,7 +1071,7 @@ function AnalysisSection({
         <h2 id="analysis-title">Бизнес-модель <span>7К</span></h2>
         <strong className="analysis-method-subtitle">Система пошагового роста эксперта</strong>
         <p>Показывает, как шаг за шагом построить сильную аутентичную систему. Сравните текущую модель с моделью под вашу цель и посмотрите, какие элементы важно достроить.</p>
-        <span className="analysis-context-chip">Итоговый балл: <strong>{currentTotal}</strong> из 70</span>
+        <span className="analysis-context-chip">Итоговый балл: <strong>{currentTotal}</strong><span>из 70</span></span>
       </div>
 
       <div className="analysis-carousel">
@@ -1816,7 +1815,7 @@ export default function Home() {
         <HeaderMenu onNewDiagnostic={startNewDiagnostic} />
       </header>}
 
-      {!loadingTarget && <section className="hero" aria-labelledby="page-title">
+      {!loadingTarget && currentStage !== 2 && <section className="hero" aria-labelledby="page-title">
         <span className="hero-badge">Авторский разбор для экспертов</span>
         <h1 id="page-title">Твоя Бизнес-Система</h1>
         <p>
