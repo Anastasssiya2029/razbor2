@@ -22,6 +22,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   const [result, setResult] = useState<AnalysisResultV1 | null>(null);
   const [cover, setCover] = useState<AnalysisCoverContext | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [activeStage, setActiveStage] = useState<1 | 2>(2);
   useEffect(() => {
     if (!user) return;
     void fetch(`/api/analysis-runs/${analysisRunId}/result`, { cache: "no-store" })
@@ -37,6 +38,28 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   if (sessionLoading || !user) return <main className="admin-loading">Проверяю доступ…</main>;
   return <main className="result-shell">
     <header className="admin-header no-print"><AppBrand /><nav className="admin-actions"><Link className="admin-button" href="/cabinet">К разборам</Link>{result && <button className="admin-button primary" type="button" onClick={() => window.print()}>Распечатать / PDF</button>}</nav></header>
-    {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <AnalysisResultView result={result} currentRevenueRub={cover?.currentRevenueRub} targetRevenueRub={cover?.targetRevenueRub} deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)} /> : <section className="result-state"><h1>Открываю результат…</h1></section>}
+    {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <>
+      <AnalysisResultView
+        result={result}
+        currentRevenueRub={cover?.currentRevenueRub}
+        targetRevenueRub={cover?.targetRevenueRub}
+        deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)}
+        view={activeStage === 1 ? "analysis" : "plan"}
+      />
+      <nav className="journey saved-result-journey no-print" aria-label="Этапы работы">
+        <Link className="journey-stage" href="/">
+          <span className="journey-number">1</span><span>Диагностика</span>
+        </Link>
+        <button type="button" className={`journey-stage ${activeStage === 1 ? "active" : ""}`} aria-current={activeStage === 1 ? "step" : undefined} onClick={() => { setActiveStage(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <span className="journey-number">2</span><span>Разбор</span>
+        </button>
+        <button type="button" className={`journey-stage ${activeStage === 2 ? "active" : ""}`} aria-current={activeStage === 2 ? "step" : undefined} onClick={() => { setActiveStage(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <span className="journey-number">3</span><span>План перехода</span>
+        </button>
+        <button type="button" className="journey-stage" disabled aria-label="Бонусный этап">
+          <span className="journey-number">4</span><span />
+        </button>
+      </nav>
+    </> : <section className="result-state"><h1>Открываю результат…</h1></section>}
   </main>;
 }

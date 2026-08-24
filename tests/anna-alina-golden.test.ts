@@ -74,6 +74,8 @@ test("Anna route uses canonical transitions and does not grow blog or team", () 
   assert.deepEqual(
     resolved.tasks.map((task) => task.task_id),
     [
+      "product_method_1_2",
+      "product_method_2_3",
       "product_method_3_4",
       "authenticity_2_3",
       "authenticity_3_4",

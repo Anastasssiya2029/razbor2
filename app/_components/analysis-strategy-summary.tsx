@@ -3,10 +3,10 @@
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import type { SevenKElementId } from "@/server/7k/types";
+import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 
 type Props = {
   result: AnalysisResultV1;
-  showMoneyNow?: boolean;
   startNumber?: number;
 };
 
@@ -14,50 +14,20 @@ function elementName(elementId: SevenKElementId): string {
   return SEVEN_K_ELEMENTS.find((element) => element.id === elementId)?.name ?? elementId;
 }
 
-function moneyNowCopy(result: AnalysisResultV1): {
-  eyebrow: string;
-  headline: string;
-  text: string;
-  tone: "available" | "guarded";
-} {
-  const narrative = result.report.moneyNow.narrative ?? result.report.moneyNow.locked_teaser;
-  switch (result.moneyNow.status) {
-    case "available":
-      return {
-        eyebrow: "Где деньги сейчас",
-        headline: result.report.moneyNow.headline,
-        text: narrative,
-        tone: "available",
-      };
-    case "no_eligible_scenario":
-      return {
-        eyebrow: "Ближайший денежный фокус",
-        headline: "Сначала нужно подтвердить рабочую опору",
-        text: narrative,
-        tone: "guarded",
-      };
-    case "blocked_insufficient_evidence":
-      return {
-        eyebrow: "Ближайший денежный фокус",
-        headline: "Пока не хватает данных для точного денежного действия",
-        text: narrative,
-        tone: "guarded",
-      };
-    case "blocked_inconsistency":
-      return {
-        eyebrow: "Ближайший денежный фокус",
-        headline: "Сначала нужно сверить противоречивые данные",
-        text: narrative,
-        tone: "guarded",
-      };
-  }
-}
-
-export function AnalysisStrategySummary({ result, showMoneyNow = true, startNumber = 3 }: Props) {
+export function AnalysisStrategySummary({ result, startNumber = 3 }: Props) {
   const bundle = [result.strategy.bundle.priority_element, ...result.strategy.bundle.build_elements]
     .filter((elementId): elementId is SevenKElementId => elementId !== null)
-    .filter((elementId, index, all) => all.indexOf(elementId) === index);
-  const moneyNow = moneyNowCopy(result);
+    .filter((elementId, index, all) => all.indexOf(elementId) === index)
+    .slice(0, 3);
+  const supporting = SEVEN_K_ELEMENTS
+    .map((element) => element.id)
+    .filter((elementId) => (
+      result.target.targetScores[elementId] > result.current.scores[elementId]
+      && !bundle.includes(elementId)
+    ));
+  const paused = result.report.whyNotNow
+    .filter((item) => result.target.targetScores[item.element_id] === result.current.scores[item.element_id])
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.element_id === item.element_id) === index);
 
   return (
     <div className="analysis-strategy-summary">
@@ -77,6 +47,7 @@ export function AnalysisStrategySummary({ result, showMoneyNow = true, startNumb
                 <small>{index === 0 ? "Главный элемент" : "Поддерживающий элемент"}</small>
                 <strong>{elementName(elementId)}</strong>
                 <em>{result.current.scores[elementId]} → {result.target.targetScores[elementId]}</em>
+                <span className="growth-bundle-lever">{SEVEN_K_BUSINESS_LEVERS[elementId]}</span>
               </article>
             </div>
           ))}
@@ -88,17 +59,38 @@ export function AnalysisStrategySummary({ result, showMoneyNow = true, startNumb
         </div>
       </section>
 
-      {result.report.whyNotNow.length > 0 && (
-        <section className="result-section why-not-now-section" aria-labelledby="why-not-now-title">
+      {supporting.length > 0 && (
+        <section className="result-section supporting-growth-section" aria-labelledby="supporting-growth-title">
           <div className="result-section-heading">
             <span>{String(startNumber + 1).padStart(2, "0")}</span>
             <div>
-              <h2 id="why-not-now-title">Почему не другие элементы</h2>
-              <p>К ним вернёмся после того, как появится указанный сигнал.</p>
+              <h2 id="supporting-growth-title">Поддерживающие изменения</h2>
+              <p>Их не развиваем отдельными большими проектами: добавляем ровно настолько, насколько нужно основной связке.</p>
+            </div>
+          </div>
+          <div className="supporting-growth-grid">
+            {supporting.map((elementId) => (
+              <article key={elementId}>
+                <strong>{elementName(elementId)}</strong>
+                <em>{result.current.scores[elementId]} → {result.target.targetScores[elementId]}</em>
+                <p>{SEVEN_K_BUSINESS_LEVERS[elementId]}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {paused.length > 0 && (
+        <section className="result-section why-not-now-section" aria-labelledby="why-not-now-title">
+          <div className="result-section-heading">
+            <span>{String(startNumber + (supporting.length > 0 ? 2 : 1)).padStart(2, "0")}</span>
+            <div>
+              <h2 id="why-not-now-title">Пока не трогаем как отдельное направление</h2>
+              <p>Эти элементы остаются на текущем уровне и не забирают ресурс ближайшего перехода.</p>
             </div>
           </div>
           <div className="why-not-now-grid">
-            {result.report.whyNotNow.map((item) => (
+            {paused.map((item) => (
               <article key={item.element_id}>
                 <strong>{elementName(item.element_id)}</strong>
                 <p>{item.text}</p>
@@ -106,14 +98,6 @@ export function AnalysisStrategySummary({ result, showMoneyNow = true, startNumb
               </article>
             ))}
           </div>
-        </section>
-      )}
-
-      {showMoneyNow && (
-        <section className={`result-section money-now-summary ${moneyNow.tone}`} aria-labelledby="money-now-title">
-          <span className="admin-eyebrow">{moneyNow.eyebrow}</span>
-          <h2 id="money-now-title">{moneyNow.headline}</h2>
-          <p>{moneyNow.text}</p>
         </section>
       )}
     </div>

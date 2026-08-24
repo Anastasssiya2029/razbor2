@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
-import { ELEMENT_NEUROMARKETERS, NEUROMARKETERS } from "@/lib/neuromarketers";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { systemScoreTone } from "@/lib/business-analysis";
 import type { SevenKElementId } from "@/server/7k/types";
+import { resolveTransitionSequence } from "@/server/7k/transition-resolver";
+import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
 
 type Props = {
@@ -51,6 +51,25 @@ function elementName(elementId: SevenKElementId): string {
   return SEVEN_K_ELEMENTS.find((element) => element.id === elementId)?.name ?? elementId;
 }
 
+function checklistElementIds(result: AnalysisResultV1): SevenKElementId[] {
+  const growing = SEVEN_K_ELEMENTS
+    .map((element) => element.id)
+    .filter((elementId) => result.target.targetScores[elementId] > result.current.scores[elementId]);
+  const routed = result.route.cards
+    .map((card) => card.elementId)
+    .filter((elementId, index, all) => growing.includes(elementId) && all.indexOf(elementId) === index);
+
+  if (
+    result.current.scores.product_method <= 2
+    && growing.includes("product_method")
+    && !routed.includes("product_method")
+  ) {
+    routed.splice(Math.min(1, routed.length), 0, "product_method");
+  }
+
+  return [...routed, ...growing].filter((elementId, index, all) => all.indexOf(elementId) === index);
+}
+
 export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, targetRevenueRub, view = "full" }: Props) {
   const clientName = result.clientContext.expertName;
   const clientNameGenitive = clientName ? declineRussianNameGenitive(clientName) : "клиента";
@@ -58,19 +77,19 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
   const archetype = BUSINESS_ARCHETYPE_BY_ID[result.archetype.finalArchetype];
   const currentTotal = Object.values(result.current.scores).reduce((sum, score) => sum + score, 0);
   const targetTotal = Object.values(targetScores).reduce((sum, score) => sum + score, 0);
-  const buildNow = [result.strategy.bundle.priority_element, ...result.strategy.bundle.build_elements]
-    .filter((elementId): elementId is SevenKElementId => elementId !== null);
-  const paused = [...result.strategy.bundle.maintain_elements, ...result.strategy.bundle.later_elements.map((item) => item.element_id)]
-    .filter((elementId, index, all) => all.indexOf(elementId) === index);
-  const pauseReason = new Map<SevenKElementId, string>();
-  for (const item of result.strategy.bundle.why_not_now) pauseReason.set(item.element_id, item.reason);
-  for (const item of result.strategy.bundle.later_elements) pauseReason.set(item.element_id, item.reason);
   const showAnalysis = view !== "plan";
   const showPlan = view !== "analysis";
   const showPlanCover = view === "plan";
-  const routeElementIds = result.route.cards
-    .map((card) => card.elementId)
-    .filter((elementId, index, all) => all.indexOf(elementId) === index);
+  const checklistCards = checklistElementIds(result).map((elementId, index) => {
+    const fromScore = result.current.scores[elementId];
+    const toScore = result.target.targetScores[elementId];
+    const transitions = resolveTransitionSequence([{ element_id: elementId, from_score: fromScore, to_score: toScore }]).tasks;
+    const resolvedCard = result.route.cards.find((card) => card.elementId === elementId);
+    const narrative = resolvedCard
+      ? result.report.routeCards.find((item) => item.card_id === resolvedCard.cardId)
+      : null;
+    return { elementId, fromScore, toScore, transitions, narrative, order: index + 1 };
+  });
   return (
     <div className="result-view">
       {(showAnalysis || showPlanCover) && <section className="result-cover">
@@ -84,8 +103,6 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
         <p>{result.report.opening.headline}</p>
         {deadlineLabel && (currentRevenueRub == null || targetRevenueRub == null) && <strong>Плановый срок: {deadlineLabel}</strong>}
       </section>}
-
-      {showPlanCover && <AnalysisStrategySummary result={result} showMoneyNow={false} startNumber={1} />}
 
       {showAnalysis && <section className="result-section target-configuration-section">
         <div className="result-section-heading"><span>01</span><div><h2>Целевая конфигурация системы</h2><p>{result.report.targetConfiguration.summary}</p></div></div>
@@ -120,54 +137,45 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
             </article>;
           })}
         </div>
-        <div className="configuration-decisions">
-          <section>
-            <span className="admin-eyebrow">Достраиваем сейчас</span>
-            <div>{buildNow.map((elementId) => <article key={elementId}><strong>{elementName(elementId)}</strong><small>{result.current.scores[elementId]} → {targetScores[elementId]}</small></article>)}</div>
-          </section>
-          <section className="configuration-paused">
-            <span className="admin-eyebrow">Пока не трогаем</span>
-            <div>{paused.map((elementId) => <article key={elementId}><strong>{elementName(elementId)}</strong><small>{pauseReason.get(elementId) ?? "Текущий уровень достаточен для ближайшего перехода."}</small></article>)}</div>
-          </section>
-        </div>
       </section>}
+
+      {showAnalysis && <AnalysisStrategySummary result={result} />}
 
       {showAnalysis && <section className="result-columns">
         <article className="result-section archetype-card">
-          <span className="admin-eyebrow">Архетип</span><h2>{archetype.name}</h2><p>{result.report.archetype.summary}</p>
+          <span className="admin-eyebrow">Бизнес-архетип</span><h2>{archetype.name}</h2><p>{result.report.archetype.summary}</p>
         </article>
         <article className="result-section focus-card">
           <span className="admin-eyebrow">Главная связка роста</span><h2>{result.report.growthPoint.title}</h2><p>{result.report.growthPoint.coach_explanation}</p>
         </article>
       </section>}
 
-      {showPlan && <section className="result-section transition-checklist-section">
-        <div className="result-section-heading"><span>{showPlanCover ? "03" : "02"}</span><div><h2>Чек‑лист перехода</h2><p>Двигайтесь по порядку: следующая связка опирается на результат предыдущей.</p></div></div>
-        <div className="route-cards">
-          {result.route.cards.map((card) => {
-            const name = SEVEN_K_ELEMENTS.find((item) => item.id === card.elementId)?.name ?? card.elementId;
-            const narrative = result.report.routeCards.find((item) => item.card_id === card.cardId);
-            return <article key={card.cardId}>
-              <header><span>{card.order}</span><div><small>{card.role === "priority" ? "Главный элемент" : "Поддерживающий элемент"}</small><h3>{name}: {card.fromScore} → {card.toScore}</h3></div></header>
-              {narrative?.why_now && <p>{narrative.why_now}</p>}
-              <ol>{card.tasks.map((task) => <li key={task.taskId}><strong>{task.task}</strong><span>Готово, когда: {task.doneWhen}</span></li>)}</ol>
-            </article>;
-          })}
-        </div>
+      {showPlanCover && <section className="result-columns plan-identity-summary">
+        <article className="result-section archetype-card">
+          <span className="admin-eyebrow">Бизнес-архетип</span>
+          <h2>{archetype.name}</h2>
+          <p>{result.report.archetype.summary}</p>
+        </article>
+        <article className="result-section focus-card">
+          <span className="admin-eyebrow">Главная связка роста</span>
+          <h2>{result.report.growthPoint.title}</h2>
+          <p>{result.report.growthPoint.coach_explanation}</p>
+        </article>
       </section>}
 
-      {showPlan && <section className="result-section">
-        <div className="result-section-heading"><span>{showPlanCover ? "04" : "03"}</span><div><h2>Нейромаркетологи для реализации</h2><p>Показываем только помощников для элементов текущего маршрута. Для элемента «Команда» используется вся связка.</p></div></div>
-        <div className="marketer-grid">
-          {routeElementIds.map((elementId) => {
-            const element = SEVEN_K_ELEMENTS.find((item) => item.id === elementId)!;
-            return <article key={element.id}>
-            <h3>{element.name}</h3>
-            <div>{ELEMENT_NEUROMARKETERS[element.id].map((marketerId) => {
-              const marketer = NEUROMARKETERS[marketerId];
-              return <section key={marketerId}><Image src={marketer.image} alt="" width={48} height={48} /><p><strong>{marketer.name}</strong><small>{marketer.description}</small></p></section>;
-            })}</div>
-          </article>;
+      {showPlan && <section className="result-section transition-checklist-section">
+        <div className="result-section-heading"><span>{showPlanCover ? "01" : "02"}</span><div><h2>Чек‑лист перехода</h2><p>Карточки расставлены по приоритету. Отмечайте выполненное и переходите к следующему уровню элемента.</p></div></div>
+        <div className="route-cards">
+          {checklistCards.map((card) => {
+            const role = card.order === 1 ? "Главный элемент" : card.order <= 3 ? "Ключевой элемент" : "Поддерживающий элемент";
+            return <article key={card.elementId}>
+              <header><span>{card.order}</span><div><small>{role}</small><h3>{elementName(card.elementId)}: {card.fromScore} → {card.toScore}</h3><em>{SEVEN_K_BUSINESS_LEVERS[card.elementId]}</em></div></header>
+              {card.narrative?.why_now && <p>{card.narrative.why_now}</p>}
+              <ol className="route-task-list">{card.transitions.map((task) => <li key={task.task_id}>
+                <i className="route-task-check" aria-hidden="true" />
+                <div><strong>{task.task}</strong><span>Готово, когда: {task.done_when}</span></div>
+              </li>)}</ol>
+            </article>;
           })}
         </div>
       </section>}
@@ -178,10 +186,6 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
         </button>
       </div>}
 
-      {view === "full" && <section className="result-columns">
-        <article className="result-section money-card"><span className="admin-eyebrow">Где деньги сейчас</span><h2>{result.report.moneyNow.headline}</h2><p>{result.report.moneyNow.narrative ?? result.report.moneyNow.locked_teaser}</p></article>
-        <article className="result-section focus-card"><span className="admin-eyebrow">Первое действие</span><h2>{result.finalFocus.headline}</h2><p>{result.finalFocus.text}</p><strong>{result.finalFocus.first_action}</strong><small>Сигнал: {result.finalFocus.wait_for_signal}</small></article>
-      </section>}
     </div>
   );
 }

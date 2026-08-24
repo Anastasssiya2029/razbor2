@@ -307,6 +307,11 @@ test("P-01 package 1:1 target keeps blog out and requires regular personal sales
 
 test("P-01 does not mistake first-session to core-package flow for a post-package upsell", () => {
   const fixture = validP01Fixture();
+  const input = structuredClone(ANNA_GOLDEN_CASE.input);
+  input.current.products = "Первая консультация 3 500 ₽; затем основной пакет из 10 консультаций за 30 000 ₽.";
+  input.current.bestSeller = "После первой консультации чаще покупают основной пакет из 10 консультаций.";
+  input.project.clientPath = "WhatsApp → первая консультация → основной пакет; отдельной допродажи после пакета нет.";
+  input.project.sales = "Первая консультация становится точкой перехода к основному пакету; отдельного допродажного продукта нет.";
   for (const factCode of [
     "LOGICAL_CONTINUATION_EXISTS",
     "CONTINUATION_OBJECTIVELY_NEEDED",
@@ -324,7 +329,7 @@ test("P-01 does not mistake first-session to core-package flow for a post-packag
 
   const normalized = normalizeP01CanonicalFields(
     fixture,
-    structuredClone(ANNA_GOLDEN_CASE.input),
+    input,
   );
 
   for (const factCode of [

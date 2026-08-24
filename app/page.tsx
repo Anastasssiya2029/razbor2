@@ -1007,7 +1007,6 @@ function AnalysisSection({
   analysis,
   activeSlide,
   setActiveSlide,
-  submittedFieldCount,
   onOpenPlan,
   planReady,
   progressStatus,
@@ -1017,7 +1016,6 @@ function AnalysisSection({
   analysis: AnalysisOverview;
   activeSlide: number;
   setActiveSlide: (slide: number) => void;
-  submittedFieldCount: number;
   onOpenPlan: () => void;
   planReady: boolean;
   progressStatus: AnalysisProgressStatus;
@@ -1028,6 +1026,7 @@ function AnalysisSection({
   const [archetypeOpen, setArchetypeOpen] = useState(false);
   const [archetypeFlipped, setArchetypeFlipped] = useState(false);
   const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
+  const currentTotal = systemElements.reduce((sum, element) => sum + element.current, 0);
   const currentModelGroups = useMemo(() => {
     return {
       soft: "Развиты по нижней границе: ценность эксперта и понимание клиента пока описаны отдельными признаками, но не собраны в ясное «почему я» и подтверждённое понимание типичного клиента.",
@@ -1073,7 +1072,7 @@ function AnalysisSection({
         <h2 id="analysis-title">Бизнес-модель <span>7К</span></h2>
         <strong className="analysis-method-subtitle">Система пошагового роста эксперта</strong>
         <p>Показывает, как шаг за шагом построить сильную аутентичную систему. Сравните текущую модель с моделью под вашу цель и посмотрите, какие элементы важно достроить.</p>
-        <span className="analysis-context-chip">Проанализировано ответов: {submittedFieldCount}</span>
+        <span className="analysis-context-chip">Итоговый балл: <strong>{currentTotal}</strong> из 70</span>
       </div>
 
       <div className="analysis-carousel">
@@ -1794,8 +1793,6 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const submittedValues = submittedDiagnostic?.values ?? values;
-  const submittedFieldCount = Object.values(submittedValues).filter((value) => value.trim()).length + 2;
   const visibleAnalysis: AnalysisOverview = analysisResult ?? {
     archetype: demoBusinessAnalysis.archetype,
     systemScores: demoBusinessAnalysis.systemScores,
@@ -2040,7 +2037,6 @@ export default function Home() {
           analysis={visibleAnalysis}
           activeSlide={analysisSlide}
           setActiveSlide={setAnalysisSlide}
-          submittedFieldCount={submittedFieldCount}
           onOpenPlan={openTransitionPlan}
           planReady={Boolean(realAnalysisResult)}
           progressStatus={realAnalysisResult ? "ready" : analysisProgressStatus}

@@ -25,6 +25,13 @@ const resultView = readFileSync(join(
   "_components",
   "analysis-result-view.tsx",
 ), "utf8");
+const savedResultPage = readFileSync(join(
+  process.cwd(),
+  "app",
+  "analysis",
+  "[analysisRunId]",
+  "page.tsx",
+), "utf8");
 
 test("interactive Step 2 opens from the persisted overview before the full report is ready", () => {
   assert.match(runRoute, /overview,\s*\n\s*result: execution\.result/u);
@@ -55,30 +62,37 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.doesNotMatch(page, /<strong>\{currentModelGroups\.(?:soft|hard)\}<\/strong>/u);
   assert.doesNotMatch(page, /current-score-argument-grid/u);
   assert.doesNotMatch(page, /Почему не выше:/u);
+  assert.match(page, /Итоговый балл:/u);
+  assert.match(page, /currentTotal/u);
+  assert.doesNotMatch(page, /Проанализировано ответов:/u);
 });
 
-test("Step 2 adds the key money bundle and Money Now only after the final result is available", () => {
+test("Step 2 adds the key bundle, supporting changes, and keeps Money Now hidden for MVP", () => {
   assert.match(page, /result && <AnalysisStrategySummary result=\{result\} \/>/u);
   assert.match(strategySummary, /Связка для перехода к денежной цели/u);
   assert.match(strategySummary, /Почему именно эта связка/u);
-  assert.match(strategySummary, /Почему не другие элементы/u);
-  assert.match(strategySummary, /Где деньги сейчас/u);
-  for (const status of [
-    "available",
-    "no_eligible_scenario",
-    "blocked_insufficient_evidence",
-    "blocked_inconsistency",
-  ]) {
-    assert.match(strategySummary, new RegExp(`case "${status}"`, "u"));
-  }
+  assert.match(strategySummary, /Поддерживающие изменения/u);
+  assert.match(strategySummary, /Пока не трогаем как отдельное направление/u);
+  assert.doesNotMatch(strategySummary, /Где деньги сейчас/u);
 });
 
-test("Step 3 uses resolved route tasks and only neuromarketers for routed elements", () => {
-  assert.match(resultView, /result\.route\.cards\.map/u);
-  assert.match(resultView, /card\.tasks\.map/u);
-  assert.match(resultView, /const routeElementIds = result\.route\.cards/u);
-  assert.match(resultView, /ELEMENT_NEUROMARKETERS\[element\.id\]/u);
+test("Step 3 expands every target gap into printable canonical transition tasks", () => {
+  assert.match(resultView, /resolveTransitionSequence/u);
+  assert.match(resultView, /targetScores\[elementId\] > result\.current\.scores\[elementId\]/u);
+  assert.match(resultView, /card\.transitions\.map/u);
+  assert.match(resultView, /route-task-check/u);
+  assert.match(resultView, /Готово, когда:/u);
+  assert.doesNotMatch(resultView, /Нейромаркетологи для реализации/u);
+  assert.doesNotMatch(resultView, /Где деньги сейчас/u);
   assert.doesNotMatch(resultView, /prototypePlanTasks|prototypePlanCriteria/u);
+});
+
+test("saved result restores the step navigation and separates review from plan", () => {
+  assert.match(savedResultPage, /const \[activeStage, setActiveStage\]/u);
+  assert.match(savedResultPage, /view=\{activeStage === 1 \? "analysis" : "plan"\}/u);
+  assert.match(savedResultPage, /saved-result-journey/u);
+  assert.match(savedResultPage, />Разбор</u);
+  assert.match(savedResultPage, />План перехода</u);
 });
 
 test("client-facing progress copy does not expose internal pipeline names or raw failure codes", () => {

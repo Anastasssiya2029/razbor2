@@ -38,9 +38,8 @@ export const ANNA_GOLDEN_CASE: SevenKGoldenCase = {
       payingClientsCount: 10,
       clientsCountPeriod: "month",
       weeklyHours: 30,
-      products:
-        "Первая консультация 3 500 ₽; затем пакет из 10 консультаций по 3 000 ₽, всего 30 000 ₽.",
-      bestSeller: "После первой консультации чаще покупают пакет из 10 консультаций.",
+      products: "Только разовая консультация по работе с эмоциями стоимостью 3 500 ₽; пакетов и программ нет.",
+      bestSeller: "Покупают разовую консультацию за 3 500 ₽; более дорогого предложения пока нет.",
       freeProducts: "Бесплатных продуктов нет.",
     },
     target: {
@@ -60,9 +59,9 @@ export const ANNA_GOLDEN_CASE: SevenKGoldenCase = {
       sources:
         "Практически только рекомендации; поток неровный. В лучший месяц с тематического нетворкинга пришло около 20 человек.",
       clientPath:
-        "WhatsApp → информация о цене → первая платная встреча → при подходящем запросе пакет; системного follow-up нет.",
+        "WhatsApp → информация о цене → разовая платная встреча; системного следующего предложения и follow-up нет.",
       sales:
-        "Отдельной технологии нет, продажи идут интуитивно; первая сессия становится точкой перехода к пакету.",
+        "Отдельной технологии нет, продажи идут интуитивно; более дорогого следующего предложения после консультации нет.",
       socialAssets:
         "Около 20 контактов, блог примерно на 15 подписчиков и неактивный профиль специалиста.",
       team: "Команды нет; AI используется как помощник для черновиков постов.",
@@ -81,13 +80,13 @@ export const ANNA_GOLDEN_CASE: SevenKGoldenCase = {
   currentScores: {
     authenticity: 2,
     audience: 3,
-    product_method: 3,
+    product_method: 1,
     sales_technology: 2,
     funnel: 2,
     blog: 1,
     team: 1,
   },
-  currentTotal: 14,
+  currentTotal: 12,
   currentArchetype: "explorer",
   targetScores: {
     authenticity: 4,
@@ -107,7 +106,7 @@ export const ANNA_GOLDEN_CASE: SevenKGoldenCase = {
     moneyNowReason:
       "Есть довольные клиенты и результат; рекомендации уже приводят людей, но не запрашиваются и не измеряются как регулярный источник.",
     transitionSequence: [
-      { element_id: "product_method", from_score: 3, to_score: 4 },
+      { element_id: "product_method", from_score: 1, to_score: 4 },
       { element_id: "authenticity", from_score: 2, to_score: 4 },
       { element_id: "audience", from_score: 3, to_score: 4 },
       { element_id: "sales_technology", from_score: 2, to_score: 5 },
