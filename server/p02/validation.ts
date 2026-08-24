@@ -25,6 +25,19 @@ const ajv = new Ajv2020({ allErrors: true, strict: false });
 const validateSchema = ajv.compile(p02OutputSchema);
 const ELEMENT_SET = new Set<string>(SEVEN_K_ELEMENT_IDS);
 
+export function collectAllowedP02BusinessNumbers(strategyContext: P01StrategyContext): number[] {
+  const allowed = new Set<number>();
+  strategyContext.moneyChainFacts.forEach((fact) => {
+    [fact.value, fact.denominator, fact.conversionPct].forEach((value) => {
+      if (value !== null) allowed.add(value);
+    });
+  });
+  if (strategyContext.desiredSystemWeeklyHours !== null) {
+    allowed.add(strategyContext.desiredSystemWeeklyHours);
+  }
+  return [...allowed].sort((left, right) => left - right);
+}
+
 function schemaIssue(error: ErrorObject): P02ValidationIssue {
   return { path: error.instancePath || "/", code: `schema.${error.keyword}`, message: error.message ?? "Schema validation failed" };
 }
@@ -184,15 +197,7 @@ export function validateP02Invariants(
   if (!/(?:переоцен|пересмотр|проверить\s+гипотез|reevaluat|reassess)/iu.test(result.businessValidation.if_signal_absent)) {
     add(issues, "/businessValidation/if_signal_absent", "missing_constraint_reevaluation", "Absent signal must trigger constraint reevaluation, not automatic continuation.");
   }
-  const allowedBusinessNumbers = new Set<number>();
-  input.strategyContext.moneyChainFacts.forEach((fact) => {
-    [fact.value, fact.denominator, fact.conversionPct].forEach((value) => {
-      if (value !== null) allowedBusinessNumbers.add(value);
-    });
-  });
-  if (input.strategyContext.desiredSystemWeeklyHours !== null) {
-    allowedBusinessNumbers.add(input.strategyContext.desiredSystemWeeklyHours);
-  }
+  const allowedBusinessNumbers = new Set(collectAllowedP02BusinessNumbers(input.strategyContext));
   const validation = result.businessValidation;
   if (validation.baseline_value !== null && !allowedBusinessNumbers.has(validation.baseline_value)) {
     add(issues, "/businessValidation/baseline_value", "unsupported_business_number", "Baseline must come from persisted client/backend facts.");

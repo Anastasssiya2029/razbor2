@@ -1114,11 +1114,11 @@ function AnalysisSection({
                 <div className="current-system-conclusion" aria-label="Вывод о мягких и твёрдых элементах системы">
                   <article className="soft">
                     <span>Мягкие элементы системы</span>
-                    <strong>{currentModelGroups.soft}</strong>
+                    <p>{currentModelGroups.soft}</p>
                   </article>
                   <article className="hard">
                     <span>Твёрдые элементы системы</span>
-                    <strong>{currentModelGroups.hard}</strong>
+                    <p>{currentModelGroups.hard}</p>
                   </article>
                 </div>
               </aside>

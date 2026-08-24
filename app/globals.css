@@ -1338,7 +1338,7 @@ body :is(
 }
 
 .current-system-conclusion span,
-.current-system-conclusion strong {
+.current-system-conclusion p {
   display: block;
 }
 
@@ -1350,10 +1350,12 @@ body :is(
   text-transform: uppercase;
 }
 
-.current-system-conclusion strong {
+.current-system-conclusion p {
   margin-top: 4px;
-  color: #512354;
+  margin-bottom: 0;
+  color: #5d4962;
   font-size: 11px;
+  font-weight: 400;
   line-height: 1.35;
 }
 

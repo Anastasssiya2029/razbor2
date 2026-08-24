@@ -71,9 +71,22 @@ function addUsage(total: AiProviderUsage, next: AiProviderUsage): void {
 }
 
 function correctionFor(title: string, issues: readonly P02ValidationIssue[]): string {
+  const issueCodes = new Set(issues.map((issue) => issue.code));
+  const targetedRules: string[] = [];
+  if (issueCodes.has("unsupported_business_number")) {
+    targetedRules.push(
+      "Для businessValidation не извлекай числа из narrative/evidence text. Используй только список разрешённых чисел из P02_CANONICAL_INPUT_RULES; если подходящего baseline нет, поставь baseline_value=null.",
+    );
+  }
+  if (issueCodes.has("sanity.TARGET_CONFIG_INCONSISTENCY")) {
+    targetedRules.push(
+      "Различие modelFamily и visionModelFamily является намеренным поэтапным переходом, уже проверенным backend. Удали ложный TARGET_CONFIG_INCONSISTENCY и собери стратегию по ближайшему modelFamily/targetScores.",
+    );
+  }
   return [
     `${title}:`,
     ...issues.slice(0, 24).map((issue) => `- ${issue.path}: ${issue.code}: ${issue.message}`),
+    ...targetedRules,
     "Переоцени причинный узел и верни весь JSON заново. Не меняй persisted current/target. При неразрешимом противоречии верни analysisStatus=blocked_by_inconsistency.",
   ].join("\n");
 }

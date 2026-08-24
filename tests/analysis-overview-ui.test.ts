@@ -50,6 +50,9 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.doesNotMatch(page, /systemElementDefinitions\[argument\.id\]\.name/u);
   assert.match(page, /currentModelGroups\.soft/u);
   assert.match(page, /currentModelGroups\.hard/u);
+  assert.match(page, /<p>\{currentModelGroups\.soft\}<\/p>/u);
+  assert.match(page, /<p>\{currentModelGroups\.hard\}<\/p>/u);
+  assert.doesNotMatch(page, /<strong>\{currentModelGroups\.(?:soft|hard)\}<\/strong>/u);
   assert.doesNotMatch(page, /current-score-argument-grid/u);
   assert.doesNotMatch(page, /Почему не выше:/u);
 });

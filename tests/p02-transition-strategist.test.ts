@@ -175,6 +175,22 @@ test("P-02 receives fail-closed transition levers without task text", () => {
   assert.match(prompt, /Доверие к эксперту/u);
   assert.doesNotMatch(prompt, /Сформулировать своё «почему я»/u);
 });
+test("P-02 prompt treats nearest and vision models as an intentional staged transition", () => {
+  const input = prepared();
+  input.targetConfig.visionModelFamily = "autoproduct";
+  input.targetConfig.visionModelComponents = ["autoproduct"];
+  input.targetConfig.modelTransitionNote = "Сначала пакет, затем автономный продукт.";
+  const prompt = buildP02SystemPrompt(input.strategyContext, input.targetConfig);
+  assert.match(prompt, /Различие между ближайшей и дальней моделью намеренно/u);
+  assert.match(prompt, /НЕ является TARGET_CONFIG_INCONSISTENCY/u);
+  assert.match(prompt, /Стратегию ближайшего перехода собирай по modelFamily и targetScores/u);
+});
+test("P-02 prompt exposes the same exact baseline allowlist enforced by backend", () => {
+  const prompt = buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig);
+  assert.match(prompt, /Разрешённые точные числа для businessValidation baseline_value: \[0,4\]/u);
+  assert.match(prompt, /если подходящего числа нет, верни null/u);
+  assert.match(prompt, /Не извлекай baseline_value из свободного текста/u);
+});
 test("7. perceived ads need may differ from evidenced offer→payment leak", () => assert.equal(output().perceivedVsEvidenced.relation, "differs"));
 test("8. perceived struggles may honestly match evidence", () => { const value = output(); value.perceivedVsEvidenced.relation = "matches"; assert.doesNotThrow(() => validateP02Invariants(value, prepared())); });
 test("9. repeated-break pattern requires repeated persisted attempts", () => { const result = p01(); result.businessMap.experience.attempts.push({ ...result.businessMap.experience.attempts[0], attempt: "Партнёрский запуск" }); const value = output(); value.previousAttemptsAnalysis!.repeated_break_pattern = "Две попытки дали встречи без оплат"; assert.doesNotThrow(() => validateP02Invariants(value, prepared(result))); });
@@ -194,6 +210,17 @@ test("21a. an exact markdown JSON fence is accepted without a paid retry", async
 test("21b. malformed JSON fails after one paid provider response", async () => { const provider = new QueueProvider(["Ответ: {}", output()]); await assert.rejects(() => runP02TransitionStrategist(prepared(), { provider }), (error: unknown) => error instanceof P02RunExecutionError && error.failureCode === "P02_MALFORMED_JSON"); assert.equal(provider.requests.length, 1); });
 test("21c. schema-invalid JSON fails after one paid provider response", async () => { const provider = new QueueProvider([{}, output()]); await assert.rejects(() => runP02TransitionStrategist(prepared(), { provider }), (error: unknown) => error instanceof P02RunExecutionError && error.failureCode === "P02_SCHEMA_VALIDATION_FAILED"); assert.equal(provider.requests.length, 1); });
 test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.constraint.root_evidence_ids = ["E99"]; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
+test("22a. reevaluation explains unsupported baselines and intentional target staging", async () => {
+  const broken = output();
+  broken.businessValidation.baseline_value = 120000;
+  broken.sanityChecks = [{ code: "TARGET_CONFIG_INCONSISTENCY", severity: "error", message: "Ближняя и дальняя модели различаются", element_ids: ["product_method"], evidence_ids: ["E03"] }];
+  const provider = new QueueProvider([broken, output()]);
+  const result = await runP02TransitionStrategist(prepared(), { provider });
+  assert.equal(result.kind, "success");
+  assert.equal(provider.requests.length, 2);
+  assert.match(provider.requests[1].correction ?? "", /baseline_value=null/u);
+  assert.match(provider.requests[1].correction ?? "", /намеренным поэтапным переходом/u);
+});
 test("P-02 canonicalizes zero-gap build elements and clamps milestones to persisted target", () => {
   const input = prepared();
   const value = output();
