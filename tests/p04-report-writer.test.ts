@@ -253,6 +253,13 @@ test("client language contract asks for concise human explanations without chang
   const prompt = buildP04SystemPrompt(input);
   assert.match(prompt, /как сильный практик объясняет решение другу/u);
   assert.match(prompt, /Не меняй факты, баллы, роли, порядок, задачи/u);
+  assert.match(prompt, /REPORT_GLOSSARY\.businessLevers/u);
+  assert.match(prompt, /соедини их businessLevers в одну причинную бизнес-задачу/u);
+  assert.equal(input.reportGlossary.version, "report-glossary.v1.1");
+  assert.deepEqual(
+    (input.reportGlossary.businessLevers as Record<string, string>).product_method,
+    "Средний чек и способ доведения клиента до результата",
+  );
 });
 
 test("report-like wording and overly long sentences trigger only the bounded semantic repair", async () => {

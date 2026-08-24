@@ -97,7 +97,11 @@ function addUsage(total: P01ProviderUsage, next: P01ProviderUsage): void {
   total.costUsd = add(total.costUsd, next.costUsd);
 }
 
-function issuesCorrection(kind: string, issues: readonly P01ValidationIssue[]): string {
+function issuesCorrection(
+  kind: string,
+  issues: readonly P01ValidationIssue[],
+  validEvidenceIds: readonly string[] = [],
+): string {
   const targeted: string[] = [];
   if (
     issues.some((issue) =>
@@ -119,6 +123,11 @@ function issuesCorrection(kind: string, issues: readonly P01ValidationIssue[]): 
   if (issues.some((issue) => issue.code === "new_condition_code_evidence_mismatch")) {
     targeted.push(
       "Свяжи condition_code с тем же current evidence ID у соответствующего confirmed_true moneyNowFact; не подменяй PRODUCT evidence фактом CAPACITY и наоборот.",
+    );
+  }
+  if (issues.some((issue) => issue.code === "dangling_evidence_id")) {
+    targeted.push(
+      `Допустимые ID из текущего evidenceLedger: ${JSON.stringify(validEvidenceIds)}. Каждая ссылка во всех evidence_ids/counterevidence_ids/new_condition_evidence_ids должна byte-equal совпадать с evidenceLedger.id. Если нужного доказательства нет, добавь одну корректную запись ledger и используй её exact ID либо убери недоказанное утверждение. Перед ответом проверь, что set(all referenced IDs) \\ set(evidenceLedger.id) пуст.`,
     );
   }
   return [
@@ -242,7 +251,11 @@ export async function runP01EvidenceScorer(
     } catch (error) {
       if (error instanceof P01InvariantError && reevaluationRetryCount === 0) {
         reevaluationRetryCount += 1;
-        correction = issuesCorrection("Нарушены backend invariants", error.issues);
+        correction = issuesCorrection(
+          "Нарушены backend invariants",
+          error.issues,
+          result.evidenceLedger.map((evidence) => evidence.id),
+        );
         continue;
       }
       throw executionError(

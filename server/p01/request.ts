@@ -43,6 +43,12 @@ export function buildP01SystemPrompt(
   prompt += `Корневое поле schemaVersion должно быть ровно "1.4".\n`;
   prompt += `Не используй названия версии из описательных заголовков вместо этих двух точных констант.\n`;
   prompt += `</OUTPUT_CONTRACT_CONTROL>`;
+  prompt += `\n\n<EVIDENCE_REFERENCE_INTEGRITY>\n`;
+  prompt += `Сначала собери evidenceLedger с уникальными ID, затем используй только эти exact ID во всех evidence_ids, counterevidence_ids и new_condition_evidence_ids.\n`;
+  prompt += `Один и тот же факт во всех разделах должен ссылаться на один и тот же ID из evidenceLedger. Не создавай ссылку без соответствующей записи ledger.\n`;
+  prompt += `Перед ответом молча вычисли множество всех ссылочных ID минус множество evidenceLedger.id. Разность обязана быть пустой.\n`;
+  prompt += `Если доказательства для утверждения нет, не выдумывай ID: убери утверждение или понизь его до unknown/low_confidence согласно schema и rules.\n`;
+  prompt += `</EVIDENCE_REFERENCE_INTEGRITY>`;
 
   if (correction) {
     prompt += `\n\n<CONTROLLED_REEVALUATION>\nИсправь только перечисленные противоречия, не меняя вход и versioned rules:\n${correction}\n</CONTROLLED_REEVALUATION>`;

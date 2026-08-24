@@ -203,7 +203,7 @@ export type P04RuleVersions = {
   p03Schema: "1.5";
   reportPolicy: typeof P04_REPORT_POLICY_VERSION;
   sourceRegistry: typeof P04_SOURCE_REGISTRY_VERSION;
-  reportGlossary: "report-glossary.v1";
+  reportGlossary: "report-glossary.v1.1";
   promptSha256: string;
 };
 

@@ -17,7 +17,7 @@ test("the Anna scenario keeps product and sales as the core linkage", () => {
   assert.deepEqual(plan.core, ["product_method", "sales_technology"]);
   assert.deepEqual(plan.supporting, ["audience", "authenticity"]);
   assert.deepEqual(plan.deferred, []);
-  assert.equal(growthRole(plan, "product_method"), "Главный элемент");
+  assert.equal(growthRole(plan, "product_method"), "Ключевой элемент");
   assert.equal(growthRole(plan, "sales_technology"), "Ключевой элемент");
   assert.equal(growthRole(plan, "audience"), "Поддерживающий элемент");
   assert.deepEqual(orderedGrowthElements(plan), ["product_method", "sales_technology", "audience", "authenticity"]);

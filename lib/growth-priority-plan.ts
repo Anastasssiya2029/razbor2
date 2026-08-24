@@ -59,8 +59,7 @@ export function resolveGrowthPriorityPlan(result: AnalysisResultV1): GrowthPrior
 export function growthRole(
   plan: GrowthPriorityPlan,
   elementId: SevenKElementId,
-): "Главный элемент" | "Ключевой элемент" | "Поддерживающий элемент" | "Следующий этап" {
-  if (plan.core[0] === elementId) return "Главный элемент";
+): "Ключевой элемент" | "Поддерживающий элемент" | "Следующий этап" {
   if (plan.core.includes(elementId)) return "Ключевой элемент";
   if (plan.supporting.includes(elementId)) return "Поддерживающий элемент";
   return "Следующий этап";

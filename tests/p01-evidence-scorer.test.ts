@@ -966,6 +966,13 @@ test("production P-01 prompt separates the next-level target from distant autono
   assert.match(prompt, /не должны повышать target через capability или modifier/u);
 });
 
+test("production P-01 prompt requires closed evidence references", () => {
+  const prompt = buildP01SystemPrompt(diagnosticInput());
+  assert.match(prompt, /<EVIDENCE_REFERENCE_INTEGRITY>/u);
+  assert.match(prompt, /Разность обязана быть пустой/u);
+  assert.match(prompt, /не выдумывай ID/u);
+});
+
 test("runner retries technical/schema failures once and invariant failures once", async () => {
   const valid = validP01Fixture();
   const technical = new QueueProvider(new Error("temporary network"), valid);
@@ -997,6 +1004,17 @@ test("runner retries technical/schema failures once and invariant failures once"
   assert.equal(invariantProvider.requests.length, 2);
   assert.equal(invariantOutcome.metadata.reevaluationRetryCount, 1);
   assert.match(invariantProvider.requests[1].correction ?? "", /score_above_cap/u);
+
+  const danglingInvalid = structuredClone(valid);
+  danglingInvalid.current7k.funnel.evidence_ids = ["E99"];
+  const danglingProvider = new QueueProvider(danglingInvalid, valid);
+  const danglingOutcome = await runP01EvidenceScorer(diagnosticInput(), {
+    provider: danglingProvider,
+    hashInput: async () => "hash",
+  });
+  assert.equal(danglingOutcome.metadata.reevaluationRetryCount, 1);
+  assert.match(danglingProvider.requests[1].correction ?? "", /Допустимые ID из текущего evidenceLedger: \["E01"\]/u);
+  assert.match(danglingProvider.requests[1].correction ?? "", /set\(all referenced IDs\)/u);
 });
 
 test("runner fails closed a confirmed_false fact without negative evidence", async () => {

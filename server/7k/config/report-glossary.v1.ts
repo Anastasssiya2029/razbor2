@@ -1,7 +1,8 @@
 import { BUSINESS_ARCHETYPES } from "./archetypes.v1";
 import { SEVEN_K_ELEMENTS } from "./elements.v1";
+import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 
-export const REPORT_GLOSSARY_VERSION = "report-glossary.v1" as const;
+export const REPORT_GLOSSARY_VERSION = "report-glossary.v1.1" as const;
 
 export const REPORT_GLOSSARY = {
   version: REPORT_GLOSSARY_VERSION,
@@ -9,6 +10,7 @@ export const REPORT_GLOSSARY = {
   elements: Object.fromEntries(
     SEVEN_K_ELEMENTS.map((element) => [element.id, element.name]),
   ),
+  businessLevers: SEVEN_K_BUSINESS_LEVERS,
   archetypes: Object.fromEntries(
     BUSINESS_ARCHETYPES.map((archetype) => [archetype.id, archetype.name]),
   ),

@@ -72,6 +72,10 @@ test("Step 2 adds one shared key and supporting bundle and keeps Money Now hidde
   assert.match(strategySummary, /Почему именно эта связка/u);
   assert.match(strategySummary, /Ключевая связка/u);
   assert.match(strategySummary, /Поддерживающие элементы/u);
+  assert.doesNotMatch(strategySummary, /Главный элемент/u);
+  assert.match(strategySummary, /Продукты и метод/u);
+  assert.match(strategySummary, /Воронка и связки/u);
+  assert.match(strategySummary, /<h4>\{compactElementName\(elementId\)\}<\/h4>/u);
   assert.doesNotMatch(strategySummary, /Поддерживающие изменения/u);
   assert.match(strategySummary, /Пока не трогаем как отдельное направление/u);
   assert.doesNotMatch(strategySummary, /Где деньги сейчас/u);

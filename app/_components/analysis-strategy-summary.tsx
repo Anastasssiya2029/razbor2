@@ -15,6 +15,12 @@ function elementName(elementId: SevenKElementId): string {
   return SEVEN_K_ELEMENTS.find((element) => element.id === elementId)?.name ?? elementId;
 }
 
+function compactElementName(elementId: SevenKElementId): string {
+  if (elementId === "product_method") return "Продукты и метод";
+  if (elementId === "funnel") return "Воронка и связки";
+  return elementName(elementId);
+}
+
 export function AnalysisStrategySummary({ result, startNumber = 3 }: Props) {
   const priorityPlan = resolveGrowthPriorityPlan(result);
   const paused = result.report.whyNotNow
@@ -39,8 +45,8 @@ export function AnalysisStrategySummary({ result, startNumber = 3 }: Props) {
                 <div className="growth-bundle-item" key={elementId}>
                   {index > 0 && <span aria-hidden="true">+</span>}
                   <article>
-                    <small>{index === 0 ? "Главный элемент" : "Ключевой элемент"}</small>
-                    <strong>{elementName(elementId)}</strong>
+                    <small>Ключевой элемент</small>
+                    <h4>{compactElementName(elementId)}</h4>
                     <em>{result.current.scores[elementId]} → {result.target.targetScores[elementId]}</em>
                     <span className="growth-bundle-lever">{SEVEN_K_BUSINESS_LEVERS[elementId]}</span>
                   </article>
@@ -56,7 +62,7 @@ export function AnalysisStrategySummary({ result, startNumber = 3 }: Props) {
                   {index > 0 && <span aria-hidden="true">+</span>}
                   <article>
                     <small>Поддерживающий элемент</small>
-                    <strong>{elementName(elementId)}</strong>
+                    <h4>{compactElementName(elementId)}</h4>
                     <em>{result.current.scores[elementId]} → {result.target.targetScores[elementId]}</em>
                     <span className="growth-bundle-lever">{SEVEN_K_BUSINESS_LEVERS[elementId]}</span>
                   </article>
