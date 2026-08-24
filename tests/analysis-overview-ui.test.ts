@@ -25,6 +25,13 @@ const resultView = readFileSync(join(
   "_components",
   "analysis-result-view.tsx",
 ), "utf8");
+const editableChecklist = readFileSync(join(
+  process.cwd(),
+  "app",
+  "_components",
+  "editable-plan-checklist.tsx",
+), "utf8");
+const checklistModel = readFileSync(join(process.cwd(), "lib", "analysis-checklist.ts"), "utf8");
 const savedResultPage = readFileSync(join(
   process.cwd(),
   "app",
@@ -82,12 +89,14 @@ test("Step 2 adds one shared key and supporting bundle and keeps Money Now hidde
 });
 
 test("Step 3 expands every target gap into printable canonical transition tasks", () => {
-  assert.match(resultView, /resolveTransitionSequence/u);
+  assert.match(checklistModel, /resolveTransitionSequence/u);
   assert.match(resultView, /resolveGrowthPriorityPlan/u);
-  assert.match(resultView, /growthRole/u);
-  assert.match(resultView, /card\.transitions\.map/u);
-  assert.match(resultView, /route-task-check/u);
-  assert.match(resultView, /Готово, когда:/u);
+  assert.match(editableChecklist, /growthRole/u);
+  assert.match(editableChecklist, /card\.tasks\.map/u);
+  assert.match(editableChecklist, /route-task-check/u);
+  assert.match(editableChecklist, /Готово, когда/u);
+  assert.match(editableChecklist, /Редактировать чек-лист/u);
+  assert.match(editableChecklist, /Сохранить версию/u);
   assert.doesNotMatch(resultView, /Нейромаркетологи для реализации/u);
   assert.doesNotMatch(resultView, /Где деньги сейчас/u);
   assert.doesNotMatch(resultView, /prototypePlanTasks|prototypePlanCriteria/u);

@@ -4,6 +4,7 @@ import test from "node:test";
 
 const pdfView = readFileSync("app/_components/analysis-pdf-view.tsx", "utf8");
 const resultView = readFileSync("app/_components/analysis-result-view.tsx", "utf8");
+const checklist = readFileSync("lib/analysis-checklist.ts", "utf8");
 const styles = readFileSync("app/globals.css", "utf8");
 
 test("approved PDF plan is embedded once and receives the persisted analysis context", () => {
@@ -29,8 +30,10 @@ test("target model and checklist are generated from canonical result data", () =
   assert.match(pdfView, /result\.current\.scores\[element\.id\]/u);
   assert.match(pdfView, /result\.target\.targetScores\[element\.id\]/u);
   assert.match(pdfView, /resolveGrowthPriorityPlan\(result\)/u);
-  assert.match(pdfView, /resolveTransitionSequence/u);
-  assert.match(pdfView, /card\.transitions\.map/u);
+  assert.match(checklist, /resolveTransitionSequence/u);
+  assert.match(pdfView, /buildCanonicalChecklist\(result\)/u);
+  assert.match(pdfView, /applyManagerPlan/u);
+  assert.match(pdfView, /card\.tasks\.map/u);
   assert.match(pdfView, /Готово, когда:/u);
   assert.match(pdfView, /result\.report\.growthPoint\.coach_explanation/u);
   assert.doesNotMatch(pdfView, /70 000|200 000|Анн[аы]/u);

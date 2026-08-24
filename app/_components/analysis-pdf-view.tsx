@@ -3,15 +3,16 @@ import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
-import { resolveTransitionSequence } from "@/server/7k/transition-resolver";
 import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 import { archetypeDefinitions, systemScoreTone } from "@/lib/business-analysis";
-import { growthRole, orderedGrowthElements, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
+import { growthRole, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
 import { ELEMENT_NEUROMARKETERS, NEUROMARKETERS } from "@/lib/neuromarketers";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
+import { applyManagerPlan, buildCanonicalChecklist, type ManagerPlanVersion } from "@/lib/analysis-checklist";
 
 type Props = {
   result: AnalysisResultV1;
+  managerPlan?: ManagerPlanVersion | null;
   deadlineLabel?: string | null;
   currentRevenueRub?: number | null;
   targetRevenueRub?: number | null;
@@ -86,7 +87,7 @@ function PdfSystemModel({ result }: { result: AnalysisResultV1 }) {
   </div>;
 }
 
-export function AnalysisPdfView({ result, deadlineLabel, currentRevenueRub, targetRevenueRub }: Props) {
+export function AnalysisPdfView({ result, managerPlan, deadlineLabel, currentRevenueRub, targetRevenueRub }: Props) {
   const growthPlan = resolveGrowthPriorityPlan(result);
   const clientNameGenitive = result.clientContext.expertName
     ? declineRussianNameGenitive(result.clientContext.expertName)
@@ -94,7 +95,6 @@ export function AnalysisPdfView({ result, deadlineLabel, currentRevenueRub, targ
   const archetypeId = result.archetype.finalArchetype;
   const archetype = BUSINESS_ARCHETYPE_BY_ID[archetypeId];
   const archetypeCopy = archetypeDefinitions[archetypeId];
-  const growingElements = orderedGrowthElements(growthPlan);
   const pausedElements = SEVEN_K_ELEMENT_IDS.filter(
     (elementId) => result.target.targetScores[elementId] === result.current.scores[elementId],
   );
@@ -106,16 +106,11 @@ export function AnalysisPdfView({ result, deadlineLabel, currentRevenueRub, targ
   const supportCopy = growthPlan.supporting.length > 0
     ? `Помогают упаковать ключевую связку: ${growthPlan.supporting.map((elementId) => SEVEN_K_BUSINESS_LEVERS[elementId].toLocaleLowerCase("ru-RU")).join(" и ")}.`
     : "Дополнительные элементы подключаются только после проверки ключевой связки.";
-  const checklistCards = growingElements.map((elementId, index) => {
-    const fromScore = result.current.scores[elementId];
-    const toScore = result.target.targetScores[elementId];
-    const transitions = resolveTransitionSequence([{ element_id: elementId, from_score: fromScore, to_score: toScore }]).tasks;
-    const routeCard = result.route.cards.find((card) => card.elementId === elementId);
-    const narrative = routeCard
-      ? result.report.routeCards.find((item) => item.card_id === routeCard.cardId)
-      : null;
-    return { elementId, fromScore, toScore, transitions, narrative, order: index + 1 };
-  });
+  const checklistCards = applyManagerPlan(
+    buildCanonicalChecklist(result),
+    managerPlan,
+    result.provenance.assemblyInputHash,
+  );
   const totalPages = 3 + checklistCards.length;
   const printedAt = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "long", year: "numeric" }).format(new Date());
 
@@ -203,10 +198,10 @@ export function AnalysisPdfView({ result, deadlineLabel, currentRevenueRub, targ
             <div><h2>{elementName(card.elementId)}</h2><strong>Балл: {card.fromScore} → {card.toScore}</strong></div>
           </div>
           {card.narrative?.why_now && <p className="analysis-pdf-checklist-intro">{card.narrative.why_now}</p>}
-          <ol className={`analysis-pdf-task-list ${card.transitions.length > 5 ? "dense" : ""}`}>
-            {card.transitions.map((task) => <li key={task.task_id}>
+          <ol className={`analysis-pdf-task-list ${card.tasks.length > 5 ? "dense" : ""}`}>
+            {card.tasks.map((task) => <li key={task.id}>
               <i />
-              <div><strong>{task.task}</strong><span>Готово, когда: {task.done_when}</span></div>
+              <div><strong>{task.task}</strong><span>Готово, когда: {task.doneWhen}</span></div>
             </li>)}
           </ol>
           <section className="analysis-pdf-neuro-card">

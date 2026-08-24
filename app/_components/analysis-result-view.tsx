@@ -1,19 +1,25 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { systemScoreTone } from "@/lib/business-analysis";
-import type { SevenKElementId } from "@/server/7k/types";
-import { resolveTransitionSequence } from "@/server/7k/transition-resolver";
-import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
-import { growthRole, orderedGrowthElements, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
+import { resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
 import { AnalysisPdfView } from "@/app/_components/analysis-pdf-view";
+import { EditablePlanChecklist } from "@/app/_components/editable-plan-checklist";
+import {
+  applyManagerPlan,
+  buildCanonicalChecklist,
+  type ManagerPlanVersion,
+} from "@/lib/analysis-checklist";
 
 type Props = {
   result: AnalysisResultV1;
+  analysisRunId?: string;
+  initialManagerPlan?: ManagerPlanVersion | null;
   deadlineLabel?: string | null;
   currentRevenueRub?: number | null;
   targetRevenueRub?: number | null;
@@ -49,11 +55,7 @@ function ResultSystemModel({ result }: { result: AnalysisResultV1 }) {
   </div>;
 }
 
-function elementName(elementId: SevenKElementId): string {
-  return SEVEN_K_ELEMENTS.find((element) => element.id === elementId)?.name ?? elementId;
-}
-
-export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, targetRevenueRub, view = "full" }: Props) {
+export function AnalysisResultView({ result, analysisRunId, initialManagerPlan, deadlineLabel, currentRevenueRub, targetRevenueRub, view = "full" }: Props) {
   const clientName = result.clientContext.expertName;
   const clientNameGenitive = clientName ? declineRussianNameGenitive(clientName) : "клиента";
   const targetScores = result.target.targetScores;
@@ -64,16 +66,13 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
   const showPlan = view !== "analysis";
   const showPlanCover = view === "plan";
   const growthPlan = resolveGrowthPriorityPlan(result);
-  const checklistCards = orderedGrowthElements(growthPlan).map((elementId, index) => {
-    const fromScore = result.current.scores[elementId];
-    const toScore = result.target.targetScores[elementId];
-    const transitions = resolveTransitionSequence([{ element_id: elementId, from_score: fromScore, to_score: toScore }]).tasks;
-    const resolvedCard = result.route.cards.find((card) => card.elementId === elementId);
-    const narrative = resolvedCard
-      ? result.report.routeCards.find((item) => item.card_id === resolvedCard.cardId)
-      : null;
-    return { elementId, fromScore, toScore, transitions, narrative, order: index + 1 };
-  });
+  const sourceResultHash = result.provenance.assemblyInputHash;
+  const canonicalChecklist = useMemo(() => buildCanonicalChecklist(result), [result]);
+  const [managerPlan, setManagerPlan] = useState<ManagerPlanVersion | null>(initialManagerPlan ?? null);
+  const checklistCards = useMemo(
+    () => applyManagerPlan(canonicalChecklist, managerPlan, sourceResultHash),
+    [canonicalChecklist, managerPlan, sourceResultHash],
+  );
   return (
     <div className="result-view">
       <AnalysisPdfView
@@ -81,6 +80,7 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
         currentRevenueRub={currentRevenueRub}
         targetRevenueRub={targetRevenueRub}
         deadlineLabel={deadlineLabel}
+        managerPlan={managerPlan}
       />
       {(showAnalysis || showPlanCover) && <section className={`result-cover ${showPlanCover ? "plan-cover" : ""}`}>
         <span className="admin-eyebrow">Персональная стратегия 7К</span>
@@ -142,19 +142,14 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
 
       {showPlan && <section className="result-section transition-checklist-section">
         <div className="result-section-heading"><span>{showPlanCover ? "01" : "02"}</span><div><h2>Чек‑лист перехода</h2><p>Карточки расставлены по приоритету. Отмечайте выполненное и переходите к следующему уровню элемента.</p></div></div>
-        <div className="route-cards">
-          {checklistCards.map((card) => {
-            const role = growthRole(growthPlan, card.elementId);
-            return <article key={card.elementId}>
-              <header><span>{card.order}</span><div><small>{role}</small><h3>{elementName(card.elementId)}: {card.fromScore} → {card.toScore}</h3><em>{SEVEN_K_BUSINESS_LEVERS[card.elementId]}</em></div></header>
-              {card.narrative?.why_now && <p>{card.narrative.why_now}</p>}
-              <ol className="route-task-list">{card.transitions.map((task) => <li key={task.task_id}>
-                <i className="route-task-check" aria-hidden="true" />
-                <div><strong>{task.task}</strong><span>Готово, когда: {task.done_when}</span></div>
-              </li>)}</ol>
-            </article>;
-          })}
-        </div>
+        <EditablePlanChecklist
+          analysisRunId={analysisRunId}
+          sourceResultHash={sourceResultHash}
+          growthPlan={growthPlan}
+          cards={checklistCards}
+          managerPlan={managerPlan}
+          onSaved={setManagerPlan}
+        />
       </section>}
 
       {showPlanCover && <section className="result-section plan-identity-summary plan-closing-summary">

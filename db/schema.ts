@@ -183,6 +183,28 @@ export const analysisResults = sqliteTable(
   ],
 );
 
+export const analysisPlanManagerVersions = sqliteTable(
+  "analysis_plan_manager_versions",
+  {
+    id: text("id").primaryKey(),
+    analysisRunId: text("analysis_run_id")
+      .notNull()
+      .references(() => analysisRuns.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    sourceResultHash: text("source_result_hash").notNull(),
+    contentJson: text("content_json").notNull(),
+    revision: integer("revision").notNull().default(1),
+    updatedByUserId: text("updated_by_user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("analysis_plan_manager_versions_run_unique").on(table.analysisRunId),
+    index("analysis_plan_manager_versions_editor_idx").on(table.updatedByUserId),
+  ],
+);
+
 export const p01AnalysisResults = sqliteTable(
   "p01_analysis_results",
   {

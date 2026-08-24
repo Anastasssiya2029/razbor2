@@ -8,6 +8,7 @@ import { AnalysisResultView } from "@/app/_components/analysis-result-view";
 import { GiftWheel } from "@/app/_components/gift-wheel";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import type { AnalysisCoverContext } from "@/server/analyses";
+import type { ManagerPlanVersion } from "@/lib/analysis-checklist";
 
 function deadlineLabel(months: number | null): string | null {
   if (months == null) return null;
@@ -22,19 +23,33 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   const { user, loading: sessionLoading } = useAppSession({ redirectToLogin: true });
   const [result, setResult] = useState<AnalysisResultV1 | null>(null);
   const [cover, setCover] = useState<AnalysisCoverContext | null>(null);
+  const [managerPlan, setManagerPlan] = useState<ManagerPlanVersion | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [activeStage, setActiveStage] = useState<1 | 2 | 3>(2);
   useEffect(() => {
     if (!user) return;
-    void fetch(`/api/analysis-runs/${analysisRunId}/result`, { cache: "no-store" })
-      .then(async (response) => {
+    void (async () => {
+      try {
+        const response = await fetch(`/api/analysis-runs/${analysisRunId}/result`, { cache: "no-store", credentials: "include" });
         const payload = await response.json() as { result?: AnalysisResultV1; cover?: AnalysisCoverContext | null; message?: string };
         if (!response.ok || !payload.result) throw new Error(payload.message ?? "Результат ещё не готов.");
         setCover(payload.cover ?? null);
-        return payload.result;
-      })
-      .then(setResult)
-      .catch((error) => setMessage(error instanceof Error ? error.message : "Результат ещё не готов."));
+        let loadedManagerPlan: ManagerPlanVersion | null = null;
+        try {
+          const managerResponse = await fetch(`/api/analysis-runs/${analysisRunId}/manager-plan`, { cache: "no-store", credentials: "include" });
+          if (managerResponse.ok) {
+            const managerPayload = await managerResponse.json() as { managerPlan?: ManagerPlanVersion | null };
+            loadedManagerPlan = managerPayload.managerPlan ?? null;
+          }
+        } catch {
+          // The canonical checklist remains available if the editable overlay cannot be loaded.
+        }
+        setManagerPlan(loadedManagerPlan);
+        setResult(payload.result);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Результат ещё не готов.");
+      }
+    })();
   }, [analysisRunId, user]);
   if (sessionLoading || !user) return <main className="admin-loading">Проверяю доступ…</main>;
   return <main className="result-shell">
@@ -42,6 +57,8 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
     {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <>
       {activeStage === 3 ? <GiftWheel analysisRunId={analysisRunId} /> : <AnalysisResultView
         result={result}
+        analysisRunId={analysisRunId}
+        initialManagerPlan={managerPlan}
         currentRevenueRub={cover?.currentRevenueRub}
         targetRevenueRub={cover?.targetRevenueRub}
         deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)}

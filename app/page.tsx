@@ -2046,6 +2046,7 @@ export default function Home() {
         <section className="embedded-result">
           <AnalysisResultView
             result={realAnalysisResult}
+            analysisRunId={submittedDiagnostic?.analysisRunId}
             view="plan"
             deadlineLabel={submittedDiagnostic?.deadline ?? deadline}
             currentRevenueRub={submittedDiagnostic?.input.current.monthlyRevenueRub}
