@@ -10,6 +10,7 @@ import { resolveTransitionSequence } from "@/server/7k/transition-resolver";
 import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";
 import { growthRole, orderedGrowthElements, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
+import { AnalysisPdfView } from "@/app/_components/analysis-pdf-view";
 
 type Props = {
   result: AnalysisResultV1;
@@ -75,6 +76,12 @@ export function AnalysisResultView({ result, deadlineLabel, currentRevenueRub, t
   });
   return (
     <div className="result-view">
+      <AnalysisPdfView
+        result={result}
+        currentRevenueRub={currentRevenueRub}
+        targetRevenueRub={targetRevenueRub}
+        deadlineLabel={deadlineLabel}
+      />
       {(showAnalysis || showPlanCover) && <section className={`result-cover ${showPlanCover ? "plan-cover" : ""}`}>
         <span className="admin-eyebrow">Персональная стратегия 7К</span>
         <h1>Индивидуальный план системного роста проекта для {clientNameGenitive}</h1>
