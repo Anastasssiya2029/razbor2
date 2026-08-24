@@ -1029,14 +1029,11 @@ function AnalysisSection({
   const [archetypeFlipped, setArchetypeFlipped] = useState(false);
   const systemElements = useMemo(() => resolveSystemElements(analysis.systemScores), [analysis.systemScores]);
   const currentModelGroups = useMemo(() => {
-    const summarize = (kind: "soft" | "hard") => {
-      const items = analysis.currentScoreArguments.filter((argument) => argument.kind === kind);
-      return items
-        .map((argument) => `${systemElementDefinitions[argument.id].name} · ${argument.score}/10`)
-        .join(" · ");
+    return {
+      soft: "Развиты по нижней границе: ценность эксперта и понимание клиента пока описаны отдельными признаками, но не собраны в ясное «почему я» и подтверждённое понимание типичного клиента.",
+      hard: "Находятся на нижних уровнях: отдельные действия уже есть, но пока не собраны в устойчивую повторяемую систему.",
     };
-    return { soft: summarize("soft"), hard: summarize("hard") };
-  }, [analysis.currentScoreArguments]);
+  }, []);
   const archetype = archetypeDefinitions[analysis.archetype.id];
   const slideCount = 2;
   const showSlide = (slide: number) => setActiveSlide(Math.max(0, Math.min(slideCount - 1, slide)));

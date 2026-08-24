@@ -25,6 +25,9 @@ function targetProjection(source: TaskResolverSource): TargetConfigProjection {
   return {
     modelFamily: target.modelFamily,
     modelComponents: target.modelComponents,
+    visionModelFamily: target.visionModelFamily,
+    visionModelComponents: target.visionModelComponents,
+    modelTransitionNote: target.modelTransitionNote,
     requiredMinimum: target.requiredMinimum,
     targetScores: target.targetScores,
     gap: target.gap,

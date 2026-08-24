@@ -45,7 +45,9 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.doesNotMatch(page, /setLoadingTarget\("plan"\)/u);
   assert.match(page, /Мягкие элементы системы/u);
   assert.match(page, /Твёрдые элементы системы/u);
-  assert.match(page, /systemElementDefinitions\[argument\.id\]\.name/u);
+  assert.match(page, /Развиты по нижней границе/u);
+  assert.match(page, /Находятся на нижних уровнях/u);
+  assert.doesNotMatch(page, /systemElementDefinitions\[argument\.id\]\.name/u);
   assert.match(page, /currentModelGroups\.soft/u);
   assert.match(page, /currentModelGroups\.hard/u);
   assert.doesNotMatch(page, /current-score-argument-grid/u);

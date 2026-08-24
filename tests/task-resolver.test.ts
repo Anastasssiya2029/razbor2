@@ -165,6 +165,9 @@ function targetConfigProjection(target: ReturnType<typeof calculateTargetConfigu
   return {
     modelFamily: target.modelFamily,
     modelComponents: target.modelComponents,
+    visionModelFamily: target.visionModelFamily,
+    visionModelComponents: target.visionModelComponents,
+    modelTransitionNote: target.modelTransitionNote,
     requiredMinimum: target.requiredMinimum,
     targetScores: target.targetScores,
     gap: target.gap,
@@ -176,7 +179,14 @@ function targetConfigProjection(target: ReturnType<typeof calculateTargetConfigu
 
 async function sourceWith(sequence = [milestone(1, "audience", 2, 5)]): Promise<TaskResolverSource> {
   const p01 = p01Result();
-  const baseTarget = calculateTargetConfiguration({ currentScores: CURRENT, modelFamily: "package_1to1", desiredSystemWeeklyHours: null });
+  const baseTarget = calculateTargetConfiguration({
+    currentScores: CURRENT,
+    modelFamily: "package_1to1",
+    visionModelFamily: "autoproduct",
+    visionModelComponents: ["autoproduct"],
+    modelTransitionNote: "Сначала подтвердить пакет, затем переводить продукт в запись.",
+    desiredSystemWeeklyHours: null,
+  });
   const target = {
     ...baseTarget,
     requiredMinimum: TARGET,
@@ -363,6 +373,18 @@ test("16. valid low_confidence P-02 is allowed", async () => {
   const source = await sourceWith();
   source.p02!.result!.analysisStatus = "low_confidence";
   const result = await runTaskResolverStage("run-1", { repository: new MemoryRepository(source), createId: () => "resolver-1" });
+  assert.equal(result.status, "money_now");
+});
+
+test("16a. nearest and vision target fields survive the P-02 to Task Resolver contract", async () => {
+  const source = await sourceWith();
+  assert.equal(source.targetStage!.target!.modelFamily, "package_1to1");
+  assert.equal(source.targetStage!.target!.visionModelFamily, "autoproduct");
+  assert.equal(source.p02!.targetConfig.visionModelFamily, "autoproduct");
+  const result = await runTaskResolverStage("run-1", {
+    repository: new MemoryRepository(source),
+    createId: () => "resolver-vision-fields",
+  });
   assert.equal(result.status, "money_now");
 });
 
