@@ -396,6 +396,35 @@ test("a distant product model is kept as vision while the scored target stays on
   assert.ok(result.target.modelTransitionNote);
 });
 
+test("distant capabilities cannot inflate the nearest sellable target", () => {
+  const p01 = p01Fixture({
+    authenticity: 2,
+    audience: 2,
+    product_method: 1,
+    sales_technology: 2,
+    funnel: 3,
+    blog: 1,
+    team: 1,
+  });
+  p01.targetIntent.normalizedModelFamily = "autoproduct";
+  p01.targetIntent.primaryModelFamily = "autoproduct";
+  p01.targetIntent.activatedCapabilities = [
+    { code: "result_product", reason: "Нужен понятный результат.", source_fields: ["target.businessModel"] },
+    { code: "packaged_flagship", reason: "Дальняя упаковка продукта.", source_fields: ["target.businessModel"] },
+    { code: "author_method", reason: "Дальний авторский метод.", source_fields: ["target.businessModel"] },
+    { code: "content_system", reason: "Дальняя контент-система.", source_fields: ["target.businessModel"] },
+  ];
+
+  const result = computeTargetAndArchetype(source(p01));
+
+  assert.equal(result.target.modelFamily, "package_1to1");
+  assert.equal(result.target.visionModelFamily, "autoproduct");
+  assert.deepEqual(result.target.capabilities, ["result_product"]);
+  assert.equal(result.target.targetScores.product_method, 3);
+  assert.equal(result.target.targetScores.blog, 1);
+  assert.doesNotMatch(result.target.requirementReasons.blog.join(" "), /content_system/u);
+});
+
 test("a mature product system keeps the selected autonomous product model as the scored target", () => {
   const p01 = p01Fixture({
     authenticity: 5,

@@ -131,6 +131,27 @@ test("3. Product root precedes Sales when it is unclear what is sold", () => { c
 test("4. non-target meetings route Audience or Funnel before automatic Sales", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /нецелевые встречи → audience и\/или funnel/u));
 test("5. gratitude alone never proves overconsulting", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /Благодарность сама по себе недостаточна/u));
 test("6. normal sales plus low-owner-time target allows owner_dependency/team priority", () => assert.match(buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig), /constraint может быть `owner_dependency\/team`/u));
+test("P-02 prompt embeds the exact root output contract", () => {
+  const prompt = buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig);
+  const match = prompt.match(/<P02_OUTPUT_SCHEMA_JSON>\n([\s\S]+?)\n<\/P02_OUTPUT_SCHEMA_JSON>/u);
+  assert.ok(match);
+  const schema = JSON.parse(match[1]) as { additionalProperties: boolean; required: string[] };
+  assert.equal(schema.additionalProperties, false);
+  assert.deepEqual(schema.required, [
+    "promptVersion",
+    "schemaVersion",
+    "analysisStatus",
+    "constraint",
+    "perceivedVsEvidenced",
+    "previousAttemptsAnalysis",
+    "candidateAudit",
+    "bundle",
+    "elementSequence",
+    "businessValidation",
+    "sanityChecks",
+  ]);
+  assert.match(prompt, /Не добавляй другие корневые поля/u);
+});
 test("P-02 receives fail-closed transition levers without task text", () => {
   const current = { ...SCORES, authenticity: 2 };
   const target = { ...current, authenticity: 3 };

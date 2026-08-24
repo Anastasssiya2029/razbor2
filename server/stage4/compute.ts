@@ -6,6 +6,7 @@ import {
 } from "@/server/7k";
 import {
   BASE_MODEL_FAMILIES,
+  BASE_MODEL_PROFILES,
   CAPABILITY_FLOORS,
   OWNER_ROLE_MODIFIER,
   TARGET_MODIFIER_FLOORS,
@@ -153,6 +154,22 @@ function splitTargetCodes(source: Stage4Source): {
   };
 }
 
+function keepCapabilitiesForNearTermModel(
+  capabilities: readonly CapabilityCode[],
+  nearTermModel: ModelFamily,
+  visionModel: ModelFamily,
+): CapabilityCode[] {
+  if (nearTermModel === visionModel || nearTermModel === "hybrid") {
+    return [...capabilities];
+  }
+
+  const nearTermProfile = BASE_MODEL_PROFILES[nearTermModel];
+  return capabilities.filter((code) => {
+    const capability = CAPABILITY_FLOORS[code];
+    return capability.floor <= nearTermProfile[capability.elementId];
+  });
+}
+
 function deriveDesiredOwnerRole(modifiers: readonly TargetModifierCode[]): {
   role: DesiredOwnerRole | null;
   derivedFrom: string | null;
@@ -239,7 +256,13 @@ export function mapP01ToTargetConfigurationInput(source: Stage4Source): {
     visionModel,
     currentScores,
   );
-  const { capabilities, modifiers } = splitTargetCodes(source);
+  const targetCodes = splitTargetCodes(source);
+  const capabilities = keepCapabilitiesForNearTermModel(
+    targetCodes.capabilities,
+    modelFamily,
+    visionModel.modelFamily,
+  );
+  const { modifiers } = targetCodes;
   const ownerRole = deriveDesiredOwnerRole(modifiers);
   const targetInput: TargetArchetypeComputation["targetInput"] = {
     currentScores,

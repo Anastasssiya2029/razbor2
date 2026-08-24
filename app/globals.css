@@ -1302,43 +1302,29 @@ body :is(
 }
 
 .current-score-rationale {
-  max-width: 980px;
-  margin: 20px auto 4px;
-  padding: 17px 19px;
+  max-width: 860px;
+  margin: 18px auto 4px;
+  padding: 11px 13px;
   color: #5d4962;
   background: linear-gradient(145deg, #fffaf7, #fbf5fc);
   border: 1px solid rgba(162, 91, 127, 0.13);
-  border-radius: 17px;
+  border-radius: 15px;
   text-align: left;
 }
 
-.current-score-rationale-heading strong {
-  display: block;
-  color: #702273;
-  font-size: 14px;
-}
-
-.current-score-rationale-heading p {
-  margin: 4px 0 0;
-  color: #78667c;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 .current-system-conclusion {
-  margin-top: 13px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .current-system-conclusion article {
   min-width: 0;
-  padding: 14px 15px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(109, 47, 182, 0.1);
-  border-radius: 14px;
-  box-shadow: 0 8px 22px rgba(80, 36, 92, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(80, 36, 92, 0.05);
 }
 
 .current-system-conclusion article.soft {
@@ -1352,8 +1338,7 @@ body :is(
 }
 
 .current-system-conclusion span,
-.current-system-conclusion strong,
-.current-system-conclusion p {
+.current-system-conclusion strong {
   display: block;
 }
 
@@ -1366,62 +1351,14 @@ body :is(
 }
 
 .current-system-conclusion strong {
-  margin-top: 5px;
+  margin-top: 4px;
   color: #512354;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.current-system-conclusion p {
-  margin: 7px 0 0;
-  color: #6f6073;
   font-size: 11px;
-  line-height: 1.48;
-}
-
-.current-score-argument-grid {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.current-score-argument {
-  min-width: 0;
-  padding: 11px 12px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(109, 47, 182, 0.09);
-  border-radius: 12px;
-}
-
-.current-score-argument.soft {
-  background: linear-gradient(145deg, rgba(255, 247, 251, 0.96), rgba(249, 241, 252, 0.9));
-  border-color: rgba(187, 39, 132, 0.15);
-}
-
-.current-score-argument > strong {
-  display: block;
-  color: #512354;
-  font-size: 12px;
   line-height: 1.35;
 }
 
-.current-score-argument p,
-.current-score-argument small {
-  display: block;
-  margin: 5px 0 0;
-  color: #6f6073;
-  font-size: 11px;
-  line-height: 1.42;
-}
-
-.current-score-argument small b {
-  color: #702273;
-}
-
 @media (max-width: 600px) {
-  .current-system-conclusion,
-  .current-score-argument-grid {
+  .current-system-conclusion {
     grid-template-columns: 1fr;
   }
 }
