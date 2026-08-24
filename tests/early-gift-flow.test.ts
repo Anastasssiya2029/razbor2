@@ -26,6 +26,14 @@ test("the wheel retains the Replit client-number guard and remains excluded from
   assert.match(wheel, /gift-section no-print/u);
 });
 
+test("the Replit wheel animation lands on the server-selected gift without client-side randomness", () => {
+  const wheel = readFileSync("app/_components/gift-wheel.tsx", "utf8");
+  assert.match(wheel, /landingAngle\(prizes, selectedGift\.prizeCode\)/u);
+  assert.match(wheel, /setGift\(selectedGift\)/u);
+  assert.doesNotMatch(wheel, /Math\.random/u);
+  assert.doesNotMatch(wheel, /api\/save-gift/u);
+});
+
 test("the printable result excludes the wheel while the saved analysis keeps the bonus stage available", () => {
   const resultView = readFileSync("app/_components/analysis-result-view.tsx", "utf8");
   const detailPage = readFileSync("app/analysis/[analysisRunId]/page.tsx", "utf8");
