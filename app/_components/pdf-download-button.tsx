@@ -26,10 +26,21 @@ function collectPrintRules(): string {
 async function waitForImages(root: HTMLElement): Promise<void> {
   await Promise.all(Array.from(root.querySelectorAll("img")).map(async (image) => {
     if (image.complete && image.naturalWidth > 0) return;
-    await new Promise<void>((resolve) => {
+    image.loading = "eager";
+    const settled = new Promise<void>((resolve) => {
       image.addEventListener("load", () => resolve(), { once: true });
       image.addEventListener("error", () => resolve(), { once: true });
     });
+    // Images inside the normally hidden print template can remain indefinitely
+    // deferred by native lazy-loading. Reassigning the resolved URL starts the
+    // request, while the timeout keeps PDF export fail-open for an unavailable
+    // decorative image instead of leaving the manager on "Собираю PDF…".
+    const source = image.currentSrc || image.src;
+    if (source) image.src = source;
+    await Promise.race([
+      settled,
+      new Promise<void>((resolve) => window.setTimeout(resolve, 5_000)),
+    ]);
   }));
 }
 

@@ -59,5 +59,7 @@ test("plan PDF is downloaded as a real multi-page file instead of only opening t
   assert.match(downloadButton, /import\("html-to-image"\)/u);
   assert.match(downloadButton, /import\("jspdf"\)/u);
   assert.match(downloadButton, /querySelectorAll<HTMLElement>\("\.analysis-pdf-page"\)/u);
+  assert.match(downloadButton, /image\.loading = "eager"/u);
+  assert.match(downloadButton, /Promise\.race/u);
   assert.match(downloadButton, /pdf\.save/u);
 });
