@@ -110,3 +110,34 @@ test("a bulleted transition is rendered as separate checklist checkpoints withou
   assert.match(tasks[0].task, /источников клиентов/u);
   assert.match(tasks[1].task, /путь клиента/u);
 });
+
+test("an older saved manager copy with combined bullets is normalized during merge", () => {
+  const transition = TRANSITIONS_70.find((item) => item.task_id === "funnel_2_3");
+  assert.ok(transition);
+  const canonical = [{
+    elementId: "funnel" as const,
+    fromScore: 2,
+    toScore: 3,
+    order: 1,
+    narrative: null,
+    tasks: splitCanonicalTransitionTask(transition),
+  }];
+  const version: ManagerPlanVersion = {
+    version: MANAGER_PLAN_VERSION,
+    sourceResultHash: "legacy-result",
+    revision: 1,
+    updatedAt: "2026-08-25 12:00:00",
+    cards: [{
+      elementId: "funnel",
+      tasks: [{
+        id: transition.task_id,
+        source: "canonical",
+        task: transition.task,
+        doneWhen: transition.done_when,
+      }],
+    }],
+  };
+  const applied = applyManagerPlan(canonical, version, "legacy-result");
+  assert.deepEqual(applied[0].tasks.map((task) => task.id), ["funnel_2_3", "funnel_2_3:2"]);
+  assert.ok(applied[0].tasks.every((task) => !/[•●]/u.test(task.task)));
+});

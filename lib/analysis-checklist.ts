@@ -52,11 +52,20 @@ function splitDoneWhen(value: string, count: number): string[] {
 }
 
 export function splitCanonicalTransitionTask(task: TransitionTask): ChecklistTask[] {
-  const taskParts = splitTaskText(task.task);
-  const doneWhenParts = splitDoneWhen(task.done_when, taskParts.length);
-  return taskParts.map((taskText, index) => ({
-    id: index === 0 ? task.task_id : `${task.task_id}:${index + 1}`,
+  return splitChecklistTask({
+    id: task.task_id,
     source: "canonical",
+    task: task.task,
+    doneWhen: task.done_when,
+  });
+}
+
+export function splitChecklistTask(task: ChecklistTask): ChecklistTask[] {
+  const taskParts = splitTaskText(task.task);
+  const doneWhenParts = splitDoneWhen(task.doneWhen, taskParts.length);
+  return taskParts.map((taskText, index) => ({
+    id: index === 0 ? task.id : `${task.id}:${index + 1}`,
+    source: task.source,
     task: taskText,
     doneWhen: doneWhenParts[index],
   }));
@@ -97,13 +106,17 @@ export function applyManagerPlan(
   return canonicalCards.map((card) => {
     const savedTasks = edits.get(card.elementId);
     if (!savedTasks) return card;
-    const savedById = new Map(savedTasks.map((task) => [task.id, task]));
+    // Older manager-plan revisions could contain several bullet items inside one
+    // saved canonical task. Normalize them before merging so existing analyses
+    // receive the same one-checkpoint-per-task presentation as new analyses.
+    const normalizedSavedTasks = savedTasks.flatMap(splitChecklistTask);
+    const savedById = new Map(normalizedSavedTasks.map((task) => [task.id, task]));
     const canonicalIds = new Set(card.tasks.map((task) => task.id));
     return {
       ...card,
       tasks: [
         ...card.tasks.map((task) => savedById.get(task.id) ?? task),
-        ...savedTasks.filter((task) => task.source === "manager" && !canonicalIds.has(task.id)),
+        ...normalizedSavedTasks.filter((task) => task.source === "manager" && !canonicalIds.has(task.id)),
       ],
     };
   });
