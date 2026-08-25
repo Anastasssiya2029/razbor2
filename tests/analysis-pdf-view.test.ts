@@ -19,11 +19,15 @@ test("approved PDF plan is embedded once and receives the persisted analysis con
 test("print template uses the approved 7K cover and footer contract", () => {
   assert.match(pdfView, /kurs-neuro\.ru/u);
   assert.match(pdfView, /ПЕРСОНАЛЬНАЯ СТРАТЕГИЯ 7К/u);
+  assert.match(pdfView, /БИЗНЕС-МОДЕЛЬ 7К — семь ключевых вопросов/u);
+  assert.match(pdfView, /на которые нужно ответить бизнесу, чтобы понять, что ограничивает рост и как увеличить доход\./u);
   assert.match(pdfView, /ПЕРЕХОД К ДЕНЕЖНОЙ ЦЕЛИ/u);
   assert.match(pdfView, /number:\s*1,\s*label:\s*"Аутентичность"/u);
   assert.match(pdfView, /Кто я\?/u);
   assert.match(pdfView, /number:\s*7,\s*label:\s*"Команда"/u);
   assert.match(pdfView, /Как сделать бизнес автономным\?/u);
+  assert.match(pdfView, /<PdfBrand page=\{1\} \/>/u);
+  assert.doesNotMatch(pdfView, /totalPages/u);
   assert.doesNotMatch(pdfView, /business-system-diagnostic\.suhareva-anastasiya\.chatgpt\.site/u);
 });
 
@@ -37,7 +41,26 @@ test("target model and checklist are generated from canonical result data", () =
   assert.match(pdfView, /card\.tasks\.map/u);
   assert.match(pdfView, /Готово, когда:/u);
   assert.match(pdfView, /result\.report\.growthPoint\.coach_explanation/u);
+  assert.match(pdfView, /orderedGrowthElements\(growthPlan\)/u);
+  assert.match(pdfView, /Чтобы выйти на денежную цель, нужно усилить ключевые, на текущий момент, элементы бизнес-модели/u);
+  assert.doesNotMatch(pdfView, /targetConfiguration\.summary/u);
+  assert.match(pdfView, /Рабочий путь клиента/u);
+  assert.match(pdfView, /Балл: \{card\.fromScore\} → \{card\.toScore\}/u);
+  assert.match(pdfView, /localizeWhyNotNow\(item\.text\)/u);
   assert.doesNotMatch(pdfView, /70 000|200 000|Анн[аы]/u);
+});
+
+test("archetype and checklist pages preserve the approved reference layout", () => {
+  assert.match(pdfView, /Бизнес-архетип текущей модели/u);
+  assert.match(pdfView, /Архетип показывает способ находить решения на текущем уровне, а не описывает характер человека\./u);
+  assert.match(pdfView, /Что поможет<br \/>перейти дальше/u);
+  assert.match(pdfView, /className="analysis-pdf-checklist-title"/u);
+  assert.match(pdfView, /String\(checklistCards\.length\)\.padStart\(2, "0"\)/u);
+  assert.match(pdfView, /className="analysis-pdf-checklist-card"/u);
+  assert.match(pdfView, /className="analysis-pdf-checklist-main"/u);
+  assert.match(pdfView, /<aside className="analysis-pdf-neuro-card">/u);
+  assert.match(styles, /\.analysis-pdf-archetype-grid\s*\{[\s\S]*grid-template-columns:\s*1fr 1fr;/u);
+  assert.match(styles, /\.analysis-pdf-checklist-card\s*\{[\s\S]*height:\s*209mm;[\s\S]*grid-template-columns:/u);
 });
 
 test("each growing element carries its mapped neuromarketer without changing analysis data", () => {
@@ -60,6 +83,15 @@ test("plan PDF is downloaded as a real multi-page file instead of only opening t
   assert.match(downloadButton, /import\("jspdf"\)/u);
   assert.match(downloadButton, /querySelectorAll<HTMLElement>\("\.analysis-pdf-page"\)/u);
   assert.match(downloadButton, /image\.loading = "eager"/u);
+  assert.match(downloadButton, /list\.scrollHeight > list\.clientHeight \+ 1/u);
+  assert.match(downloadButton, /lastItem\.getBoundingClientRect\(\)\.bottom > card\.getBoundingClientRect\(\)\.bottom - 1/u);
+  assert.match(downloadButton, /classList\.add\("is-overflowing"\)/u);
+  assert.match(downloadButton, /resetChecklistLayout\(\)/u);
+  assert.match(styles, /\.analysis-pdf-task-list\.is-overflowing\s*\{[\s\S]*justify-content:\s*flex-start;/u);
   assert.match(downloadButton, /Promise\.race/u);
+  assert.match(downloadButton, /skipFonts:\s*true/u);
+  assert.match(downloadButton, /PDF_IMAGE_PAGE_PIXEL_RATIO\s*=\s*4\.5/u);
+  assert.match(downloadButton, /containsImages \? PDF_IMAGE_PAGE_PIXEL_RATIO : PDF_TEXT_PAGE_PIXEL_RATIO/u);
+  assert.match(downloadButton, /quality:\s*0\.98/u);
   assert.match(downloadButton, /pdf\.save/u);
 });

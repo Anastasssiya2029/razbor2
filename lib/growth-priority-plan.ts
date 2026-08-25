@@ -1,4 +1,4 @@
-import type { AnalysisResultV1 } from "@/server/analysis-result";
+import type { AnalysisResultV1 } from "@/server/analysis-result/types";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId, type SevenKScores } from "@/server/7k/types";
 
 const SOFT_ELEMENTS = new Set<SevenKElementId>(["authenticity", "audience"]);
@@ -19,6 +19,20 @@ export type GrowthPriorityPlanInput = {
 
 function unique(values: readonly SevenKElementId[]): SevenKElementId[] {
   return values.filter((value, index, all) => all.indexOf(value) === index);
+}
+
+function sortByMissingLevels(
+  input: Pick<GrowthPriorityPlanInput, "currentScores" | "targetScores">,
+  elementIds: readonly SevenKElementId[],
+): SevenKElementId[] {
+  return elementIds
+    .map((elementId, index) => ({
+      elementId,
+      index,
+      missingLevels: input.targetScores[elementId] - input.currentScores[elementId],
+    }))
+    .sort((left, right) => right.missingLevels - left.missingLevels || left.index - right.index)
+    .map(({ elementId }) => elementId);
 }
 
 export function resolveGrowthPriorityPlanFromInput(input: GrowthPriorityPlanInput): GrowthPriorityPlan {
@@ -54,14 +68,13 @@ export function resolveGrowthPriorityPlanFromInput(input: GrowthPriorityPlanInpu
     if (!SOFT_ELEMENTS.has(elementId) && !core.includes(elementId)) core.push(elementId);
   }
 
-  const supporting = unique([
-    ...ordered.filter((elementId) => SOFT_ELEMENTS.has(elementId)),
-    ...selected.filter((elementId) => !SOFT_ELEMENTS.has(elementId) && !core.includes(elementId)),
-  ]).slice(0, 2);
-  const assigned = new Set([...core, ...supporting]);
-  const deferred = ordered.filter((elementId) => !assigned.has(elementId));
+  const sortedCore = sortByMissingLevels(input, core.slice(0, 2));
+  const supporting = sortByMissingLevels(
+    input,
+    ordered.filter((elementId) => !sortedCore.includes(elementId)),
+  );
 
-  return { core: core.slice(0, 2), supporting, deferred };
+  return { core: sortedCore, supporting, deferred: [] };
 }
 
 export function resolveGrowthPriorityPlan(result: AnalysisResultV1): GrowthPriorityPlan {

@@ -39,9 +39,22 @@ test("sales cannot be displaced from a product-led core by extra build elements"
   result.target.targetScores.team = 2;
   const plan = resolveGrowthPriorityPlan(result);
   assert.deepEqual(plan.core, ["product_method", "sales_technology"]);
-  assert.deepEqual(plan.supporting, ["audience", "authenticity"]);
-  assert.ok(plan.deferred.includes("funnel"));
-  assert.ok(plan.deferred.includes("team"));
+  assert.deepEqual(plan.supporting, ["audience", "authenticity", "funnel", "team"]);
+  assert.deepEqual(plan.deferred, []);
+});
+
+test("key and supporting elements are ordered by the number of missing levels", () => {
+  const result = resultFixture();
+  result.target.targetScores.product_method = 3;
+  result.target.targetScores.sales_technology = 5;
+  result.target.targetScores.authenticity = 5;
+  result.target.targetScores.audience = 3;
+
+  const plan = resolveGrowthPriorityPlan(result);
+
+  assert.deepEqual(plan.core, ["sales_technology", "product_method"]);
+  assert.deepEqual(plan.supporting, ["authenticity", "audience"]);
+  assert.deepEqual(orderedGrowthElements(plan), ["sales_technology", "product_method", "authenticity", "audience"]);
 });
 
 test("a hard build element may support the core when soft changes do not fill the support block", () => {

@@ -1,4 +1,4 @@
-import type { AnalysisResultV1 } from "@/server/analysis-result";
+import type { AnalysisResultV1 } from "@/server/analysis-result/types";
 import { resolveTransitionSequence, type TransitionTask } from "@/server/7k/transition-resolver";
 import type { SevenKElementId } from "@/server/7k/types";
 import { findBundleRule } from "@/server/7k/config/bundle-rules.v1";

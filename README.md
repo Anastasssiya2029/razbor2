@@ -1,8 +1,16 @@
-# 7K Business Diagnostic Core
+# 7K Business Diagnostic Service
 
-Frozen Stage 10 implementation of the 7K business diagnostic pipeline. The service accepts a validated `DiagnosticInput v1.2`, persists every stage independently, keeps AI and deterministic decisions separated, and builds one immutable `analysis-result.v1` from persisted validated snapshots.
+Internal manager-facing service for conducting a 7K business diagnostic during a client meeting. The manager signs in, records the client's answers, runs the staged analysis, reviews the result, adjusts a manager-owned checklist copy when needed, and exports the individual plan to PDF or the analysis register to Excel.
 
-This repository is the host-independent diagnostic core plus the current D1 adapter. It is not yet the final client product.
+The current release candidate combines the frozen diagnostic core, D1 persistence, application authentication and roles, manager/admin interfaces, saved analyses, Google Sheets synchronization, gifts, Excel export, and the approved multi-page PDF template.
+
+## Release scope
+
+- Internal use by invited employees; clients do not receive separate accounts in this release.
+- The manager fills the diagnostic form during a live client meeting.
+- Desktop and tablet layouts are supported. The release browser matrix is current Google Chrome, Yandex Browser, and Safari on macOS/iPadOS.
+- Production AI stages P-01 through P-04 are pinned to `openai/gpt-5.6-luna-pro` through OpenRouter with structured output enabled.
+- Live provider calls are never part of CI. A paid release smoke test requires explicit product-owner approval.
 
 ## Pipeline
 
@@ -19,6 +27,22 @@ DiagnosticInput v1.2
 ```
 
 AI is limited to P-01, P-02, P-03 and P-04. Target scores, archetype, fixed tasks, Money Now scenario selection and final assembly are deterministic. The final assembler never calls a model and never recalculates a business decision.
+
+## Application flow
+
+```text
+Invited employee signs in
+  -> manager fills three diagnostic sections during the meeting
+  -> diagnostic and partial progress are persisted
+  -> authenticated owner starts/resumes the analysis pipeline
+  -> current/target views and then the full plan become available
+  -> manager may save a separate editable checklist revision
+  -> result is reopened from the cabinet
+  -> individual plan is downloaded as PDF
+  -> analysis register is exported to Excel / synchronized to Google Sheets
+```
+
+The persisted canonical checklist is never overwritten by manager edits. Replaying a completed stage with the same immutable input returns the stored result instead of making a duplicate model call.
 
 ## Frozen versions
 
@@ -56,6 +80,13 @@ Run the full repository verification, including the production build and rendere
 npm test
 ```
 
+Run lint and validate the deployable Sites artifact separately:
+
+```bash
+npm run lint
+npm run validate:artifact
+```
+
 Target only the Stage 10 E2E suite:
 
 ```bash
@@ -69,13 +100,25 @@ Copy `.env.example` and set values only in the deployment secret store. Never co
 - `OPENROUTER_API_KEY`: shared server-only transport key.
 - `OPENROUTER_BASE_URL`: optional OpenRouter base URL override.
 - `P01_AI_PROVIDER`, `P02_AI_PROVIDER`, `P03_AI_PROVIDER`, `P04_AI_PROVIDER`: provider adapters; currently `openrouter`.
-- `P01_AI_MODEL`, `P02_AI_MODEL`, `P03_AI_MODEL`, `P04_AI_MODEL`: explicit model IDs; none is hardcoded.
+- `P01_AI_MODEL`, `P02_AI_MODEL`, `P03_AI_MODEL`, `P04_AI_MODEL`: explicit model IDs. The release candidate uses `openai/gpt-5.6-luna-pro` for every stage; values remain runtime configuration rather than application constants.
 - `P01_STRUCTURED_OUTPUT`, `P02_STRUCTURED_OUTPUT`, `P03_STRUCTURED_OUTPUT`, `P04_STRUCTURED_OUTPUT`: set `false` only for a provider/model without JSON Schema output.
 - `P03_PUBLIC_EXECUTION_ENABLED`, `P03_ORCHESTRATOR_TOKEN`: fail-closed P-03 HTTP execution guard.
 - `P04_PUBLIC_EXECUTION_ENABLED`, `P04_ORCHESTRATOR_TOKEN`: fail-closed P-04 HTTP execution guard.
 - `ANALYSIS_DEBUG_ENABLED`, `ANALYSIS_DEBUG_TOKEN`: fail-closed final result debug guard.
 
 The current deployment adapter expects a database binding named `DB`. The core is isolated behind repository interfaces; a future Supabase adapter can replace the D1 repositories without changing business contracts.
+
+## Authentication and roles
+
+Application access is invitation-only and backed by the external identity provider. The app session cookie is `HttpOnly`, `Secure` in production, `SameSite=Lax`, and expires after seven days. Disabled users cannot create or reuse sessions.
+
+| Role | Analyses | Team access | Role changes |
+|---|---|---|---|
+| `architect` | All analyses | Add employees | May assign any role |
+| `admin` | All analyses | Add managers | Cannot change roles |
+| `manager` | Own analyses only | No access | No access |
+
+Analysis routes enforce ownership or an all-analyses role on the server. The gift draw and full-pipeline execution remain owner-only. Managers receive only their own rows in Excel; architect/admin exports include all permitted analyses.
 
 ## Endpoints
 
@@ -109,17 +152,16 @@ The endpoint is disabled unless `ANALYSIS_DEBUG_ENABLED=true` and a non-empty to
 - Final assembly has no timestamp, model call or random business field, so equal snapshots produce equal JSON.
 - Existing `analysis_results` storage is append-only per analysis run. A different snapshot/version produces a conflict instead of overwriting history.
 
-## Not production-ready
+## Release readiness
 
-Stage 10 intentionally does not include:
+Authentication, authorization, the manager/admin UI, persistent analysis lifecycle, final PDF generation, Excel export, Google Sheets synchronization, and production runtime configuration are implemented. The service is still in release verification rather than generally available status.
 
-- Replit or Supabase adaptation;
-- production orchestrator/job queue;
-- authentication, authorization, tenancy or rate limits for the whole pipeline;
-- entitlement/paywall;
-- polished client UI;
-- PDF generation;
-- final OpenRouter model selection;
-- production secrets management and observability.
+The remaining release gates are:
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for module boundaries and [HANDOFF.md](./HANDOFF.md) for the next implementation steps.
+- complete automated regression and business-rule verification;
+- Chrome, Yandex Browser, and real Safari desktop/tablet acceptance;
+- access-isolation, retry, duplicate-call, and failure-recovery checks;
+- one explicitly approved paid end-to-end OpenRouter smoke test;
+- manager pilot acceptance, operational instructions, rollback and monitoring checks.
+
+There is no client self-service role, entitlement/paywall, or general-purpose public signup in the current release scope. See [ARCHITECTURE.md](./ARCHITECTURE.md) for module boundaries and [HANDOFF.md](./HANDOFF.md) for the current technical handoff.

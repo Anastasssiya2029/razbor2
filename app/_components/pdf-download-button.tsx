@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+const PDF_TEXT_PAGE_PIXEL_RATIO = 2.75;
+const PDF_IMAGE_PAGE_PIXEL_RATIO = 4.5;
+
 function safeFileName(value: string): string {
   const normalized = value.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/gu, "-").replace(/\s+/gu, "-");
   return `${normalized || "Индивидуальный-план-7К"}.pdf`;
@@ -44,6 +47,21 @@ async function waitForImages(root: HTMLElement): Promise<void> {
   }));
 }
 
+function fitOverflowingChecklistCards(root: HTMLElement): () => void {
+  const adjustedLists: HTMLElement[] = [];
+  for (const list of Array.from(root.querySelectorAll<HTMLElement>(".analysis-pdf-task-list"))) {
+    const card = list.closest<HTMLElement>(".analysis-pdf-checklist-card");
+    const lastItem = list.lastElementChild;
+    const overflowsList = list.scrollHeight > list.clientHeight + 1;
+    const overflowsCard = Boolean(card && lastItem
+      && lastItem.getBoundingClientRect().bottom > card.getBoundingClientRect().bottom - 1);
+    if (!overflowsList && !overflowsCard) continue;
+    list.classList.add("is-overflowing");
+    adjustedLists.push(list);
+  }
+  return () => adjustedLists.forEach((list) => list.classList.remove("is-overflowing"));
+}
+
 async function downloadPdf(fileName: string): Promise<void> {
   const root = document.querySelector<HTMLElement>(".analysis-pdf");
   if (!root) throw new Error("Макет PDF не найден. Обновите страницу и попробуйте снова.");
@@ -56,10 +74,13 @@ async function downloadPdf(fileName: string): Promise<void> {
   printStyle.textContent = printRules;
   document.head.append(printStyle);
   document.body.classList.add("is-exporting-pdf");
+  let resetChecklistLayout = () => undefined;
 
   try {
     await document.fonts.ready;
     await waitForImages(root);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    resetChecklistLayout = fitOverflowingChecklistCards(root);
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
     const [{ toJpeg }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
@@ -68,17 +89,27 @@ async function downloadPdf(fileName: string): Promise<void> {
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
     for (let index = 0; index < pages.length; index += 1) {
+      const containsImages = pages[index].querySelector("img") !== null;
       const image = await toJpeg(pages[index], {
         backgroundColor: "#fff9fb",
-        cacheBust: true,
-        pixelRatio: 1.45,
-        quality: 0.94,
+        // The approved PDF template uses system Arial, so walking every
+        // application stylesheet and embedding unrelated webfonts for each
+        // of the eight pages only makes export slower and less reliable.
+        skipFonts: true,
+        cacheBust: false,
+        // Text-only pages are rendered a little above 2K. Pages containing
+        // portraits are rendered close to 4K so the 1K-2K source artwork is
+        // preserved at print quality instead of being downsampled.
+        pixelRatio: containsImages ? PDF_IMAGE_PAGE_PIXEL_RATIO : PDF_TEXT_PAGE_PIXEL_RATIO,
+        quality: 0.98,
       });
       if (index > 0) pdf.addPage("a4", "portrait");
       pdf.addImage(image, "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
     }
     pdf.save(safeFileName(fileName));
   } finally {
+    resetChecklistLayout();
     document.body.classList.remove("is-exporting-pdf");
     printStyle.remove();
   }

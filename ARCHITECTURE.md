@@ -23,6 +23,11 @@ No later stage repairs or silently guesses a missing upstream decision.
 | `server/p03` | Prescription for the immutable selected scenario | Yes |
 | `server/p04` | Narrative over immutable upstream snapshots | Yes |
 | `server/analysis-result` | Validate and join final `analysis-result.v1` | No |
+| `server/auth` | Invitation registry, identity binding, sessions and role policy | No |
+| `server/analysis-runs` | Owner-authorized orchestration, overview and access checks | No |
+| `server/manager-plan` | Versioned manager checklist copy without canonical mutation | No |
+| `server/exports`, `server/google-sheets` | Authorized register export and synchronization | No |
+| `app` | Manager meeting form, cabinet, team administration and result/PDF surfaces | No |
 
 ## Final AnalysisResult
 
@@ -67,8 +72,16 @@ Provider raw responses stay in stage-specific server tables and are not copied i
 - server token must exist;
 - `x-analysis-debug-token` must match using constant-time comparison.
 
-This is a debug control, not a complete production authorization model.
+Application authorization is separate from this debug control:
+
+- `architect` and `admin` may view all analyses;
+- `manager` may access only an analysis owned by the same application user;
+- full pipeline execution and gift drawing require the analysis owner;
+- user and export endpoints apply role-aware server checks;
+- sessions are random, stored as hashes, bound to active users, and expire after seven days.
+
+Direct P-03 and P-04 HTTP endpoints have independent fail-closed feature-flag and orchestrator-token guards. The normal manager flow does not enable those public endpoints.
 
 ## Testing
 
-`tests/analysis-result-e2e.test.ts` uses persisted fixture snapshots only and never calls a live provider. It covers the ten Stage 10 scenarios and checks exact immutable joins, deterministic output, replay behavior and absence of raw/secrets.
+Contract and E2E tests use persisted fixtures and never call a live provider. They cover the diagnostic form, role policy, access-aware application surfaces, staged analysis, deterministic business rules, replay behavior, exports, manager revisions, gifts, and PDF composition. A live provider smoke test is intentionally separate, paid, and requires explicit approval.

@@ -28,7 +28,10 @@ export default function TeamPage() {
   useEffect(() => {
     if (!user) return;
     if (user.role === "manager") { window.location.replace("/cabinet"); return; }
-    void loadUsers().catch((error) => setMessage(error instanceof Error ? error.message : "Не удалось загрузить сотрудников."));
+    const timeoutId = window.setTimeout(() => {
+      void loadUsers().catch((error) => setMessage(error instanceof Error ? error.message : "Не удалось загрузить сотрудников."));
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [loadUsers, user]);
 
   async function addUser(event: FormEvent) {

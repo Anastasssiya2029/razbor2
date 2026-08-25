@@ -21,12 +21,15 @@ export default function ResetPasswordPage() {
     const token = params.get("access_token");
     const type = params.get("type");
     window.history.replaceState(null, "", window.location.pathname);
-    if (type !== "recovery" || !token) {
-      setMessage("Ссылка восстановления недействительна или устарела.");
-      return;
-    }
-    setAccessToken(token);
-    setMessage("");
+    const timeoutId = window.setTimeout(() => {
+      if (type !== "recovery" || !token) {
+        setMessage("Ссылка восстановления недействительна или устарела.");
+        return;
+      }
+      setAccessToken(token);
+      setMessage("");
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   async function submit(event: FormEvent) {

@@ -1,23 +1,37 @@
-# GitHub handoff
+# Technical handoff
 
-## Frozen handoff scope
+## Current release-candidate scope
 
-This Stage 10 tree contains the validated diagnostic core through deterministic `analysis-result.v1`, the D1 repository adapters, a fail-closed internal result endpoint, and a mock-only E2E suite.
+The repository contains the frozen diagnostic core through deterministic `analysis-result.v1`, D1 persistence, a fail-closed internal result endpoint, invitation-only application authentication, architect/admin/manager authorization, the manager diagnostic flow, saved analyses, manager checklist revisions, gifts, Google Sheets synchronization, Excel export, and the approved client PDF.
 
-Do not change P-01 through P-04 or the 7K methodology during hosting migration unless a reproducible contract bug is demonstrated. Preserve `VERSION_MANIFEST.json` and immutable snapshots/hashes.
+Do not change P-01 through P-04 or the 7K methodology during release hardening unless a reproducible contract bug is demonstrated and approved. Preserve `VERSION_MANIFEST.json`, immutable snapshots/hashes, the Matrix 70 task wording, and deterministic ordering rules.
 
-## Future work
+## Production configuration
 
-1. **Replit/Supabase adaptation:** implement repository adapters, preserve unique run constraints and migrate immutable history safely.
-2. **Authentication and rate limits:** identities, tenancy, role checks, spend limits and production authorization.
-3. **Production orchestrator/job queue:** durable lifecycle, retries, idempotent scheduling and dead-letter handling.
-4. **Entitlement/paywall:** backend teaser/full-result/download rights.
-5. **Client UI:** map `analysis-result.v1` without changing the core contract.
-6. **PDF:** server renderer and entitlement-specific templates.
-7. **Live model selection:** evaluate and pin each AI stage separately; keep live smoke outside CI.
-8. **Secrets and observability:** secret rotation, redacted logs, stage cost/latency and contract-conflict alerts.
+- P-01, P-02, P-03 and P-04 use `openai/gpt-5.6-luna-pro` through OpenRouter.
+- Structured output is enabled for all four stages.
+- Direct public execution of P-03 and P-04 is disabled; the authenticated owner uses the orchestrated run route.
+- The internal result debug endpoint is disabled in production.
+- Runtime credentials stay in the hosting secret store and must never be committed.
 
-## GitHub connection
+## Remaining release gates
+
+1. Run the complete contract/E2E suite, lint, verified production build, and rendered artifact test from a clean release candidate.
+2. Verify the manager's full meeting flow, reload/resume behavior, error recovery, and duplicate-click idempotency without using live AI until approved.
+3. Verify architect/admin/manager isolation on every user-facing and pipeline route, including Excel and manager-plan revisions.
+4. Accept the UI and PDF in current desktop/tablet Chrome, Yandex Browser, and real Safari on macOS/iPadOS.
+5. With explicit budget approval, run a limited live OpenRouter smoke test and record stage latency, retries, token usage, cost, and final PDF.
+6. Complete the manager pilot, operational instructions, backup/rollback check, and first-48-hour monitoring plan.
+
+## Deferred beyond the manager release
+
+- client self-service accounts and public signup;
+- entitlement/paywall;
+- a general-purpose production job queue for larger concurrency;
+- a future Supabase data adapter if D1 is replaced;
+- model changes that have not passed golden-case comparison and a separately approved paid smoke test.
+
+## Repository connection
 
 The current `origin` may be the workspace hosting remote rather than GitHub. Do not overwrite it. After creating a GitHub repository:
 
@@ -38,4 +52,4 @@ git status --short
 git log -1 --oneline
 ```
 
-Expected: all tests green, no live provider calls in CI, and a clean tree after the Stage 10 commit.
+Expected: all tests green, no live provider calls in CI, a valid deployable artifact, and a clean release tree containing neither local transfer notes nor generated `output/` and `tmp/` artifacts.
