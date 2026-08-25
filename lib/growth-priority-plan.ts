@@ -1,5 +1,5 @@
 import type { AnalysisResultV1 } from "@/server/analysis-result";
-import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
+import { SEVEN_K_ELEMENT_IDS, type SevenKElementId, type SevenKScores } from "@/server/7k/types";
 
 const SOFT_ELEMENTS = new Set<SevenKElementId>(["authenticity", "audience"]);
 
@@ -9,19 +9,27 @@ export type GrowthPriorityPlan = {
   deferred: SevenKElementId[];
 };
 
+export type GrowthPriorityPlanInput = {
+  currentScores: SevenKScores;
+  targetScores: SevenKScores;
+  priorityElement: SevenKElementId | null;
+  buildElements: SevenKElementId[];
+  routeElements: SevenKElementId[];
+};
+
 function unique(values: readonly SevenKElementId[]): SevenKElementId[] {
   return values.filter((value, index, all) => all.indexOf(value) === index);
 }
 
-export function resolveGrowthPriorityPlan(result: AnalysisResultV1): GrowthPriorityPlan {
+export function resolveGrowthPriorityPlanFromInput(input: GrowthPriorityPlanInput): GrowthPriorityPlan {
   const growing = SEVEN_K_ELEMENT_IDS.filter(
-    (elementId) => result.target.targetScores[elementId] > result.current.scores[elementId],
+    (elementId) => input.targetScores[elementId] > input.currentScores[elementId],
   );
   const selected = unique([
-    ...(result.strategy.bundle.priority_element ? [result.strategy.bundle.priority_element] : []),
-    ...result.strategy.bundle.build_elements,
+    ...(input.priorityElement ? [input.priorityElement] : []),
+    ...input.buildElements,
   ]).filter((elementId) => growing.includes(elementId));
-  const routeOrder = unique(result.route.cards.map((card) => card.elementId))
+  const routeOrder = unique(input.routeElements)
     .filter((elementId) => growing.includes(elementId));
   const ordered = unique([...selected, ...routeOrder, ...growing]);
 
@@ -30,8 +38,8 @@ export function resolveGrowthPriorityPlan(result: AnalysisResultV1): GrowthPrior
   // Если продукт входит в денежную связку, а целевая модель одновременно требует
   // усилить технологию продаж, эти два твёрдых элемента должны расти вместе.
   if (
-    result.strategy.bundle.priority_element === "product_method"
-    && result.current.scores.sales_technology <= 2
+    input.priorityElement === "product_method"
+    && input.currentScores.sales_technology <= 2
     && growing.includes("sales_technology")
   ) {
     core = ["product_method", "sales_technology"];
@@ -54,6 +62,16 @@ export function resolveGrowthPriorityPlan(result: AnalysisResultV1): GrowthPrior
   const deferred = ordered.filter((elementId) => !assigned.has(elementId));
 
   return { core: core.slice(0, 2), supporting, deferred };
+}
+
+export function resolveGrowthPriorityPlan(result: AnalysisResultV1): GrowthPriorityPlan {
+  return resolveGrowthPriorityPlanFromInput({
+    currentScores: result.current.scores,
+    targetScores: result.target.targetScores,
+    priorityElement: result.strategy.bundle.priority_element,
+    buildElements: result.strategy.bundle.build_elements,
+    routeElements: result.route.cards.map((card) => card.elementId),
+  });
 }
 
 export function growthRole(

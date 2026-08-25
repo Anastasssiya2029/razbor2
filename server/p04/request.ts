@@ -1,4 +1,7 @@
 import { P04_SYSTEM_PROMPT } from "@/server/7k/prompts/p04.v1.2";
+import { BUNDLE_RULES_VERSION, findBundleRule } from "@/server/7k/config/bundle-rules.v1";
+import { resolveGrowthPriorityPlanFromInput } from "@/lib/growth-priority-plan";
+import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "@/server/7k/types";
 import type { P04PreparedInput } from "./stage-types";
 
 const PLAIN_LANGUAGE_CONTRACT = `
@@ -17,14 +20,32 @@ const GROWTH_BUNDLE_SYNTHESIS_CONTRACT = `
 <GROWTH_BUNDLE_SYNTHESIS_CONTRACT>
 REPORT_GLOSSARY.businessLevers объясняет денежный смысл каждого элемента 7К.
 Для growthPoint.coach_explanation:
-- возьми только priority_element и build_elements из утверждённой P-02 связки;
-- соедини их businessLevers в одну причинную бизнес-задачу, а не перечисляй подписи;
-- отдельно покажи, что создают ключевые элементы и как поддерживающие элементы помогают это упаковать или внедрить;
+- используй только правило из APPROVED_BUNDLE_RULE; это утверждённая связка для данного разбора;
+- keyCreates объясняет, что создают ключевые элементы;
+- supportingAdds объясняет вклад поддерживающих элементов;
+- combinedEffect объединяет их в одну денежную задачу;
+- checklistTask и doneWhen нельзя менять, расширять или подменять другими задачами;
 - объясни простыми словами, что именно изменится в предложении, продаже и пути клиента;
 - не называй один элемент главным, если несколько элементов образуют ключевую связку;
 - не добавляй новые элементы, действия, обещания или цифры.
-Пример логики, не готовый текст: продукт задаёт более дорогой результат, технология продаж помогает его продать, а аудитория и аутентичность делают предложение точным и узнаваемым для своего клиента.
 </GROWTH_BUNDLE_SYNTHESIS_CONTRACT>`;
+
+function currentScores(input: P04PreparedInput): SevenKScores {
+  return Object.fromEntries(
+    SEVEN_K_ELEMENT_IDS.map((elementId) => [elementId, input.context.current.current7k[elementId].score]),
+  ) as SevenKScores;
+}
+
+function selectedBundleRule(input: P04PreparedInput) {
+  const plan = resolveGrowthPriorityPlanFromInput({
+    currentScores: currentScores(input),
+    targetScores: input.context.target.targetScores,
+    priorityElement: input.context.strategy.bundle.priority_element,
+    buildElements: input.context.strategy.bundle.build_elements,
+    routeElements: input.context.resolvedPlan.cards.map((card) => card.elementId),
+  });
+  return findBundleRule(plan.core, plan.supporting);
+}
 
 export function buildP04SystemPrompt(
   input: P04PreparedInput,
@@ -35,6 +56,8 @@ export function buildP04SystemPrompt(
     .replace("{{REPORT_POLICY_JSON}}", JSON.stringify(input.reportPolicy))
     .replace("{{SOURCE_REGISTRY_JSON}}", JSON.stringify(input.sourceRegistry))
     .replace("{{REPORT_GLOSSARY_JSON}}", JSON.stringify(input.reportGlossary));
-  if (!correction) return `${prompt}\n\n${PLAIN_LANGUAGE_CONTRACT}\n\n${GROWTH_BUNDLE_SYNTHESIS_CONTRACT}`;
-  return `${prompt}\n\n${PLAIN_LANGUAGE_CONTRACT}\n\n${GROWTH_BUNDLE_SYNTHESIS_CONTRACT}\n\n<CORRECTION_REQUIRED>\n${correction}\n</CORRECTION_REQUIRED>`;
+  const rule = selectedBundleRule(input);
+  const approvedRule = `<APPROVED_BUNDLE_RULE>\n${JSON.stringify({ version: BUNDLE_RULES_VERSION, rule })}\n</APPROVED_BUNDLE_RULE>`;
+  if (!correction) return `${prompt}\n\n${PLAIN_LANGUAGE_CONTRACT}\n\n${GROWTH_BUNDLE_SYNTHESIS_CONTRACT}\n\n${approvedRule}`;
+  return `${prompt}\n\n${PLAIN_LANGUAGE_CONTRACT}\n\n${GROWTH_BUNDLE_SYNTHESIS_CONTRACT}\n\n${approvedRule}\n\n<CORRECTION_REQUIRED>\n${correction}\n</CORRECTION_REQUIRED>`;
 }

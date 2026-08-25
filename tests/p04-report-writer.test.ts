@@ -254,12 +254,34 @@ test("client language contract asks for concise human explanations without chang
   assert.match(prompt, /как сильный практик объясняет решение другу/u);
   assert.match(prompt, /Не меняй факты, баллы, роли, порядок, задачи/u);
   assert.match(prompt, /REPORT_GLOSSARY\.businessLevers/u);
-  assert.match(prompt, /соедини их businessLevers в одну причинную бизнес-задачу/u);
+  assert.match(prompt, /<APPROVED_BUNDLE_RULE>/u);
+  assert.match(prompt, /"version":"bundle-rules\.v1"/u);
+  assert.match(prompt, /combinedEffect объединяет их в одну денежную задачу/u);
+  assert.doesNotMatch(prompt, /"id":"BR-21"/u);
   assert.equal(input.reportGlossary.version, "report-glossary.v1.1");
   assert.deepEqual(
     (input.reportGlossary.businessLevers as Record<string, string>).product_method,
     "Средний чек и способ доведения клиента до результата",
   );
+});
+
+test("P04 receives only the exact approved bundle rule selected for the analysis", async () => {
+  const input = await prepared();
+  for (const elementId of Object.keys(input.context.target.targetScores) as Array<keyof typeof input.context.target.targetScores>) {
+    input.context.target.targetScores[elementId] = input.context.current.current7k[elementId].score;
+  }
+  input.context.target.targetScores.authenticity = 3;
+  input.context.target.targetScores.audience = 3;
+  input.context.target.targetScores.product_method = 3;
+  input.context.target.targetScores.sales_technology = 3;
+  input.context.strategy.bundle.priority_element = "product_method";
+  input.context.strategy.bundle.build_elements = ["sales_technology"];
+
+  const prompt = buildP04SystemPrompt(input);
+  assert.match(prompt, /"id":"BR-01"/u);
+  assert.match(prompt, /Собрать продукт с понятным результатом и научиться продавать его/u);
+  assert.doesNotMatch(prompt, /"id":"BR-02"/u);
+  assert.doesNotMatch(prompt, /"id":"BR-21"/u);
 });
 
 test("report-like wording and overly long sentences trigger only the bounded semantic repair", async () => {

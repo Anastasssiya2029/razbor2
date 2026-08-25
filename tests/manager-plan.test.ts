@@ -42,6 +42,9 @@ function resultFixture(): AnalysisResultV1 {
 test("manager version edits canonical copy and adds a task without changing the source checklist", () => {
   const result = resultFixture();
   const canonical = buildCanonicalChecklist(result);
+  assert.equal(canonical[0].tasks[0].id, "bundle:BR-01");
+  assert.match(canonical[0].tasks[0].task, /Собрать продукт с понятным результатом/u);
+  assert.ok(canonical[0].tasks.some((task) => task.id.startsWith("TASK-")));
   const content = managerPlanContentFromCards(canonical);
   content.cards[0].tasks[0].task = "Собрать понятный пакет для клиента";
   content.cards[0].tasks.push({
@@ -79,4 +82,18 @@ test("saved copy is applied only to the exact immutable analysis result", () => 
   };
   assert.equal(applyManagerPlan(canonical, version, "result-hash")[0].tasks[0].task, "Версия менеджера");
   assert.notEqual(applyManagerPlan(canonical, version, "different-hash")[0].tasks[0].task, "Версия менеджера");
+});
+
+test("an older saved manager copy does not hide a newly approved canonical bundle task", () => {
+  const canonical = buildCanonicalChecklist(resultFixture());
+  const content = managerPlanContentFromCards(canonical);
+  content.cards[0].tasks = content.cards[0].tasks.filter((task) => task.id !== "bundle:BR-01");
+  const version: ManagerPlanVersion = {
+    ...content,
+    sourceResultHash: "result-hash",
+    revision: 1,
+    updatedAt: "2026-08-25 12:00:00",
+  };
+  const applied = applyManagerPlan(canonical, version, "result-hash");
+  assert.equal(applied[0].tasks[0].id, "bundle:BR-01");
 });
