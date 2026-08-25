@@ -95,8 +95,12 @@ test("Step 3 expands every target gap into printable canonical transition tasks"
   assert.match(editableChecklist, /card\.tasks\.map/u);
   assert.match(editableChecklist, /route-task-check/u);
   assert.match(editableChecklist, /Готово, когда/u);
-  assert.match(editableChecklist, /Редактировать чек-лист/u);
+  assert.doesNotMatch(editableChecklist, />\s*Редактировать чек-лист\s*</u);
+  assert.match(editableChecklist, /manager-card-edit/u);
+  assert.match(editableChecklist, /editingCardIndex === cardIndex/u);
   assert.match(editableChecklist, /Сохранить версию/u);
+  assert.match(checklistModel, /flatMap\(splitCanonicalTransitionTask\)/u);
+  assert.doesNotMatch(resultView, /plan-identity-summary/u);
   assert.doesNotMatch(resultView, /Нейромаркетологи для реализации/u);
   assert.doesNotMatch(resultView, /Где деньги сейчас/u);
   assert.doesNotMatch(resultView, /prototypePlanTasks|prototypePlanCriteria/u);
@@ -109,6 +113,7 @@ test("saved result restores the step navigation and separates review from plan",
   assert.match(savedResultPage, />Разбор</u);
   assert.match(savedResultPage, />План перехода</u);
   assert.match(savedResultPage, /<GiftWheel analysisRunId=\{analysisRunId\}/u);
+  assert.match(savedResultPage, /activeStage === 1 && <header/u);
 });
 
 test("client-facing progress copy does not expose internal pipeline names or raw failure codes", () => {

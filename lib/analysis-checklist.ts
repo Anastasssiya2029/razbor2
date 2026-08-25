@@ -1,5 +1,5 @@
 import type { AnalysisResultV1 } from "@/server/analysis-result";
-import { resolveTransitionSequence } from "@/server/7k/transition-resolver";
+import { resolveTransitionSequence, type TransitionTask } from "@/server/7k/transition-resolver";
 import type { SevenKElementId } from "@/server/7k/types";
 import { findBundleRule } from "@/server/7k/config/bundle-rules.v1";
 import { orderedGrowthElements, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
@@ -36,6 +36,32 @@ export type ManagerPlanVersion = ManagerPlanContent & {
   updatedAt: string;
 };
 
+function splitTaskText(value: string): string[] {
+  const lines = value
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const bulletLines = lines.filter((line) => /^[•●]\s*/u.test(line));
+  if (bulletLines.length < 2 || bulletLines.length !== lines.length) return [value.trim()];
+  return bulletLines.map((line) => line.replace(/^[•●]\s*/u, "").trim());
+}
+
+function splitDoneWhen(value: string, count: number): string[] {
+  const clauses = value.split(/;\s*/u).map((part) => part.trim()).filter(Boolean);
+  return clauses.length === count ? clauses : Array.from({ length: count }, () => value.trim());
+}
+
+export function splitCanonicalTransitionTask(task: TransitionTask): ChecklistTask[] {
+  const taskParts = splitTaskText(task.task);
+  const doneWhenParts = splitDoneWhen(task.done_when, taskParts.length);
+  return taskParts.map((taskText, index) => ({
+    id: index === 0 ? task.task_id : `${task.task_id}:${index + 1}`,
+    source: "canonical",
+    task: taskText,
+    doneWhen: doneWhenParts[index],
+  }));
+}
+
 export function buildCanonicalChecklist(result: AnalysisResultV1): ChecklistCard[] {
   const growthPlan = resolveGrowthPriorityPlan(result);
   const bundleRule = findBundleRule(growthPlan.core, growthPlan.supporting);
@@ -44,12 +70,7 @@ export function buildCanonicalChecklist(result: AnalysisResultV1): ChecklistCard
     const toScore = result.target.targetScores[elementId];
     const transitionTasks = resolveTransitionSequence([
       { element_id: elementId, from_score: fromScore, to_score: toScore },
-    ]).tasks.map((task) => ({
-      id: task.task_id,
-      source: "canonical" as const,
-      task: task.task,
-      doneWhen: task.done_when,
-    }));
+    ]).tasks.flatMap(splitCanonicalTransitionTask);
     const tasks = index === 0 && bundleRule
       ? [{
           id: `bundle:${bundleRule.id}`,

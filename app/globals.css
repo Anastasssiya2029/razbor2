@@ -141,10 +141,10 @@ body {
 .result-cover .admin-eyebrow { color: #f7bde5; }
 .result-cover h1 { max-width: 900px; margin: 10px 0 18px; font-family: var(--display-font); font-size: clamp(38px, 6vw, 72px); line-height: 1.02; letter-spacing: -.05em; }
 .result-cover p { max-width: 780px; margin: 0 0 18px; color: #f5eaf7; font-size: clamp(17px, 2vw, 22px); }
-.result-cover.plan-cover { min-height: 0; padding: clamp(30px, 5vw, 58px); color: #35143f; background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(251,241,251,.96)); border: 1px solid rgba(109,47,182,.11); box-shadow: 0 18px 50px rgba(71,24,93,.08); }
+.result-cover.plan-cover { min-height: 0; padding: clamp(38px, 6vw, 72px) clamp(24px, 5vw, 58px) clamp(30px, 5vw, 56px); align-items: center; color: #35143f; text-align: center; background: transparent; border: 0; box-shadow: none; }
 .result-cover.plan-cover .admin-eyebrow { color: #b02b89; }
-.result-cover.plan-cover h1 { max-width: 1020px; color: #35143f; font-size: clamp(36px, 5vw, 62px); }
-.result-cover.plan-cover p { color: #715d78; }
+.result-cover.plan-cover h1 { width: fit-content; max-width: 1040px; margin: 18px auto; color: transparent; background: linear-gradient(102deg, #2d123f 0%, #60248b 54%, #942c9c 79%, #c62e98 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-size: clamp(42px, 5.65vw, 74px); font-weight: 800; line-height: 1.04; letter-spacing: -.047em; }
+.result-cover.plan-cover p { max-width: 820px; color: #715d78; }
 .result-section { padding: clamp(24px, 4vw, 42px); background: rgba(255,255,255,.94); border: 1px solid rgba(109,47,182,.1); border-radius: 26px; box-shadow: 0 15px 50px rgba(71,24,93,.07); }
 .result-section h2 { margin: 4px 0 10px; color: #401647; font-family: var(--display-font); font-size: clamp(25px, 3vw, 38px); font-weight: 800; line-height: 1.12; letter-spacing: -.025em; }
 .result-section p { color: #63536c; }
@@ -224,7 +224,7 @@ body {
 .money-now-summary.available .admin-eyebrow { color: #f8bce7; }
 .result-plan-actions { margin: -4px 0 2px; display: flex; justify-content: center; }
 .route-cards { display: grid; gap: 16px; }
-.route-cards > article { padding: 20px; background: #fcf9fd; border: 1px solid rgba(109,47,182,.1); border-radius: 17px; }
+.route-cards > article { padding: 20px; position: relative; background: #fcf9fd; border: 1px solid rgba(109,47,182,.1); border-radius: 17px; }
 .route-cards header { display: flex; gap: 14px; align-items: center; }
 .route-cards header > span { width: 43px; height: 43px; flex: 0 0 auto; display: grid; place-items: center; color: #fff; background: #722079; border-radius: 12px; font-weight: 900; }
 .route-cards header > div { display: grid; gap: 3px; }
@@ -238,28 +238,29 @@ body {
 .route-task-list li { display: flex; gap: 12px; align-items: flex-start; }
 .route-task-list li > div { min-width: 0; display: grid; gap: 5px; }
 .route-task-check { width: 20px; height: 20px; flex: 0 0 auto; margin-top: 1px; border: 2px solid #b06ad1; border-radius: 5px; background: #fff; }
-.manager-plan-toolbar { margin: -6px 0 22px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 18px; background: linear-gradient(145deg, #fff9fd, #faf5ff); border: 1px solid rgba(109,47,182,.12); border-radius: 17px; }
-.manager-plan-toolbar > div:first-child { display: grid; gap: 3px; }
-.manager-plan-toolbar > div:first-child strong { color: #55205d; font-size: 14px; }
-.manager-plan-toolbar > div:first-child span { color: #806d85; font-size: 12px; line-height: 1.4; }
-.manager-plan-toolbar > div:last-child { display: flex; flex: 0 0 auto; gap: 9px; }
 .manager-plan-message { margin: -11px 0 18px; padding: 10px 14px; color: #84245f; background: #fff1f7; border-radius: 11px; font-size: 13px; }
 .manager-plan-message.success { color: #41604d; background: #f1faf4; }
-.route-cards.is-editing > article { background: linear-gradient(145deg, #fff, #fcf7fd); border-color: rgba(154,55,148,.18); box-shadow: 0 14px 34px rgba(73,23,89,.07); }
+.route-cards > article.is-editing { background: linear-gradient(145deg, #fff, #fcf7fd); border-color: rgba(154,55,148,.18); box-shadow: 0 14px 34px rgba(73,23,89,.07); }
+.manager-card-edit { width: 38px; height: 38px; padding: 0; position: absolute; top: 16px; right: 16px; display: grid; place-items: center; color: #7a287f; background: #fff; border: 1px solid rgba(119,37,124,.16); border-radius: 12px; cursor: pointer; box-shadow: 0 8px 20px rgba(71,24,93,.08); transition: transform 160ms ease, box-shadow 160ms ease, color 160ms ease; }
+.manager-card-edit:hover, .manager-card-edit:focus-visible { color: #c42d91; outline: none; transform: translateY(-2px); box-shadow: 0 12px 26px rgba(113,29,104,.15); }
+.manager-card-edit svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .manager-task-editor { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 12px; }
 .manager-task-editor label { display: grid; gap: 5px; }
 .manager-task-editor label > span { color: #724f75; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 .manager-task-editor textarea { width: 100%; min-height: 76px; padding: 11px 12px; resize: vertical; color: #594c5e; background: #fff; border: 1px solid rgba(109,47,182,.18); border-radius: 11px; outline: none; font: 400 13px/1.5 "Inter Variable", Inter, sans-serif; box-shadow: 0 8px 20px rgba(71,24,93,.04); }
 .manager-task-editor textarea:focus { border-color: transparent; box-shadow: 0 10px 26px rgba(130,38,139,.17), 0 0 0 2px rgba(192,44,144,.12); }
 .manager-task-remove { width: fit-content; padding: 0; grid-column: 1 / -1; color: #9a557d; background: transparent; border: 0; cursor: pointer; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
-.manager-task-add { margin: 14px 0 0 32px; padding: 9px 13px; color: #77257c; background: #fff; border: 1px dashed rgba(119,37,124,.35); border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 800; }
+.manager-task-add { margin: 0; padding: 9px 13px; color: #77257c; background: #fff; border: 1px dashed rgba(119,37,124,.35); border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 800; }
 .manager-task-add:hover { background: #fbf3fc; }
-.plan-identity-summary p { white-space: pre-line; }
+.manager-card-actions { margin: 16px 0 0 32px; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 9px; }
+.pdf-download-control { display: grid; justify-items: center; gap: 10px; }
+.pdf-download-control > span { max-width: 620px; color: #a3356c; font-size: 13px; text-align: center; }
 
 @media (max-width: 720px) {
-  .manager-plan-toolbar { align-items: stretch; flex-direction: column; }
-  .manager-plan-toolbar > div:last-child { flex-wrap: wrap; }
   .manager-task-editor { grid-template-columns: 1fr; }
+  .manager-card-actions { margin-left: 0; grid-template-columns: 1fr 1fr; }
+  .manager-card-actions > span { display: none; }
+  .manager-card-actions .manager-task-add { grid-column: 1 / -1; }
 }
 .marketer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .marketer-grid > article { padding: 18px; background: #fcf9fd; border: 1px solid rgba(109,47,182,.09); border-radius: 16px; break-inside: avoid; }
@@ -305,9 +306,11 @@ body {
 .gift-wheel-sector-label.light-text { fill: #fff; }
 .gift-wheel-hub { width: clamp(92px, 17%, 122px); aspect-ratio: 1; position: absolute; z-index: 4; top: 50%; left: 50%; display: grid; place-items: center; background: #fff; border: 1px solid #f8edf6; border-radius: 50%; box-shadow: 0 10px 24px rgba(71, 24, 93, 0.18); transform: translate(-50%, -50%); }
 .gift-wheel-hub > span { width: 62%; aspect-ratio: 1; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #401450, #d92e96); border-radius: 50%; box-shadow: 0 5px 12px rgba(71, 24, 93, 0.2); }
-.gift-client-panel { width: min(255px, 100%); margin: 0 auto; padding: 7px 7px 7px 19px; display: grid; grid-template-columns: 1fr 48px; grid-template-rows: auto auto; column-gap: 10px; text-align: left; background: rgba(255, 255, 255, 0.96); border: 1px solid #e8e4eb; border-radius: 999px; box-shadow: 0 8px 22px rgba(71, 24, 93, 0.11); }
+.gift-client-panel { width: min(255px, 100%); margin: 0 auto; padding: 7px 7px 7px 19px; display: grid; grid-template-columns: 1fr 48px; grid-template-rows: auto auto; column-gap: 10px; text-align: left; background: rgba(255, 255, 255, 0.96); border: 1px solid #e8e4eb; border-radius: 999px; box-shadow: 0 8px 22px rgba(71, 24, 93, 0.11); transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease; }
+.gift-client-panel:focus-within { border-color: transparent; transform: translateY(-3px); box-shadow: 0 16px 36px rgba(113,29,104,.18), 0 0 0 2px rgba(194,45,145,.11); }
 .gift-client-panel label { grid-column: 1; grid-row: 1; color: #9aa9be; font-size: 9px; font-weight: 800; letter-spacing: 0.045em; line-height: 1; text-transform: uppercase; }
 .gift-client-panel input { min-width: 0; width: 100%; grid-column: 1; grid-row: 2; padding: 2px 0 0; color: #27172d; background: transparent; border: 0; outline: 0; font-family: var(--display-font); font-size: 21px; font-weight: 800; line-height: 1.15; }
+.gift-client-panel input:focus, .gift-client-panel input:focus-visible { background: transparent !important; border: 0 !important; outline: 0 !important; box-shadow: none !important; transform: none !important; }
 .gift-client-panel input::-webkit-outer-spin-button, .gift-client-panel input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; }
 .gift-client-panel input[type="number"] { appearance: textfield; }
 .gift-client-panel > button { width: 48px; height: 48px; grid-column: 2; grid-row: 1 / span 2; align-self: center; color: #fff; background: linear-gradient(135deg, #401450, #d92e96); border: 0; border-radius: 50%; cursor: pointer; box-shadow: 0 6px 15px rgba(92, 25, 105, 0.24); font-size: 16px; }
@@ -3686,6 +3689,7 @@ body :is(
 
 .journey a.journey-stage { text-decoration: none; }
 .saved-result-journey { margin-top: 34px; }
+.journey.journey-spacious { margin-top: 42px; padding-bottom: 14px; }
 
 .journey-stage:disabled {
   cursor: default;
@@ -4779,6 +4783,20 @@ body :is(
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+body.is-exporting-pdf::before {
+  content: "Собираю PDF…";
+  position: fixed;
+  z-index: 100000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(45, 18, 63, .86);
+  font-family: var(--display-font);
+  font-size: 22px;
+  font-weight: 800;
 }
 
 /* Decision-based analysis flow */

@@ -10,6 +10,7 @@ import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-sum
 import { resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
 import { AnalysisPdfView } from "@/app/_components/analysis-pdf-view";
 import { EditablePlanChecklist } from "@/app/_components/editable-plan-checklist";
+import { PdfDownloadButton } from "@/app/_components/pdf-download-button";
 import {
   applyManagerPlan,
   buildCanonicalChecklist,
@@ -152,23 +153,8 @@ export function AnalysisResultView({ result, analysisRunId, initialManagerPlan, 
         />
       </section>}
 
-      {showPlanCover && <section className="result-section plan-identity-summary plan-closing-summary">
-        <article className="archetype-card">
-          <span className="admin-eyebrow">Бизнес-архетип</span>
-          <h2>{archetype.name}</h2>
-          <p>{result.report.archetype.summary}</p>
-        </article>
-        <article className="focus-card">
-          <span className="admin-eyebrow">Главная связка роста</span>
-          <h2>{result.report.growthPoint.title}</h2>
-          <p>{result.report.growthPoint.coach_explanation}</p>
-        </article>
-      </section>}
-
       {showPlanCover && <div className="plan-actions result-plan-actions">
-        <button type="button" className="primary-button compact" onClick={() => window.print()}>
-          Сохранить план в PDF
-        </button>
+        <PdfDownloadButton fileName={`Индивидуальный-план-${clientName || "7К"}`} />
       </div>}
 
     </div>

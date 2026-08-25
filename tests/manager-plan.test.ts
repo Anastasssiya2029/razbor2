@@ -5,10 +5,12 @@ import {
   applyManagerPlan,
   buildCanonicalChecklist,
   managerPlanContentFromCards,
+  splitCanonicalTransitionTask,
   type ManagerPlanVersion,
 } from "../lib/analysis-checklist";
 import type { AnalysisResultV1 } from "../server/analysis-result";
 import { ManagerPlanError, validateManagerPlanContent } from "../server/manager-plan";
+import { TRANSITIONS_70 } from "../server/7k/transition-resolver";
 
 function resultFixture(): AnalysisResultV1 {
   return {
@@ -44,7 +46,7 @@ test("manager version edits canonical copy and adds a task without changing the 
   const canonical = buildCanonicalChecklist(result);
   assert.equal(canonical[0].tasks[0].id, "bundle:BR-01");
   assert.match(canonical[0].tasks[0].task, /Собрать продукт с понятным результатом/u);
-  assert.ok(canonical[0].tasks.some((task) => task.id.startsWith("TASK-")));
+  assert.ok(canonical[0].tasks.some((task) => task.id === "product_method_1_2"));
   const content = managerPlanContentFromCards(canonical);
   content.cards[0].tasks[0].task = "Собрать понятный пакет для клиента";
   content.cards[0].tasks.push({
@@ -96,4 +98,15 @@ test("an older saved manager copy does not hide a newly approved canonical bundl
   };
   const applied = applyManagerPlan(canonical, version, "result-hash");
   assert.equal(applied[0].tasks[0].id, "bundle:BR-01");
+});
+
+test("a bulleted transition is rendered as separate checklist checkpoints without bullet characters", () => {
+  const transition = TRANSITIONS_70.find((item) => item.task_id === "funnel_2_3");
+  assert.ok(transition);
+  const tasks = splitCanonicalTransitionTask(transition);
+  assert.equal(tasks.length, 2);
+  assert.deepEqual(tasks.map((task) => task.id), ["funnel_2_3", "funnel_2_3:2"]);
+  assert.ok(tasks.every((task) => !/[•●]/u.test(task.task)));
+  assert.match(tasks[0].task, /источников клиентов/u);
+  assert.match(tasks[1].task, /путь клиента/u);
 });

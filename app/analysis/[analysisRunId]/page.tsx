@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { AppBrand } from "@/app/_components/brand";
 import { useAppSession } from "@/app/_components/app-session";
 import { AnalysisResultView } from "@/app/_components/analysis-result-view";
 import { GiftWheel } from "@/app/_components/gift-wheel";
@@ -53,7 +52,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   }, [analysisRunId, user]);
   if (sessionLoading || !user) return <main className="admin-loading">Проверяю доступ…</main>;
   return <main className="result-shell">
-    <header className="admin-header no-print"><AppBrand /><nav className="admin-actions"><Link className="admin-button" href="/cabinet">К разборам</Link>{result && <button className="admin-button primary" type="button" onClick={() => window.print()}>Распечатать / PDF</button>}</nav></header>
+    {activeStage === 1 && <header className="admin-header no-print"><nav className="admin-actions"><Link className="admin-button" href="/cabinet">К разборам</Link></nav></header>}
     {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <>
       {activeStage === 3 ? <GiftWheel analysisRunId={analysisRunId} /> : <AnalysisResultView
         result={result}
@@ -64,7 +63,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
         deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)}
         view={activeStage === 1 ? "analysis" : "plan"}
       />}
-      <nav className="journey saved-result-journey no-print" aria-label="Этапы работы">
+      <nav className={`journey saved-result-journey ${activeStage >= 2 ? "journey-spacious" : ""} no-print`} aria-label="Этапы работы">
         <Link className="journey-stage" href="/">
           <span className="journey-number">1</span><span>Диагностика</span>
         </Link>

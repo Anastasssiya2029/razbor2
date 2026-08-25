@@ -6,6 +6,7 @@ const pdfView = readFileSync("app/_components/analysis-pdf-view.tsx", "utf8");
 const resultView = readFileSync("app/_components/analysis-result-view.tsx", "utf8");
 const checklist = readFileSync("lib/analysis-checklist.ts", "utf8");
 const styles = readFileSync("app/globals.css", "utf8");
+const downloadButton = readFileSync("app/_components/pdf-download-button.tsx", "utf8");
 
 test("approved PDF plan is embedded once and receives the persisted analysis context", () => {
   assert.match(resultView, /<AnalysisPdfView/u);
@@ -50,4 +51,13 @@ test("print cascade replaces the interactive result with full-bleed A4 pages", (
   assert.match(styles, /\.result-view > :not\(\.analysis-pdf\)/u);
   assert.match(styles, /\.analysis-pdf-page\s*\{[\s\S]*width:\s*210mm;[\s\S]*height:\s*297mm;/u);
   assert.match(styles, /print-color-adjust:\s*exact/u);
+});
+
+test("plan PDF is downloaded as a real multi-page file instead of only opening the print dialog", () => {
+  assert.match(resultView, /<PdfDownloadButton/u);
+  assert.doesNotMatch(resultView, /window\.print\(\)/u);
+  assert.match(downloadButton, /import\("html-to-image"\)/u);
+  assert.match(downloadButton, /import\("jspdf"\)/u);
+  assert.match(downloadButton, /querySelectorAll<HTMLElement>\("\.analysis-pdf-page"\)/u);
+  assert.match(downloadButton, /pdf\.save/u);
 });

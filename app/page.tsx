@@ -1810,12 +1810,12 @@ export default function Home() {
 
   return (
     <main className={`site-shell ${loadingTarget ? "is-neuro-loading" : ""}`}>
-      {!loadingTarget && <header className="site-header">
+      {!loadingTarget && currentStage < 2 && <header className="site-header">
         <Brand />
         <HeaderMenu onNewDiagnostic={startNewDiagnostic} />
       </header>}
 
-      {!loadingTarget && currentStage !== 2 && <section className="hero" aria-labelledby="page-title">
+      {!loadingTarget && currentStage < 2 && <section className="hero" aria-labelledby="page-title">
         <span className="hero-badge">Авторский разбор для экспертов</span>
         <h1 id="page-title">Твоя Бизнес-Система</h1>
         <p>
@@ -2062,7 +2062,7 @@ export default function Home() {
         </section>
       )}
 
-      {!loadingTarget && <nav className="journey" aria-label="Этапы работы">
+      {!loadingTarget && <nav className={`journey ${currentStage >= 2 ? "journey-spacious" : ""}`} aria-label="Этапы работы">
         {stages.map((stage, index) => (
           <button
             type="button"
