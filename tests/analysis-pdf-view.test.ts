@@ -64,6 +64,13 @@ test("archetype and checklist pages preserve the approved reference layout", () 
   assert.match(styles, /\.analysis-pdf-checklist-card\s*\{[\s\S]*height:\s*209mm;[\s\S]*grid-template-columns:/u);
 });
 
+test("PDF checklist uses the same restrained berry palette as the saved plan cards", () => {
+  assert.match(styles, /\.analysis-pdf-checklist-card\s*\{[\s\S]*background:\s*#fcf9fd;/u);
+  assert.match(styles, /\.analysis-pdf-checklist-main\s*>\s*small\s*\{[\s\S]*color:\s*#9c6597;/u);
+  assert.match(styles, /\.analysis-pdf-checklist-main\s*>\s*h3\s*\{[\s\S]*color:\s*#a52381;/u);
+  assert.match(styles, /\.analysis-pdf-checklist-main\s*>\s*b\s*\{[\s\S]*color:\s*#a52381;/u);
+});
+
 test("each growing element carries its mapped neuromarketer without changing analysis data", () => {
   assert.match(pdfView, /ELEMENT_NEUROMARKETERS\[card\.elementId\]/u);
   assert.match(pdfView, /NEUROMARKETERS\[specialistId\]/u);

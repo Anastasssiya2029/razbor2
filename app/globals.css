@@ -1006,7 +1006,7 @@ body {
   }
 
   .analysis-pdf-checklist-title strong {
-    color: #c51e82;
+    color: #7a287f;
     font-size: 13.5pt;
   }
 
@@ -1022,8 +1022,8 @@ body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 55mm;
     overflow: hidden;
-    background: white;
-    border: .3mm solid #e2d2ec;
+    background: #fcf9fd;
+    border: .3mm solid #ddcfe7;
     border-radius: 7mm;
   }
 
@@ -1032,17 +1032,18 @@ body {
     padding: 9mm 8mm 7mm;
     display: flex;
     flex-direction: column;
+    background: linear-gradient(150deg, #ffffff 0%, #fcf7fd 100%);
   }
 
   .analysis-pdf-checklist-main > small {
-    color: #c51e82;
+    color: #9c6597;
     font-size: 8pt;
     font-weight: 900;
   }
 
   .analysis-pdf-checklist-main > h3 {
     margin-top: 8mm;
-    color: #281731;
+    color: #a52381;
     font-size: 22pt;
     font-weight: 800;
     line-height: 1.08;
@@ -1051,7 +1052,7 @@ body {
   .analysis-pdf-checklist-main > b {
     margin-top: 6mm;
     padding-bottom: 8mm;
-    color: #c51e82;
+    color: #a52381;
     border-bottom: .25mm solid #e9dee9;
     font-size: 15pt;
   }
@@ -1088,7 +1089,7 @@ body {
   .analysis-pdf-task-list li > i {
     width: 6mm;
     height: 6mm;
-    border: .5mm solid #9138ca;
+    border: .5mm solid #722079;
     border-radius: 1.4mm;
   }
 
@@ -1106,7 +1107,7 @@ body {
   .analysis-pdf-task-list li span {
     margin-top: 4mm;
     display: block;
-    color: #c51e82;
+    color: #7a287f;
     font-size: 9.5pt;
     font-weight: 800;
   }
@@ -1153,11 +1154,12 @@ body {
     padding: 15mm 6mm 7mm;
     position: relative;
     text-align: center;
+    background: linear-gradient(180deg, #fcf9fd 0%, #f9f3fb 100%);
     border-left: .25mm solid #e9dee9;
   }
 
   .analysis-pdf-neuro-card > small {
-    color: #c51e82;
+    color: #7a287f;
     font-size: 7.5pt;
     font-weight: 900;
   }
@@ -1192,7 +1194,7 @@ body {
   .analysis-pdf-neuro-list b {
     margin-top: 4mm;
     display: block;
-    color: #c51e82;
+    color: #a52381;
     font-size: 9pt;
     line-height: 1.2;
   }
