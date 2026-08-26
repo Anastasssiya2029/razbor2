@@ -168,7 +168,7 @@ export const archetypeDefinitions: Record<ArchetypeId, ArchetypeDefinition> = {
   hero: {
     id: "hero",
     name: "Герой",
-    quote: "Результат есть, но я по-прежнему тащит весь бизнес на себе.",
+    quote: "Результат есть, но ты по-прежнему тащишь весь бизнес на себе.",
     nextId: "magician",
     transitionKey: "Перестать бежать, перестать стараться обогнать самого себя. Нужно остановиться.",
     actions: [

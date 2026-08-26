@@ -46,7 +46,8 @@ test("target model and checklist are generated from canonical result data", () =
   assert.doesNotMatch(pdfView, /targetConfiguration\.summary/u);
   assert.match(pdfView, /Рабочий путь клиента/u);
   assert.match(pdfView, /Балл: \{card\.fromScore\} → \{card\.toScore\}/u);
-  assert.match(pdfView, /localizeWhyNotNow\(item\.text\)/u);
+  assert.match(pdfView, /Сохраняем текущий уровень и возвращаемся к этим элементам после проверки ключевой денежной связки\./u);
+  assert.doesNotMatch(pdfView, /result\.report\.whyNotNow/u);
   assert.doesNotMatch(pdfView, /70 000|200 000|Анн[аы]/u);
 });
 

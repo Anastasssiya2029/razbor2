@@ -801,9 +801,9 @@ body {
   }
 
   .analysis-pdf-key-card {
-    min-height: 40mm;
-    margin-top: 6mm;
-    padding: 7mm;
+    min-height: 36mm;
+    margin-top: 4mm;
+    padding: 5.5mm;
     background: linear-gradient(115deg, #fff5f9, #f6ecfb);
     border: .28mm solid #e3cdeb;
   }
@@ -817,7 +817,7 @@ body {
   }
 
   .analysis-pdf-key-card h3 {
-    margin-top: 3mm;
+    margin-top: 2mm;
     color: #5e197d;
     font-size: 16pt;
     font-weight: 800;
@@ -825,22 +825,22 @@ body {
   }
 
   .analysis-pdf-key-card p {
-    margin-top: 4mm;
+    margin-top: 2.5mm;
     color: #756979;
-    font-size: 10.5pt;
-    line-height: 1.3;
+    font-size: 9.5pt;
+    line-height: 1.24;
   }
 
   .analysis-pdf-secondary-cards {
-    min-height: 45mm;
-    margin-top: 3mm;
+    min-height: 37mm;
+    margin-top: 2.5mm;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 7mm;
+    gap: 5mm;
   }
 
   .analysis-pdf-secondary-cards > section {
-    padding: 7mm;
+    padding: 5.5mm;
     background: white;
     border: .28mm solid #e8d8e6;
   }
@@ -854,17 +854,17 @@ body {
   }
 
   .analysis-pdf-secondary-cards h3 {
-    margin-top: 4mm;
-    font-size: 12pt;
+    margin-top: 2.5mm;
+    font-size: 11.5pt;
     font-weight: 800;
     line-height: 1.15;
   }
 
   .analysis-pdf-secondary-cards p {
-    margin-top: 4mm;
+    margin-top: 2.5mm;
     color: #756979;
-    font-size: 10.5pt;
-    line-height: 1.3;
+    font-size: 9.5pt;
+    line-height: 1.24;
   }
 
   .analysis-pdf-archetype-page .analysis-pdf-page-content > h2 {

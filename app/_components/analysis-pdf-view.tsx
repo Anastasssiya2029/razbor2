@@ -3,7 +3,6 @@ import type { AnalysisResultV1 } from "@/server/analysis-result/types";
 import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
-import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 import { archetypeDefinitions } from "@/lib/business-analysis";
 import { growthRole, orderedGrowthElements, resolveGrowthPriorityPlan } from "@/lib/growth-priority-plan";
 import { ELEMENT_NEUROMARKETERS, NEUROMARKETERS } from "@/lib/neuromarketers";
@@ -51,15 +50,6 @@ function names(elementIds: readonly SevenKElementId[]): string {
   return elementIds.length > 0
     ? elementIds.map((elementId) => elementName(elementId, true)).join(" + ")
     : "Нет отдельных направлений";
-}
-
-function localizeWhyNotNow(value: string): string {
-  return SEVEN_K_ELEMENTS.reduce((copy, element) => {
-    const localizedName = elementName(element.id, true);
-    return copy
-      .replace(new RegExp(`Элемент\\s+${element.id}\\b`, "giu"), localizedName)
-      .replace(new RegExp(`\\b${element.id}\\b`, "giu"), localizedName);
-  }, value);
 }
 
 function checklistRole(plan: ReturnType<typeof resolveGrowthPriorityPlan>, elementId: SevenKElementId): string {
@@ -113,14 +103,12 @@ export function AnalysisPdfView({ result, managerPlan, deadlineLabel, currentRev
   const pausedElements = SEVEN_K_ELEMENT_IDS.filter(
     (elementId) => result.target.targetScores[elementId] === result.current.scores[elementId],
   );
-  const pausedCopy = result.report.whyNotNow
-    .filter((item) => pausedElements.includes(item.element_id))
-    .map((item) => localizeWhyNotNow(item.text))
-    .slice(0, 2)
-    .join(" ");
   const supportCopy = growthPlan.supporting.length > 0
-    ? `Помогают упаковать ключевую связку: ${growthPlan.supporting.map((elementId) => SEVEN_K_BUSINESS_LEVERS[elementId].toLocaleLowerCase("ru-RU")).join(" и ")}.`
+    ? "Поддерживают ключевую связку: помогают точнее упаковать предложение, удерживать контакт с аудиторией и усиливать поток качественных лидов."
     : "Дополнительные элементы подключаются только после проверки ключевой связки.";
+  const pausedCopy = pausedElements.length > 0
+    ? "Сохраняем текущий уровень и возвращаемся к этим элементам после проверки ключевой денежной связки."
+    : "Нет отдельных направлений, которые нужно удерживать без развития на этом этапе.";
   const checklistOrder = orderedGrowthElements(growthPlan);
   const checklistCards = applyManagerPlan(
     buildCanonicalChecklist(result),
@@ -176,7 +164,7 @@ export function AnalysisPdfView({ result, managerPlan, deadlineLabel, currentRev
         </section>
         <div className="analysis-pdf-secondary-cards">
           <section><small>ПОДДЕРЖИВАЮЩИЕ ЭЛЕМЕНТЫ</small><h3>{names(growthPlan.supporting)}</h3><p>{supportCopy}</p></section>
-          <section><small>ПОКА НЕ ТРОГАЕМ</small><h3>{names(pausedElements)}</h3><p>{pausedCopy || "Возвращаемся к этим направлениям после проверки ключевой денежной связки."}</p></section>
+          <section><small>ПОКА НЕ ТРОГАЕМ</small><h3>{names(pausedElements)}</h3><p>{pausedCopy}</p></section>
         </div>
       </div>
     </article>
