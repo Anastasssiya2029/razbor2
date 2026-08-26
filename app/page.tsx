@@ -30,6 +30,7 @@ import { GiftWheel } from "@/app/_components/gift-wheel";
 import { buildCurrentSystemSummary } from "@/lib/current-system-summary";
 import type { AnalysisOverview } from "@/lib/analysis-overview";
 import { failedRunRecovery } from "@/lib/analysis-run-recovery";
+import { hasQaPrefillHash, readQaPrefillHash } from "@/lib/qa-prefill";
 
 type FieldProps = {
   label: string;
@@ -1514,6 +1515,42 @@ export default function Home() {
       setRecoveryReady(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (!recoveryReady || !user) return;
+
+    const applyQaPrefill = () => {
+      if (!hasQaPrefillHash(window.location.hash)) return;
+      const prefill = readQaPrefillHash(window.location.hash);
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+      if (user.role !== "architect" || !prefill) return;
+
+      window.sessionStorage.removeItem(FORM_RECOVERY_STORAGE_KEY);
+      setValues({ ...emptyDiagnosticValues(), ...prefill.values });
+      setDeadline(prefill.deadline);
+      setClientsCountPeriod(prefill.clientsCountPeriod);
+      setDesiredSystemHoursApplicable(prefill.desiredSystemHoursApplicable);
+      setActiveTab(2);
+      setCurrentStage(0);
+      setMaxUnlockedStage(0);
+      setAnalysisSlide(0);
+      setIsSubmittingDiagnostic(false);
+      setIsSavingStart(false);
+      setSubmittedDiagnostic(null);
+      setAnalysisResult(null);
+      setRealAnalysisResult(null);
+      setAnalysisBackgroundError(null);
+      setSubmissionError(null);
+      setLoadingTarget(null);
+      setAnalysisProgressStatus("queued");
+      setAnalysisStartedAt(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    applyQaPrefill();
+    window.addEventListener("hashchange", applyQaPrefill);
+    return () => window.removeEventListener("hashchange", applyQaPrefill);
+  }, [recoveryReady, user]);
 
   useEffect(() => {
     if (!recoveryReady) return;

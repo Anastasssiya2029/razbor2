@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { failedRunRecovery } from "../lib/analysis-run-recovery";
+import { readQaPrefillHash, type QaPrefillPayload } from "../lib/qa-prefill";
 
 test("the diagnostic form recovers a tab-local draft and starts a clean analysis explicitly", () => {
   const page = readFileSync("app/page.tsx", "utf8");
@@ -11,6 +12,27 @@ test("the diagnostic form recovers a tab-local draft and starts a clean analysis
   assert.match(page, /setValues\(emptyDiagnosticValues\(\)\)/u);
   assert.match(page, /Новый разбор/u);
   assert.match(page, /Мои разборы/u);
+});
+
+test("an architect-only QA link prefills the form without submitting an analysis", () => {
+  const page = readFileSync("app/page.tsx", "utf8");
+  const payload: QaPrefillPayload = {
+    version: "diagnostic-form-prefill.v1",
+    values: { expertName: "Алина", niche: "Маркетолог" },
+    deadline: "6 месяцев",
+    clientsCountPeriod: "month",
+    desiredSystemHoursApplicable: true,
+  };
+  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+
+  assert.deepEqual(readQaPrefillHash(`#qa-prefill=${encoded}`), payload);
+  assert.equal(readQaPrefillHash("#qa-prefill=not-json"), null);
+  assert.match(page, /user\.role !== "architect"/u);
+  assert.match(page, /setValues\(\{ \.\.\.emptyDiagnosticValues\(\), \.\.\.prefill\.values \}\)/u);
+  assert.match(page, /setActiveTab\(2\)/u);
+  assert.match(page, /setSubmittedDiagnostic\(null\)/u);
+  assert.match(page, /window\.sessionStorage\.removeItem\(FORM_RECOVERY_STORAGE_KEY\)/u);
+  assert.doesNotMatch(page, /readQaPrefillHash[\s\S]{0,1200}openAnalysis\(/u);
 });
 
 test("expired authentication redirects only after the draft has a recovery path", () => {
