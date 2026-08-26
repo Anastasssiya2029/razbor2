@@ -406,6 +406,7 @@ export async function makeP04Source(
     promptVersion: "P-02.v1.3",
     outputSchemaVersion: "1.3",
     ruleVersions: {
+      requestBuilder: "p02-request-builder.v2",
       elements: "elements.v1",
       levelCapabilities: "scoring-rules.v2.0",
       constraintRules: "constraint-rules.v2.1",

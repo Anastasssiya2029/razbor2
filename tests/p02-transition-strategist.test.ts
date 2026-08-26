@@ -159,26 +159,18 @@ test("a low sales technology accompanies a selected product in the nearest linka
   });
   assert.doesNotThrow(() => validateP02Invariants(value, input));
 });
-test("P-02 prompt embeds the exact root output contract", () => {
+test("P-02 sends the exact output contract separately and does not duplicate it in the prompt", async () => {
   const prompt = buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig);
-  const match = prompt.match(/<P02_OUTPUT_SCHEMA_JSON>\n([\s\S]+?)\n<\/P02_OUTPUT_SCHEMA_JSON>/u);
-  assert.ok(match);
-  const schema = JSON.parse(match[1]) as { additionalProperties: boolean; required: string[] };
-  assert.equal(schema.additionalProperties, false);
-  assert.deepEqual(schema.required, [
-    "promptVersion",
-    "schemaVersion",
-    "analysisStatus",
-    "constraint",
-    "perceivedVsEvidenced",
-    "previousAttemptsAnalysis",
-    "candidateAudit",
-    "bundle",
-    "elementSequence",
-    "businessValidation",
-    "sanityChecks",
-  ]);
+  assert.doesNotMatch(prompt, /P02_OUTPUT_SCHEMA_JSON/u);
   assert.match(prompt, /Не добавляй другие корневые поля/u);
+  const provider = new QueueProvider([output()]);
+  await runP02TransitionStrategist(prepared(), { provider });
+  assert.equal(provider.requests[0].outputSchema.additionalProperties, false);
+  assert.deepEqual(provider.requests[0].outputSchema.required, [
+    "promptVersion", "schemaVersion", "analysisStatus", "constraint",
+    "perceivedVsEvidenced", "previousAttemptsAnalysis", "candidateAudit", "bundle",
+    "elementSequence", "businessValidation", "sanityChecks",
+  ]);
 });
 test("P-02 receives fail-closed transition levers without task text", () => {
   const current = { ...SCORES, authenticity: 2 };
@@ -215,8 +207,8 @@ test("P-02 prompt treats nearest and vision models as an intentional staged tran
 });
 test("P-02 prompt exposes the same exact baseline allowlist enforced by backend", () => {
   const prompt = buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig);
-  assert.match(prompt, /Разрешённые точные числа для businessValidation baseline_value: \[0,4\]/u);
-  assert.match(prompt, /если подходящего числа нет, верни null/u);
+  assert.match(prompt, /"allowedBusinessNumbers":\[0,4\]/u);
+  assert.match(prompt, /если список пуст или подходящего числа нет, верни null/u);
   assert.match(prompt, /Не извлекай baseline_value из свободного текста/u);
 });
 test("7. perceived ads need may differ from evidenced offer→payment leak", () => assert.equal(output().perceivedVsEvidenced.relation, "differs"));

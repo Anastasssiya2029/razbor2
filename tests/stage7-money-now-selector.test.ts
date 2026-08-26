@@ -24,6 +24,7 @@ import {
 } from "../server/7k/money-now-selector";
 import type { P01ResultV1_4_2 } from "../server/p01/types";
 import { buildMoneyNowHistoryGuardInput } from "../server/p01/money-now-history-adapter";
+import { hydrateDisabledMoneyNow } from "../server/p01/money-now-disabled";
 import { sha256 } from "../server/stage4/hash";
 import type { ResolvedTransitionPlan } from "../server/task-resolver/types";
 import { MoneyNowSelectorStageError } from "../server/money-now-selector/errors";
@@ -598,6 +599,17 @@ test("34. no candidates returns valid no_eligible_scenario", () => {
   const result = selectMoneyNowCandidate(selectorInput(baseP01()));
   assert.equal(result.selectionStatus, "no_eligible_scenario");
   assert.equal(result.selectedScenario, null);
+});
+
+test("disabled P-01 Money Now data overrides an otherwise eligible scenario and fails closed", () => {
+  const eligible = baseP01();
+  confirmScenario(eligible, "MN05");
+  assert.equal(selectMoneyNowCandidate(selectorInput(eligible)).selectionStatus, "selected");
+
+  const hydrated = hydrateDisabledMoneyNow(eligible) as P01ResultV1_4_2;
+  const decision = selectMoneyNowCandidate(selectorInput(hydrated));
+  assert.equal(decision.selectionStatus, "no_eligible_scenario");
+  assert.equal(decision.selectedScenario, null);
 });
 
 test("35. no_eligible_scenario stays valid and routes to the deterministic P-03 skip path", async () => {

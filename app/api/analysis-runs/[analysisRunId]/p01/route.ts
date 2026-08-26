@@ -3,6 +3,7 @@ import { analysisRuns, diagnostics, p01AnalysisResults } from "@/db/schema";
 import { validateDiagnosticInput } from "@/lib/diagnostic-input";
 import { analysisRunAccessErrorResponse, requireAnalysisRunAccess } from "@/server/analysis-runs";
 import { executeP01AnalysisRun } from "@/server/p01/analysis-run-service";
+import { ANALYSIS_FEATURES } from "@/server/analysis-features";
 import { and, eq } from "drizzle-orm";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
@@ -63,6 +64,7 @@ export async function POST(request: Request, context: RouteContext) {
     analysisRunId,
     diagnosticId: run.diagnosticId,
     input,
+    moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
   });
   if (executed.status === "analysis_failed") {
     return Response.json(

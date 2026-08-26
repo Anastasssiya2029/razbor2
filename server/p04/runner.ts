@@ -3,6 +3,10 @@ import { parseProviderJson } from "@/server/ai/provider-json";
 import { P04_PROMPT_VERSION } from "@/server/7k/prompts/p04.v1.2";
 import { createConfiguredP04Provider } from "./provider";
 import { buildP04SystemPrompt } from "./request";
+import {
+  hydrateDisabledP04MoneyNow,
+  P04_WITHOUT_MONEY_NOW_OUTPUT_SCHEMA,
+} from "./money-now-disabled";
 import type { P04PreparedInput } from "./stage-types";
 import type { P04Provider, P04RunMetadata, P04RunOutcome } from "./types";
 import { P04_OUTPUT_SCHEMA_VERSION } from "./types";
@@ -39,6 +43,7 @@ export class P04RunExecutionError extends Error {
 export type RunP04Options = {
   provider?: P04Provider;
   now?: () => Date;
+  moneyNowEnabled?: boolean;
 };
 
 function emptyUsage(): AiProviderUsage {
@@ -72,6 +77,7 @@ export async function runP04ReportWriter(
   options: RunP04Options = {},
 ): Promise<P04RunOutcome> {
   const now = options.now ?? (() => new Date());
+  const moneyNowEnabled = options.moneyNowEnabled ?? true;
   const started = now();
   let provider: P04Provider;
   try {
@@ -106,8 +112,10 @@ export async function runP04ReportWriter(
     let response;
     try {
       response = await provider.complete({
-        systemPrompt: buildP04SystemPrompt(input, correction),
-        outputSchema: P04_OUTPUT_SCHEMA,
+        systemPrompt: buildP04SystemPrompt(input, correction, { moneyNowEnabled }),
+        outputSchema: moneyNowEnabled
+          ? P04_OUTPUT_SCHEMA
+          : P04_WITHOUT_MONEY_NOW_OUTPUT_SCHEMA,
         correction,
       });
       latestRaw = response.rawResponse;
@@ -134,7 +142,10 @@ export async function runP04ReportWriter(
     }
 
     try {
-      const canonical = canonicalizeP04ImmutableEchoes(parsed, input);
+      const canonical = canonicalizeP04ImmutableEchoes(
+        moneyNowEnabled ? parsed : hydrateDisabledP04MoneyNow(parsed, input),
+        input,
+      );
       return {
         result: finalizeAndValidateP04Output(
           reevaluationRetryCount > 0

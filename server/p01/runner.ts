@@ -9,6 +9,10 @@ import { openRouterErrorArtifact } from "@/server/ai/openrouter-json";
 import { parseProviderJson } from "@/server/ai/provider-json";
 import { createConfiguredP01Provider } from "./provider";
 import { buildP01SystemPrompt } from "./request";
+import {
+  hydrateDisabledMoneyNow,
+  P01_WITHOUT_MONEY_NOW_OUTPUT_SCHEMA,
+} from "./money-now-disabled";
 import type {
   P01Provider,
   P01ProviderUsage,
@@ -57,6 +61,7 @@ export class P01RunExecutionError extends Error {
 }
 
 const P01_RULE_VERSIONS = {
+  requestBuilder: "p01-request-builder.v2",
   scoringRules: SCORING_RULES_RESOURCE_VERSION,
   evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
   targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
@@ -159,6 +164,7 @@ export async function runP01EvidenceScorer(
   options: RunP01Options = {},
 ): Promise<P01RunOutcome> {
   const normalizedInput = assertDiagnosticInputForAi(input);
+  const moneyNowEnabled = options.moneyNowEnabled ?? true;
   const now = options.now ?? (() => new Date());
   const startedAtDate = now();
   const inputHash = await (options.hashInput ?? hashDiagnosticInput)(normalizedInput);
@@ -196,8 +202,10 @@ export async function runP01EvidenceScorer(
     let response;
     try {
       response = await provider.complete({
-        systemPrompt: buildP01SystemPrompt(normalizedInput, correction),
-        outputSchema: P01_OUTPUT_SCHEMA,
+        systemPrompt: buildP01SystemPrompt(normalizedInput, correction, { moneyNowEnabled }),
+        outputSchema: moneyNowEnabled
+          ? P01_OUTPUT_SCHEMA
+          : P01_WITHOUT_MONEY_NOW_OUTPUT_SCHEMA,
         correction,
       });
       latestRaw = response.rawResponse;
@@ -227,7 +235,7 @@ export async function runP01EvidenceScorer(
     let result;
     try {
       result = normalizeP01CanonicalFields(
-        validateP01Schema(parsed),
+        validateP01Schema(moneyNowEnabled ? parsed : hydrateDisabledMoneyNow(parsed)),
         normalizedInput,
       );
     } catch (error) {

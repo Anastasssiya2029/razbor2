@@ -1,4 +1,5 @@
 import { P04Error, runP04Stage } from "@/server/p04";
+import { ANALYSIS_FEATURES } from "@/server/analysis-features";
 import {
   authorizeP04PublicRequest,
   loadP04PublicGuardEnvironment,
@@ -23,7 +24,9 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
   try {
-    const executed = await runP04Stage(analysisRunId);
+    const executed = await runP04Stage(analysisRunId, {
+      moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
+    });
     if (executed.status === "analysis_failed") {
       return Response.json({
         status: executed.status,

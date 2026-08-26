@@ -118,6 +118,7 @@ export type RunP04StageOptions = {
   provider?: P04Provider;
   now?: () => Date;
   createId?: () => string;
+  moneyNowEnabled?: boolean;
 };
 
 export type P04StageExecutionResult = {

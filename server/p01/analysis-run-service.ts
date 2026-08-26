@@ -10,6 +10,7 @@ export type ExecuteP01AnalysisRunInput = {
   diagnosticId: string;
   input: DiagnosticInputV1_2;
   provider?: P01Provider;
+  moneyNowEnabled?: boolean;
 };
 
 export type ExecuteP01AnalysisRunResult = {
@@ -111,7 +112,10 @@ export async function executeP01AnalysisRun(
     );
 
   try {
-    const outcome = await runP01EvidenceScorer(input, { provider: run.provider });
+    const outcome = await runP01EvidenceScorer(input, {
+      provider: run.provider,
+      moneyNowEnabled: run.moneyNowEnabled ?? false,
+    });
     const failureCode = outcome.kind === "blocked" ? outcome.failureCode : null;
     const failureMessage = outcome.kind === "blocked" ? outcome.failureMessage : null;
     await persistP01Record({

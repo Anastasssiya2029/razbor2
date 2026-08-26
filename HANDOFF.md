@@ -8,7 +8,10 @@ Do not change P-01 through P-04 or the 7K methodology during release hardening u
 
 ## Production configuration
 
-- P-01, P-02, P-03 and P-04 use `openai/gpt-5.6-luna-pro` through OpenRouter.
+- Enabled AI stages use `openai/gpt-5.6-luna-pro` through OpenRouter. Money Now generation is disabled for new release-candidate runs, so P-03 takes the deterministic skip path without a provider call.
+- Request builders v2 put methodology before explicitly marked client/report data; P-02 no longer duplicates its output schema in the prompt.
+- The former backend-only Audience score cap has been replaced by a non-mutating review warning.
+- Safe block-repair infrastructure is present but intentionally not wired into paid retries until a separately approved live comparison.
 - Structured output is enabled for all four stages.
 - Direct public execution of P-03 and P-04 is disabled; the authenticated owner uses the orchestrated run route.
 - The internal result debug endpoint is disabled in production.
@@ -16,7 +19,9 @@ Do not change P-01 through P-04 or the 7K methodology during release hardening u
 
 ## Remaining release gates
 
-1. Run the complete contract/E2E suite, lint, verified production build, and rendered artifact test from a clean release candidate.
+Latest local verification on 2026-08-26: 441/441 contract tests passed, verified production build passed, deployable artifact validation passed, and rendered HTML check passed. Lint has zero errors and five pre-existing unused-symbol warnings outside this change.
+
+1. Repeat the complete contract/E2E suite, lint, verified production build, and rendered artifact test from the final clean release candidate.
 2. Verify the manager's full meeting flow, reload/resume behavior, error recovery, and duplicate-click idempotency without using live AI until approved.
 3. Verify architect/admin/manager isolation on every user-facing and pipeline route, including Excel and manager-plan revisions.
 4. Accept the UI and PDF in current desktop/tablet Chrome, Yandex Browser, and real Safari on macOS/iPadOS.

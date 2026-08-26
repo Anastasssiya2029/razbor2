@@ -257,6 +257,8 @@ test("client language contract asks for concise human explanations without chang
   assert.match(prompt, /<APPROVED_BUNDLE_RULE>/u);
   assert.match(prompt, /"version":"bundle-rules\.v1"/u);
   assert.match(prompt, /combinedEffect объединяет их в одну денежную задачу/u);
+  assert.match(prompt, /<REPORT_DATA role="data" trust="untrusted">/u);
+  assert.ok(prompt.indexOf("<REPORT_DATA") > prompt.indexOf("<APPROVED_BUNDLE_RULE>"));
   assert.doesNotMatch(prompt, /"id":"BR-21"/u);
   assert.equal(input.reportGlossary.version, "report-glossary.v1.1");
   assert.deepEqual(
@@ -317,6 +319,25 @@ test("32. runner performs no more than one technical retry", async () => {
   const result = await runP04ReportWriter(input, { provider });
   assert.equal(result.metadata.technicalRetryCount, 1);
   assert.equal(provider.requests.length, 2);
+});
+
+test("disabled Money Now is absent from the paid P-04 request and hydrated deterministically", async () => {
+  const input = await prepared("no_eligible_scenario");
+  const coreOutput = structuredClone(makeValidP04Output(input)) as unknown as Record<string, unknown>;
+  delete coreOutput.moneyNow;
+  const provider = new QueueProvider([coreOutput]);
+  const result = await runP04ReportWriter(input, { provider, moneyNowEnabled: false });
+  assert.equal(provider.requests.length, 1);
+  const request = provider.requests[0];
+  const schema = request.outputSchema as { required: string[]; properties: Record<string, unknown> };
+  assert.equal(schema.required.includes("moneyNow"), false);
+  assert.equal("moneyNow" in schema.properties, false);
+  assert.doesNotMatch(request.systemPrompt, /## 15\. MONEY NOW|P-03/iu);
+  assert.equal(result.result.moneyNow.headline, "Раздел временно отключён");
+  assert.equal(result.result.moneyNow.narrative, null);
+  assert.equal(result.result.moneyNow.status, input.reportPolicy.moneyNowStatus);
+  assert.equal(result.result.moneyNow.status, "no_eligible_scenario");
+  assert.equal(result.result.moneyNow.scenario_id, null);
 });
 
 test("33. runner performs one semantic retry with invariant feedback", async () => {

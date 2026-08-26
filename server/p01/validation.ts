@@ -193,7 +193,7 @@ function canonicalizePackageOneToOneCurrentFlowFacts(
   }
 }
 
-function canonicalizeAudienceKnowledge(
+function flagAudienceKnowledgeReview(
   result: P01ResultV1_4_2,
   input: DiagnosticInputV1_2,
 ): void {
@@ -219,16 +219,14 @@ function canonicalizeAudienceKnowledge(
 
   if (hasFormalQualification || deepKnowledgeSignals >= 2) return;
 
-  audience.score = 3;
-  audience.evidence_cap = Math.min(audience.evidence_cap, 3);
-  audience.cap_reason =
-    "Описан типичный клиент и желаемый результат, но не подтверждены его прошлые попытки, страхи, сомнения и причины нерешённой задачи.";
-  audience.matched_level_rule_id = "SR2-AUDIENCE-03";
-  audience.next_level_rule_id = "SR2-AUDIENCE-04";
-  audience.why_not_higher =
-    "Для уровня 4 нужны реальные примеры более глубокого знания клиента: прошлые попытки, страхи, сомнения, желания и причины нерешённой проблемы.";
-  if (!audience.missing_evidence.includes("Глубинные факты о реальных клиентах")) {
-    audience.missing_evidence.push("Глубинные факты о реальных клиентах");
+  if (!result.sanityChecks.some((check) => check.code === "AUDIENCE_DEEP_KNOWLEDGE_REVIEW")) {
+    result.sanityChecks.push({
+      code: "AUDIENCE_DEEP_KNOWLEDGE_REVIEW",
+      severity: "warning",
+      message:
+        "Высокая оценка знания аудитории требует ручной проверки: в кратких полях анкеты не найдены явные примеры прошлых попыток, страхов, сомнений или причин нерешённой задачи.",
+      evidence_ids: [...audience.evidence_ids],
+    });
   }
 }
 
@@ -262,7 +260,7 @@ export function normalizeP01CanonicalFields(
   if (typeof source === "object") {
     canonicalizePackageOneToOneTarget(result, source);
     canonicalizePackageOneToOneCurrentFlowFacts(result, source);
-    canonicalizeAudienceKnowledge(result, source);
+    flagAudienceKnowledgeReview(result, source);
   }
 
   const seenEvidenceById = new Map<string, string>();

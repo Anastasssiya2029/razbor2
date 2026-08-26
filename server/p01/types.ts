@@ -194,6 +194,7 @@ export type P01ResultV1_3 = Omit<
 };
 
 export type P01RuleVersions = {
+  requestBuilder: "p01-request-builder.v2";
   scoringRules: "scoring-rules.v2.0";
   evidenceRouting: "evidence-routing.v3.0";
   targetModelDictionary: "target-model-dictionary.v2.2";
@@ -262,4 +263,5 @@ export type RunP01Options = {
   provider?: P01Provider;
   now?: () => Date;
   hashInput?: (input: DiagnosticInputV1_2) => Promise<string>;
+  moneyNowEnabled?: boolean;
 };

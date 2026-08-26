@@ -1,6 +1,7 @@
 import { getDb } from "@/db";
 import { analysisRunLocks, analysisRuns, diagnostics } from "@/db/schema";
 import { validateDiagnosticInput, type DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
+import { ANALYSIS_FEATURES } from "@/server/analysis-features";
 import { getOrCreateAnalysisResult, type AnalysisResultV1 } from "@/server/analysis-result";
 import { runMoneyNowSelectorStage } from "@/server/money-now-selector";
 import { runP02Stage } from "@/server/p02";
@@ -119,13 +120,16 @@ export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies =
     analysisRunId: snapshot.analysisRunId,
     diagnosticId: snapshot.diagnosticId,
     input: snapshot.input,
+    moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
   }),
   runTarget: runTargetAndArchetypeStage,
   runP02: runP02Stage,
   resolveTasks: runTaskResolverStage,
   selectMoneyNow: runMoneyNowSelectorStage,
   runP03: runP03Stage,
-  runP04: runP04Stage,
+  runP04: (analysisRunId) => runP04Stage(analysisRunId, {
+    moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
+  }),
   assemble: getOrCreateAnalysisResult,
 };
 

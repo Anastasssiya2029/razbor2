@@ -174,6 +174,7 @@ export async function runP04Stage(
     const outcome = await runP04ReportWriter(prepared, {
       provider: options.provider,
       now: options.now,
+      moneyNowEnabled: options.moneyNowEnabled ?? true,
     });
     const candidate: StoredP04Result = {
       ...baseStored(

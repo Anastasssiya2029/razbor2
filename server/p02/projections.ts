@@ -14,6 +14,7 @@ import { P02Error } from "./errors";
 import type { P01StrategyContext, P02RuleVersions, TargetConfigProjection } from "./types";
 
 export const P02_RULE_VERSIONS: P02RuleVersions = {
+  requestBuilder: "p02-request-builder.v2",
   elements: ELEMENTS_RESOURCE_VERSION,
   levelCapabilities: LEVEL_CAPABILITIES_RESOURCE_VERSION,
   constraintRules: CONSTRAINT_RULES_RESOURCE_VERSION,

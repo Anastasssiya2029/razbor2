@@ -188,6 +188,7 @@ export type P04ResultV1_2 = {
 };
 
 export type P04RuleVersions = {
+  requestBuilder: "p04-request-builder.v2";
   p01Prompt: "P-01.v1.4.2";
   p01Schema: "1.4";
   targetStage: "target-archetype-stage.v1";

@@ -10,6 +10,8 @@ The diagnostic core uses three boundaries:
 
 No later stage repairs or silently guesses a missing upstream decision.
 
+New release-candidate runs currently disable the Money Now generation branch through `server/analysis-features.ts`. The provider-facing P-01/P-04 schemas omit that branch, while compatibility adapters hydrate fail-closed persisted values. The deterministic selector returns no eligible scenario and P-03 uses its existing zero-provider-call skip path. Historical completed runs remain readable.
+
 ## Module map
 
 | Module | Responsibility | AI |
@@ -22,6 +24,7 @@ No later stage repairs or silently guesses a missing upstream decision.
 | `server/money-now-selector` | Contract-driven MN01-MN16 eligibility/ranking | No |
 | `server/p03` | Prescription for the immutable selected scenario | Yes |
 | `server/p04` | Narrative over immutable upstream snapshots | Yes |
+| `server/ai/block-repair.ts` | Hash-bound, allow-listed atomic block replacement primitive; not enabled in the paid retry path | No |
 | `server/analysis-result` | Validate and join final `analysis-result.v1` | No |
 | `server/auth` | Invitation registry, identity binding, sessions and role policy | No |
 | `server/analysis-runs` | Owner-authorized orchestration, overview and access checks | No |
@@ -48,6 +51,12 @@ The assembler:
 - writes through `AnalysisResultRepository` with immutable per-run semantics.
 
 No time-dependent field is included in the JSON. `provenance.assemblyInputHash` is calculated only from frozen versions and persisted inputs.
+
+## Provider request boundary
+
+The prompt text, request assembly and output schema are separate contracts. Request builders v2 put stable methodology first and place escaped client/report payloads in an explicit untrusted data block at the end. P-02 does not embed a second JSON Schema copy in prompt text; the provider receives the canonical schema through structured output.
+
+Semantic retries remain bounded to one full-stage retry. The inactive block-repair primitive deliberately avoids arbitrary JSON Patch paths: it checks the exact base hash, replaces only allow-listed top-level blocks on a clone, and accepts the result only after full schema and cross-module invariant validation.
 
 ## Persistence boundary
 

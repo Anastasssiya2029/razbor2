@@ -9,7 +9,8 @@ The current release candidate combines the frozen diagnostic core, D1 persistenc
 - Internal use by invited employees; clients do not receive separate accounts in this release.
 - The manager fills the diagnostic form during a live client meeting.
 - Desktop and tablet layouts are supported. The release browser matrix is current Google Chrome, Yandex Browser, and Safari on macOS/iPadOS.
-- Production AI stages P-01 through P-04 are pinned to `openai/gpt-5.6-luna-pro` through OpenRouter with structured output enabled.
+- Enabled production AI stages are pinned to `openai/gpt-5.6-luna-pro` through OpenRouter with structured output enabled.
+- Money Now generation is disabled for new release-candidate runs. P-03 therefore follows its deterministic skip path and makes no paid provider call.
 - Live provider calls are never part of CI. A paid release smoke test requires explicit product-owner approval.
 
 ## Pipeline
@@ -27,6 +28,8 @@ DiagnosticInput v1.2
 ```
 
 AI is limited to P-01, P-02, P-03 and P-04. Target scores, archetype, fixed tasks, Money Now scenario selection and final assembly are deterministic. The final assembler never calls a model and never recalculates a business decision.
+
+For the current release candidate, `ANALYSIS_FEATURES.moneyNowGeneration` is `false`. P-01 and P-04 use reduced provider schemas without Money Now fields; the backend then hydrates the legacy persisted contract with neutral `unknown` / `not_reported` values. This keeps historical snapshots readable and makes re-enabling the branch explicit without charging for unused generation.
 
 ## Application flow
 
@@ -58,6 +61,8 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 - Final result: `analysis-result.v1`, assembler `analysis-result-assembler.v1`
 
 The machine-readable manifest is [VERSION_MANIFEST.json](./VERSION_MANIFEST.json).
+
+The request assembly contracts are separately versioned as `p01-request-builder.v2`, `p02-request-builder.v2` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
 
 ## Install, run and test
 
@@ -151,6 +156,8 @@ The endpoint is disabled unless `ANALYSIS_DEBUG_ENABLED=true` and a non-empty to
 - `finalFocus.first_action` must equal the first fixed task exactly.
 - Final assembly has no timestamp, model call or random business field, so equal snapshots produce equal JSON.
 - Existing `analysis_results` storage is append-only per analysis run. A different snapshot/version produces a conflict instead of overwriting history.
+- P-01 does not silently cap an AI-supported Audience score based on a narrow subset of form fields. When deep client knowledge is not visible in those fields, it records a review warning and preserves the scored evidence.
+- A block-repair primitive exists for future bounded retries: it accepts only allow-listed top-level replacements, verifies the base hash, and runs the complete stage validation before accepting a candidate. It is not connected to paid production retries until a separately approved model comparison proves it reliable.
 
 ## Release readiness
 
