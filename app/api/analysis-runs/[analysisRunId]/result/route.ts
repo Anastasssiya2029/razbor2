@@ -1,5 +1,9 @@
 import { getOrCreateAnalysisResult } from "@/server/analysis-result";
-import { analysisRunAccessErrorResponse, requireAnalysisRunAccess } from "@/server/analysis-runs";
+import {
+  analysisRunAccessErrorResponse,
+  getAnalysisOverview,
+  requireAnalysisRunAccess,
+} from "@/server/analysis-runs";
 import { getAnalysisCoverContext } from "@/server/analyses";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
@@ -13,6 +17,7 @@ export async function GET(request: Request, context: RouteContext) {
       analysisRunId,
       status: "ready",
       result: assembled.result,
+      overview: await getAnalysisOverview(analysisRunId),
       cover: await getAnalysisCoverContext(analysisRunId),
     }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) {

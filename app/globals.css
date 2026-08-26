@@ -168,7 +168,10 @@ body {
 .score-comment { margin-top: 10px; display: block; color: #77657c; font-size: 12px; line-height: 1.45; }
 .score-explanation { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(109,47,182,.09); }
 .score-explanation summary { color: #702273; cursor: pointer; font-size: 12px; font-weight: 850; }
-.score-explanation p { display: block; color: #77657c; line-height: 1.45; }
+.score-explanation p,
+.score-explanation div { display: block; color: #77657c; font-size: 12px; line-height: 1.45; }
+.score-explanation ul { margin: 6px 0 0; padding-left: 18px; }
+.score-explanation li + li { margin-top: 4px; }
 .configuration-total { width: fit-content; margin: 0 auto 24px; padding: 12px 18px; display: flex; gap: 14px; align-items: center; color: #5a4661; background: #faf4fb; border: 1px solid rgba(109,47,182,.1); border-radius: 999px; }
 .configuration-total span { display: flex; gap: 7px; align-items: baseline; }
 .configuration-total strong { color: #682276; font-size: 22px; }

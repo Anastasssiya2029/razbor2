@@ -8,6 +8,7 @@ import { GiftWheel } from "@/app/_components/gift-wheel";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import type { AnalysisCoverContext } from "@/server/analyses";
 import type { ManagerPlanVersion } from "@/lib/analysis-checklist";
+import type { AnalysisOverview } from "@/lib/analysis-overview";
 
 function deadlineLabel(months: number | null): string | null {
   if (months == null) return null;
@@ -21,6 +22,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   const { analysisRunId } = use(params);
   const { user, loading: sessionLoading } = useAppSession({ redirectToLogin: true });
   const [result, setResult] = useState<AnalysisResultV1 | null>(null);
+  const [overview, setOverview] = useState<AnalysisOverview | null>(null);
   const [cover, setCover] = useState<AnalysisCoverContext | null>(null);
   const [managerPlan, setManagerPlan] = useState<ManagerPlanVersion | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -30,9 +32,15 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
     void (async () => {
       try {
         const response = await fetch(`/api/analysis-runs/${analysisRunId}/result`, { cache: "no-store", credentials: "include" });
-        const payload = await response.json() as { result?: AnalysisResultV1; cover?: AnalysisCoverContext | null; message?: string };
+        const payload = await response.json() as {
+          result?: AnalysisResultV1;
+          overview?: AnalysisOverview | null;
+          cover?: AnalysisCoverContext | null;
+          message?: string;
+        };
         if (!response.ok || !payload.result) throw new Error(payload.message ?? "Результат ещё не готов.");
         setCover(payload.cover ?? null);
+        setOverview(payload.overview ?? null);
         let loadedManagerPlan: ManagerPlanVersion | null = null;
         try {
           const managerResponse = await fetch(`/api/analysis-runs/${analysisRunId}/manager-plan`, { cache: "no-store", credentials: "include" });
@@ -61,6 +69,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
         currentRevenueRub={cover?.currentRevenueRub}
         targetRevenueRub={cover?.targetRevenueRub}
         deadlineLabel={deadlineLabel(cover?.deadlineMonths ?? null)}
+        scoreArguments={overview?.currentScoreArguments}
         view={activeStage === 1 ? "analysis" : "plan"}
       />}
       <nav className={`journey saved-result-journey ${activeStage >= 2 ? "journey-spacious" : ""} no-print`} aria-label="Этапы работы">

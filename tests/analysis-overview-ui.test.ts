@@ -13,6 +13,15 @@ const runRoute = readFileSync(join(
   "run",
   "route.ts",
 ), "utf8");
+const resultRoute = readFileSync(join(
+  process.cwd(),
+  "app",
+  "api",
+  "analysis-runs",
+  "[analysisRunId]",
+  "result",
+  "route.ts",
+), "utf8");
 const strategySummary = readFileSync(join(
   process.cwd(),
   "app",
@@ -115,6 +124,10 @@ test("saved result restores the step navigation and separates review from plan",
   assert.match(savedResultPage, />План перехода</u);
   assert.match(savedResultPage, /<GiftWheel analysisRunId=\{analysisRunId\}/u);
   assert.match(savedResultPage, /activeStage === 1 && <header/u);
+  assert.match(resultRoute, /overview:\s*await getAnalysisOverview\(analysisRunId\)/u);
+  assert.match(savedResultPage, /scoreArguments=\{overview\?\.currentScoreArguments\}/u);
+  assert.match(resultView, /Почему выставлен этот балл/u);
+  assert.match(resultView, /Что учтено из ответов:/u);
 });
 
 test("client-facing progress copy does not expose internal pipeline names or raw failure codes", () => {
