@@ -10,7 +10,7 @@ The diagnostic core uses three boundaries:
 
 No later stage repairs or silently guesses a missing upstream decision.
 
-New release-candidate runs currently disable the Money Now generation branch through `server/analysis-features.ts`. The provider-facing P-01/P-04 schemas omit that branch, while compatibility adapters hydrate fail-closed persisted values. The deterministic selector returns no eligible scenario and P-03 uses its existing zero-provider-call skip path. Historical completed runs remain readable.
+New release-candidate runs currently disable the Money Now generation branch through `server/analysis-features.ts`. P-01 extracts one shared evidence/business context and then evaluates the seven 7K elements independently in parallel; P-01/P-04 provider schemas omit Money Now. Compatibility adapters hydrate fail-closed persisted values. The deterministic selector returns no eligible scenario and P-03 uses its existing zero-provider-call skip path. Historical completed runs remain readable.
 
 ## Module map
 
@@ -56,7 +56,7 @@ No time-dependent field is included in the JSON. `provenance.assemblyInputHash` 
 
 The prompt text, request assembly and output schema are separate contracts. Request builders v2 put stable methodology first and place escaped client/report payloads in an explicit untrusted data block at the end. P-02 does not embed a second JSON Schema copy in prompt text; the provider receives the canonical schema through structured output.
 
-Semantic retries remain bounded to one full-stage retry. The inactive block-repair primitive deliberately avoids arbitrary JSON Patch paths: it checks the exact base hash, replaces only allow-listed top-level blocks on a clone, and accepts the result only after full schema and cross-module invariant validation.
+P-01 retries transport/schema failures only for the failed subrequest. A semantic score failure triggers at most one re-evaluation of that element and then complete merged schema/invariant validation; the shared evidence context and the other six scores are preserved. P-02 still permits one bounded full strategy re-evaluation, but an empty deterministic target gap is rejected before provider configuration or a paid call. The inactive general block-repair primitive deliberately avoids arbitrary JSON Patch paths: it checks the exact base hash, replaces only allow-listed top-level blocks on a clone, and accepts the result only after full schema and cross-module invariant validation.
 
 ## Persistence boundary
 
@@ -93,4 +93,4 @@ Direct P-03 and P-04 HTTP endpoints have independent fail-closed feature-flag an
 
 ## Testing
 
-Contract and E2E tests use persisted fixtures and never call a live provider. They cover the diagnostic form, role policy, access-aware application surfaces, staged analysis, deterministic business rules, replay behavior, exports, manager revisions, gifts, and PDF composition. A live provider smoke test is intentionally separate, paid, and requires explicit approval.
+Contract and E2E tests use persisted fixtures and never call a live provider. They cover the diagnostic form, role policy, access-aware application surfaces, staged analysis, deterministic business rules, replay behavior, exports, manager revisions, gifts, and PDF composition. `npm run eval:p01:golden` is a separate fail-closed Anna/Alina provider comparison and requires both `ALLOW_PAID_AI_EVAL=true` and explicit approval.

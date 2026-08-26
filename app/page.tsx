@@ -1653,7 +1653,10 @@ export default function Home() {
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
         if (statusResponse.ok && status?.status === "analysis_failed") {
-          if (status.errorCode?.startsWith("P02_")) {
+          if (
+            status.errorCode?.startsWith("P02_") &&
+            status.errorCode !== "P02_NO_ACTIONABLE_TARGET_GAP"
+          ) {
             const retryResponse = await fetch(`/api/analysis-runs/${reusableDiagnostic.analysisRunId}/retry`, {
               method: "POST",
               credentials: "include",

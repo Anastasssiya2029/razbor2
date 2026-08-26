@@ -466,6 +466,21 @@ class QueueProvider implements P01Provider {
   }
 }
 
+function splitP01Responses(value: P01ResultV1_4_2): unknown[] {
+  const context = structuredClone(value) as unknown as Record<string, unknown>;
+  delete context.current7k;
+  delete context.moneyNowSignals;
+  delete context.moneyNowFacts;
+  delete context.moneyNowHistory;
+  return [
+    context,
+    ...ELEMENTS.map((elementId) => ({
+      elementId,
+      scorecard: structuredClone(value.current7k[elementId]),
+    })),
+  ];
+}
+
 test("P-01 resources and JSON use canonical product_method; legacy read adapter is isolated", () => {
   const files = [
     "server/7k/config/scoring-rules.v2.0.json",
@@ -951,27 +966,84 @@ test("prompt injection inside DiagnosticInput remains serialized diagnostic data
 });
 
 test("disabled Money Now is absent from the paid P-01 request and hydrated fail-closed", async () => {
-  const coreOutput = structuredClone(validP01Fixture()) as unknown as Record<string, unknown>;
-  delete coreOutput.moneyNowSignals;
-  delete coreOutput.moneyNowFacts;
-  delete coreOutput.moneyNowHistory;
-  const provider = new QueueProvider(coreOutput);
+  const provider = new QueueProvider(...splitP01Responses(validP01Fixture()));
   const outcome = await runP01EvidenceScorer(diagnosticInput(), {
     provider,
     moneyNowEnabled: false,
     hashInput: async () => "hash",
   });
-  assert.equal(provider.requests.length, 1);
+  assert.equal(provider.requests.length, 8);
   const request = provider.requests[0];
   const schema = request.outputSchema as { required: string[]; properties: Record<string, unknown> };
+  assert.equal(schema.required.includes("current7k"), false);
+  assert.equal("current7k" in schema.properties, false);
   assert.equal(schema.required.includes("moneyNowFacts"), false);
   assert.equal("moneyNowFacts" in schema.properties, false);
   assert.equal("moneyNowHistory" in schema.properties, false);
   assert.equal("moneyNowSignals" in schema.properties, false);
   assert.doesNotMatch(request.systemPrompt, /MONEY NOW|moneyNowFacts|moneyNowHistory|MN01/iu);
+  assert.match(request.systemPrompt, /НЕ выставляй баллы 7К/u);
+  assert.ok(provider.requests.slice(1).every((scoreRequest) => scoreRequest.schemaName?.startsWith("p01_score_")));
+  assert.ok(provider.requests.slice(1).every((scoreRequest) => !/target\.businessModel|target\.delegation/u.test(scoreRequest.systemPrompt)));
   assert.equal(outcome.result.moneyNowSignals.length, 0);
   assert.ok(Object.values(outcome.result.moneyNowFacts).every((fact) => fact.state === "unknown"));
   assert.ok(Object.values(outcome.result.moneyNowHistory).every((item) => item.history_status === "not_reported"));
+});
+
+test("split P-01 re-evaluates only the score block that violates merged invariants", async () => {
+  const valid = validP01Fixture();
+  const responses = splitP01Responses(valid);
+  const invalidTeam = structuredClone(responses.at(-1)) as {
+    elementId: "team";
+    scorecard: P01ResultV1_4_2["current7k"]["team"];
+  };
+  invalidTeam.scorecard.score = 5;
+  invalidTeam.scorecard.evidence_cap = 2;
+  const validTeam = responses.at(-1)!;
+  responses[responses.length - 1] = invalidTeam;
+  responses.push(validTeam);
+  const provider = new QueueProvider(...responses);
+
+  const outcome = await runP01EvidenceScorer(diagnosticInput(), {
+    provider,
+    moneyNowEnabled: false,
+    hashInput: async () => "hash",
+  });
+
+  assert.equal(provider.requests.length, 9);
+  assert.equal(outcome.metadata.reevaluationRetryCount, 1);
+  assert.equal(provider.requests.at(-1)?.schemaName, "p01_score_team_v1_4");
+  assert.match(provider.requests.at(-1)?.correction ?? "", /score_above_cap/u);
+  assert.equal(outcome.result.current7k.team.score, valid.current7k.team.score);
+});
+
+test("split P-01 repairs the shared context before launching score calls", async () => {
+  const responses = splitP01Responses(validP01Fixture());
+  const validContext = structuredClone(responses[0]) as Record<string, unknown>;
+  const invalidContext = structuredClone(validContext);
+  invalidContext.moneyChainFacts = [{
+    stage: "payment",
+    summary: "Факт оплаты",
+    value: 1,
+    denominator: 1,
+    conversionPct: 100,
+    period: "месяц",
+    evidence_ids: ["E99"],
+  }];
+  const provider = new QueueProvider(invalidContext, validContext, ...responses.slice(1));
+
+  const outcome = await runP01EvidenceScorer(diagnosticInput(), {
+    provider,
+    moneyNowEnabled: false,
+    hashInput: async () => "hash",
+  });
+
+  assert.equal(provider.requests.length, 9);
+  assert.equal(provider.requests[0].schemaName, "p01_core_context_v1_4");
+  assert.equal(provider.requests[1].schemaName, "p01_core_context_v1_4");
+  assert.match(provider.requests[1].correction ?? "", /dangling_evidence_id/u);
+  assert.ok(provider.requests.slice(2).every((request) => request.schemaName?.startsWith("p01_score_")));
+  assert.equal(outcome.metadata.reevaluationRetryCount, 1);
 });
 
 test("production P-01 prompt injects only the extraction dictionary", () => {
@@ -1139,6 +1211,15 @@ test("blocked_by_insufficient_data is stored as a blocked outcome without retry"
   if (outcome.kind === "blocked") {
     assert.equal(outcome.failureCode, "P01_BLOCKED_INSUFFICIENT_DATA");
   }
+});
+
+test("live Anna/Alina evaluation is fail-closed before provider configuration", () => {
+  const source = readFileSync("scripts/run-p01-golden-eval.ts", "utf8");
+  const approvalGate = source.indexOf('process.env.ALLOW_PAID_AI_EVAL !== "true"');
+  const providerCreation = source.indexOf("createConfiguredP01Provider(process.env)");
+  assert.ok(approvalGate >= 0);
+  assert.ok(providerCreation > approvalGate);
+  assert.match(source, /moneyNowEnabled: false/u);
 });
 
 test("lifecycle creates a validated submission directly as queued and exposes only the P-01 next step", () => {

@@ -58,7 +58,7 @@ export class OpenRouterP01Provider implements P01Provider {
       appUrl: this.appUrl,
       appTitle: this.appTitle,
       structuredOutput: this.structuredOutput,
-      schemaName: "p01_evidence_scorer_v1_3",
+      schemaName: request.schemaName ?? "p01_evidence_scorer_v1_3",
       outputSchema: request.outputSchema,
       systemPrompt: request.systemPrompt,
       fetchImpl: this.fetchImpl,

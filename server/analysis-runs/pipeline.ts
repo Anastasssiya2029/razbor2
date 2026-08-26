@@ -281,7 +281,11 @@ export async function retryFailedP02Pipeline(
 ): Promise<{ status: "resolving_tasks"; result: null; idempotentReplay: false }> {
   let snapshot = await dependencies.loadRun(analysisRunId);
   if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
-  if (snapshot.status !== "analysis_failed" || !snapshot.errorCode?.startsWith("P02_")) {
+  if (
+    snapshot.status !== "analysis_failed" ||
+    !snapshot.errorCode?.startsWith("P02_") ||
+    snapshot.errorCode === "P02_NO_ACTIONABLE_TARGET_GAP"
+  ) {
     throw new AnalysisPipelineError(
       "ANALYSIS_PIPELINE_STATE_INVALID",
       409,
@@ -294,7 +298,11 @@ export async function retryFailedP02Pipeline(
   try {
     snapshot = await dependencies.loadRun(analysisRunId);
     if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
-    if (snapshot.status !== "analysis_failed" || !snapshot.errorCode?.startsWith("P02_")) {
+    if (
+      snapshot.status !== "analysis_failed" ||
+      !snapshot.errorCode?.startsWith("P02_") ||
+      snapshot.errorCode === "P02_NO_ACTIONABLE_TARGET_GAP"
+    ) {
       throw new AnalysisPipelineError(
         "ANALYSIS_PIPELINE_STATE_INVALID",
         409,

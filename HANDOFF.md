@@ -9,7 +9,8 @@ Do not change P-01 through P-04 or the 7K methodology during release hardening u
 ## Production configuration
 
 - Enabled AI stages use `openai/gpt-5.6-luna-pro` through OpenRouter. Money Now generation is disabled for new release-candidate runs, so P-03 takes the deterministic skip path without a provider call.
-- Request builders v2 put methodology before explicitly marked client/report data; P-02 no longer duplicates its output schema in the prompt.
+- P-01 request builder v2.2 extracts shared evidence once, evaluates seven score blocks in parallel, and retries only a failed score block. Request builders keep methodology before explicitly marked client/report data; P-02 no longer duplicates its output schema in the prompt.
+- P-02 rejects an all-zero target gap before any provider call and this upstream failure is not eligible for the paid plan-only retry.
 - The former backend-only Audience score cap has been replaced by a non-mutating review warning.
 - Safe block-repair infrastructure is present but intentionally not wired into paid retries until a separately approved live comparison.
 - Structured output is enabled for all four stages.
@@ -19,7 +20,7 @@ Do not change P-01 through P-04 or the 7K methodology during release hardening u
 
 ## Remaining release gates
 
-Latest local verification on 2026-08-26: 441/441 contract tests passed, verified production build passed, deployable artifact validation passed, and rendered HTML check passed. Lint has zero errors and five pre-existing unused-symbol warnings outside this change.
+Latest local verification on 2026-08-26: 451/451 contract tests passed, verified production build passed, deployable artifact validation passed, and rendered HTML check passed. Lint has zero errors and five pre-existing unused-symbol warnings outside this change.
 
 1. Repeat the complete contract/E2E suite, lint, verified production build, and rendered artifact test from the final clean release candidate.
 2. Verify the manager's full meeting flow, reload/resume behavior, error recovery, and duplicate-click idempotency without using live AI until approved.
@@ -53,8 +54,16 @@ If the branch differs, substitute `git branch --show-current`. Do not force-push
 npm ci
 npm run test:contract
 npm test
+npm run lint
+npm run validate:artifact
 git status --short
 git log -1 --oneline
+```
+
+After explicit paid-test approval only:
+
+```bash
+ALLOW_PAID_AI_EVAL=true GOLDEN_CASE=alina npm run eval:p01:golden
 ```
 
 Expected: all tests green, no live provider calls in CI, a valid deployable artifact, and a clean release tree containing neither local transfer notes nor generated `output/` and `tmp/` artifacts.

@@ -12,6 +12,7 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run test:contract && npm run build && node --test tests/rendered-html.test.mjs",
     "test:contract": "node --require ./scripts/node-user-shim.cjs --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "eval:p01:golden": "node --require ./scripts/node-user-shim.cjs --import tsx scripts/run-p01-golden-eval.ts",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern output --ignore-pattern tmp --ignore-pattern .sites-runtime",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"

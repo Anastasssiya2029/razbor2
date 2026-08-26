@@ -5,16 +5,28 @@ import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "@/server/7k/config/money-now-
 import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v2.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
+import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
 import { openRouterErrorArtifact } from "@/server/ai/openrouter-json";
 import { parseProviderJson } from "@/server/ai/provider-json";
 import { createConfiguredP01Provider } from "./provider";
 import { buildP01SystemPrompt } from "./request";
+import {
+  buildP01CoreContextPrompt,
+  buildP01ElementScorePrompt,
+  P01_CORE_CONTEXT_OUTPUT_SCHEMA,
+  p01ElementScoreOutputSchema,
+  validateP01CoreContext,
+  validateP01ElementScoreEnvelope,
+  type P01CoreContext,
+  type P01ElementScoreEnvelope,
+} from "./split-request";
 import {
   hydrateDisabledMoneyNow,
   P01_WITHOUT_MONEY_NOW_OUTPUT_SCHEMA,
 } from "./money-now-disabled";
 import type {
   P01Provider,
+  P01ResultV1_4_2,
   P01ProviderUsage,
   P01RunMetadata,
   P01RunOutcome,
@@ -61,7 +73,7 @@ export class P01RunExecutionError extends Error {
 }
 
 const P01_RULE_VERSIONS = {
-  requestBuilder: "p01-request-builder.v2.1",
+  requestBuilder: "p01-request-builder.v2.2",
   scoringRules: SCORING_RULES_RESOURCE_VERSION,
   evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
   targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
@@ -197,6 +209,8 @@ export async function runP01EvidenceScorer(
   let correction: string | null = null;
   let latestRaw: unknown = null;
   const usage = emptyUsage();
+
+  if (!moneyNowEnabled) return runSplitCore();
 
   while (true) {
     let response;
@@ -343,6 +357,298 @@ export async function runP01EvidenceScorer(
       providerRawResponse,
       cause,
     });
+  }
+
+  async function runSplitCore(): Promise<P01RunOutcome> {
+    const rawParts: Record<string, unknown> = {};
+    latestRaw = rawParts;
+
+    async function completePart<T>(part: {
+      key: string;
+      schemaName: string;
+      outputSchema: Record<string, unknown>;
+      buildPrompt: (correction: string | null) => string;
+      validate: (value: unknown) => T;
+      initialCorrection?: string | null;
+    }): Promise<T> {
+      let partCorrection = part.initialCorrection ?? null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        let response;
+        try {
+          response = await provider.complete({
+            systemPrompt: part.buildPrompt(partCorrection),
+            outputSchema: part.outputSchema,
+            correction: partCorrection,
+            schemaName: part.schemaName,
+          });
+          rawParts[part.key] = response.rawResponse;
+          addUsage(usage, response.usage);
+        } catch (error) {
+          rawParts[part.key] = openRouterErrorArtifact(error);
+          if (attempt === 0) {
+            technicalRetryCount += 1;
+            partCorrection = null;
+            continue;
+          }
+          throw executionError(
+            "P01_TRANSPORT_ERROR",
+            error,
+            `P-01 provider transport failed in ${part.key}`,
+            rawParts,
+          );
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = parseProviderJson(response.text);
+        } catch (error) {
+          if (attempt === 0) {
+            technicalRetryCount += 1;
+            partCorrection = "Предыдущий ответ не был валидным JSON. Верни только JSON по переданной provider schema без Markdown и code fences.";
+            continue;
+          }
+          throw executionError(
+            "P01_MALFORMED_JSON",
+            error,
+            `P-01 returned malformed JSON in ${part.key}`,
+            rawParts,
+          );
+        }
+
+        try {
+          return part.validate(parsed);
+        } catch (error) {
+          if (error instanceof P01SchemaValidationError && attempt === 0) {
+            technicalRetryCount += 1;
+            partCorrection = issuesCorrection("Нарушена JSON Schema этого блока", error.issues);
+            continue;
+          }
+          throw executionError(
+            "P01_SCHEMA_VALIDATION_FAILED",
+            error,
+            error instanceof P01SchemaValidationError
+              ? safeValidationSummary(`P-01 schema validation failed in ${part.key}`, error)
+              : `P-01 schema validation failed in ${part.key}`,
+            rawParts,
+          );
+        }
+      }
+      throw executionError(
+        "P01_SCHEMA_VALIDATION_FAILED",
+        new Error(`P-01 exhausted ${part.key}`),
+        `P-01 exhausted ${part.key}`,
+        rawParts,
+      );
+    }
+
+    async function scoreElement(
+      context: P01CoreContext,
+      elementId: SevenKElementId,
+      scoreCorrection: string | null = null,
+    ): Promise<P01ElementScoreEnvelope> {
+      const suffix = scoreCorrection ? "reevaluation" : "initial";
+      return completePart({
+        key: `score.${elementId}.${suffix}`,
+        schemaName: `p01_score_${elementId}_v1_4`,
+        outputSchema: p01ElementScoreOutputSchema(elementId),
+        buildPrompt: (correction) => buildP01ElementScorePrompt({
+          input: normalizedInput,
+          context,
+          elementId,
+          correction,
+        }),
+        validate: (value) => validateP01ElementScoreEnvelope(elementId, value),
+        initialCorrection: scoreCorrection,
+      });
+    }
+
+    async function awaitAll<T>(promises: Promise<T>[]): Promise<T[]> {
+      const settled = await Promise.allSettled(promises);
+      const failure = settled.find(
+        (item): item is PromiseRejectedResult => item.status === "rejected",
+      );
+      if (failure) throw failure.reason;
+      return settled.map((item) => (item as PromiseFulfilledResult<T>).value);
+    }
+
+    const loadContext = (contextCorrection: string | null = null) => completePart({
+      key: contextCorrection ? "context.reevaluation" : "context.initial",
+      schemaName: "p01_core_context_v1_4",
+      outputSchema: P01_CORE_CONTEXT_OUTPUT_SCHEMA,
+      buildPrompt: (correction) => buildP01CoreContextPrompt(normalizedInput, correction),
+      validate: validateP01CoreContext,
+      initialCorrection: contextCorrection,
+    });
+    const validateCoreSemantics = (value: P01CoreContext): void => {
+      const emptyScorecard = {
+        score: null,
+        confidence: "low" as const,
+        evidence_cap: null,
+        cap_reason: null,
+        matched_level_rule_id: null,
+        next_level_rule_id: null,
+        evidence_ids: [],
+        counterevidence_ids: [],
+        why_not_higher: null,
+        contradiction: null,
+        historical_asset: null,
+        missing_evidence: [],
+      };
+      const probe = validateP01Schema(hydrateDisabledMoneyNow({
+        ...structuredClone(value),
+        analysisStatus: "blocked_by_insufficient_data",
+        current7k: Object.fromEntries(
+          SEVEN_K_ELEMENT_IDS.map((elementId) => [elementId, structuredClone(emptyScorecard)]),
+        ),
+      }));
+      validateP01Invariants(probe);
+    };
+
+    let context = await loadContext();
+    try {
+      validateCoreSemantics(context);
+    } catch (error) {
+      if (!(error instanceof P01InvariantError)) {
+        throw executionError(
+          "P01_INVARIANT_FAILED",
+          error,
+          "P-01 core context invariant validation failed",
+          rawParts,
+        );
+      }
+      reevaluationRetryCount += 1;
+      context = await loadContext(issuesCorrection(
+        "Нарушены backend invariants блока общего контекста",
+        error.issues,
+        context.evidenceLedger.map((evidence) => evidence.id),
+      ));
+      try {
+        validateCoreSemantics(context);
+      } catch (retryError) {
+        throw executionError(
+          "P01_INVARIANT_FAILED",
+          retryError,
+          retryError instanceof P01InvariantError
+            ? safeValidationSummary("P-01 core context invariants failed after retry", retryError)
+            : "P-01 core context invariants failed after retry",
+          rawParts,
+        );
+      }
+    }
+    let scoreEnvelopes = await awaitAll(
+      SEVEN_K_ELEMENT_IDS.map((elementId) => scoreElement(context, elementId)),
+    );
+
+    const mergeResult = (): P01ResultV1_4_2 => {
+      const current7k = Object.fromEntries(
+        scoreEnvelopes.map(({ elementId, scorecard }) => [elementId, scorecard]),
+      ) as P01ResultV1_4_2["current7k"];
+      const combined = hydrateDisabledMoneyNow({ ...context, current7k });
+      return normalizeP01CanonicalFields(validateP01Schema(combined), normalizedInput);
+    };
+
+    let result = mergeResult();
+    try {
+      validateP01Invariants(result);
+    } catch (error) {
+      if (!(error instanceof P01InvariantError)) {
+        throw executionError(
+          "P01_INVARIANT_FAILED",
+          error,
+          "P-01 semantic invariants failed",
+          rawParts,
+        );
+      }
+      const issuesByElement = new Map<SevenKElementId, P01ValidationIssue[]>();
+      for (const issue of error.issues) {
+        const match = issue.path.match(/^\/current7k\/([^/]+)/u);
+        const elementId = match?.[1] as SevenKElementId | undefined;
+        if (!elementId || !(SEVEN_K_ELEMENT_IDS as readonly string[]).includes(elementId)) {
+          throw executionError(
+            "P01_INVARIANT_FAILED",
+            error,
+            safeValidationSummary("P-01 non-score invariant failed", error),
+            rawParts,
+          );
+        }
+        const group = issuesByElement.get(elementId) ?? [];
+        group.push(issue);
+        issuesByElement.set(elementId, group);
+      }
+
+      const replacements = await awaitAll(
+        Array.from(issuesByElement, ([elementId, issues]) => {
+          reevaluationRetryCount += 1;
+          return scoreElement(
+            context,
+            elementId,
+            issuesCorrection(
+              "Нарушены backend invariants только этого элемента",
+              issues,
+              context.evidenceLedger.map((evidence) => evidence.id),
+            ),
+          );
+        }),
+      );
+      const byElement = new Map(scoreEnvelopes.map((item) => [item.elementId, item]));
+      replacements.forEach((item) => byElement.set(item.elementId, item));
+      scoreEnvelopes = SEVEN_K_ELEMENT_IDS.map((elementId) => byElement.get(elementId)!);
+      result = mergeResult();
+      try {
+        validateP01Invariants(result);
+      } catch (retryError) {
+        throw executionError(
+          "P01_INVARIANT_FAILED",
+          retryError,
+          retryError instanceof P01InvariantError
+            ? safeValidationSummary("P-01 semantic invariants failed after targeted retry", retryError)
+            : "P-01 semantic invariants failed after targeted retry",
+          rawParts,
+        );
+      }
+    }
+
+    const sanityErrors = p01SanityErrors(result);
+    if (sanityErrors.length > 0) {
+      throw executionError(
+        "P01_SANITY_ERROR",
+        new Error(sanityErrors.map((issue) => issue.message).join("; ")),
+        "P-01 sanity checks failed; the core context is not regenerated automatically",
+        rawParts,
+      );
+    }
+
+    const metadata = createMetadata({
+      provider: provider.provider,
+      model: provider.model,
+      inputHash,
+      startedAtDate,
+      finishedAt: now(),
+      technicalRetryCount,
+      reevaluationRetryCount,
+      usage,
+    });
+    if (result.analysisStatus === "blocked_by_insufficient_data") {
+      return {
+        kind: "blocked",
+        result,
+        failureCode: "P01_BLOCKED_INSUFFICIENT_DATA",
+        failureMessage: "P-01 заблокирован из-за недостатка доказательств; повтор ради заполнения запрещён.",
+        metadata,
+        providerRawResponse: rawParts,
+      };
+    }
+    if (result.analysisStatus === "blocked_by_inconsistency") {
+      return {
+        kind: "blocked",
+        result,
+        failureCode: "P01_BLOCKED_INCONSISTENCY",
+        failureMessage: "P-01 заблокирован из-за неразрешённого противоречия во входных данных.",
+        metadata,
+        providerRawResponse: rawParts,
+      };
+    }
+    return { kind: "success", result, metadata, providerRawResponse: rawParts };
   }
 }
 

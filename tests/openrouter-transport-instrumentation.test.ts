@@ -366,7 +366,7 @@ test("mocked error transport preserves frozen request semantics and performs one
   assert.equal("seed" in (capturedBody as Record<string, unknown>), false);
 
   const providerSource = readFileSync("server/p01/provider.ts", "utf8");
-  assert.match(providerSource, /schemaName: "p01_evidence_scorer_v1_3"/u);
+  assert.match(providerSource, /schemaName: request\.schemaName \?\? "p01_evidence_scorer_v1_3"/u);
   assert.doesNotMatch(providerSource, /require_parameters/u);
 });
 

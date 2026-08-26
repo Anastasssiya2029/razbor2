@@ -106,9 +106,15 @@ test("Alina route follows delegation maturity before additional scale", () => {
   assert.equal(resolved.tasks.some((task) => task.element_id === "product_method"), false);
 });
 
-test("golden Money Now choices use existing warm assets", () => {
-  assert.equal(ANNA_GOLDEN_CASE.strategy.moneyNowScenario, "MN06");
-  assert.equal(ALINA_GOLDEN_CASE.strategy.moneyNowScenario, "MN08");
-  assert.match(ALINA_GOLDEN_CASE.input.project.socialAssets ?? "", /3 000/u);
-  assert.match(ALINA_GOLDEN_CASE.input.project.socialAssets ?? "", /давно не делали/u);
+test("Alina source facts stay complete and do not revive the invented dormant 3,000-person base", () => {
+  const input = ALINA_GOLDEN_CASE.input;
+  assert.match(input.current.products, /бесплатный урок → разбор → продажа основного продукта/u);
+  assert.match(input.project.clients, /300–500 тыс\. ₽/u);
+  assert.match(input.project.clientPath, /дожимная цепочка/u);
+  assert.match(input.project.sales, /технологии переписки/u);
+  assert.match(input.project.socialAssets ?? "", /Есть база чат-бота, с ней работают/u);
+  assert.match(input.project.socialAssets ?? "", /продающие посты/u);
+  assert.doesNotMatch(input.project.socialAssets ?? "", /3 000|давно не делали/u);
+  assert.match(input.project.team, /Команда около 15 человек/u);
+  assert.match(input.project.team, /Делегированы продажи, переписки/u);
 });

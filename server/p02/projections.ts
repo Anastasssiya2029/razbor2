@@ -167,6 +167,13 @@ export function prepareP02Input(source: P02UpstreamSource): P02PreparedInput {
     appliedModifiers: stage4.target.appliedModifiers,
     desiredOwnerRole: stage4.target.desiredOwnerRole,
   };
+  if (!SEVEN_K_ELEMENT_IDS.some((elementId) => targetConfig.gap[elementId] > 0)) {
+    throw new P02Error(
+      "P02_NO_ACTIONABLE_TARGET_GAP",
+      "Целевая конфигурация не содержит ни одного положительного разрыва 7К. Платный стратегический проход остановлен до исправления upstream-цели.",
+      "upstream_blocked",
+    );
+  }
   assertDesiredRoleConsistency(strategyContext.desiredRoleSummary, targetConfig);
   if (containsLegacyId(strategyContext) || containsLegacyId(targetConfig)) {
     throw new P02Error("P02_LEGACY_ELEMENT_ID", "products_method is forbidden in P-02.", "validation");

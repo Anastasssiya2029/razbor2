@@ -83,6 +83,11 @@ function correctionFor(title: string, issues: readonly P02ValidationIssue[]): st
       "Различие modelFamily и visionModelFamily является намеренным поэтапным переходом, уже проверенным backend. Удали ложный TARGET_CONFIG_INCONSISTENCY и собери стратегию по ближайшему modelFamily/targetScores.",
     );
   }
+  if (issueCodes.has("target_gap_zero")) {
+    targetedRules.push(
+      "Выбирай priority/build только среди элементов, у которых targetConfig.gap > 0. Элементы с gap=0 оставь в maintain или later; они не могут входить в elementSequence.",
+    );
+  }
   return [
     `${title}:`,
     ...issues.slice(0, 24).map((issue) => `- ${issue.path}: ${issue.code}: ${issue.message}`),

@@ -29,7 +29,7 @@ DiagnosticInput v1.2
 
 AI is limited to P-01, P-02, P-03 and P-04. Target scores, archetype, fixed tasks, Money Now scenario selection and final assembly are deterministic. The final assembler never calls a model and never recalculates a business decision.
 
-For the current release candidate, `ANALYSIS_FEATURES.moneyNowGeneration` is `false`. P-01 and P-04 use reduced provider schemas without Money Now fields; the backend then hydrates the legacy persisted contract with neutral `unknown` / `not_reported` values. This keeps historical snapshots readable and makes re-enabling the branch explicit without charging for unused generation.
+For the current release candidate, `ANALYSIS_FEATURES.moneyNowGeneration` is `false`. P-01 first extracts the shared evidence/business context once, then scores the seven elements in independent parallel structured-output calls. A failed score block is retried alone; the full evidence pass is not replayed. P-04 also uses a reduced provider schema. The backend hydrates the legacy persisted Money Now contract with neutral `unknown` / `not_reported` values, keeping historical snapshots readable without charging for unused generation.
 
 ## Application flow
 
@@ -62,7 +62,7 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 
 The machine-readable manifest is [VERSION_MANIFEST.json](./VERSION_MANIFEST.json).
 
-The request assembly contracts are separately versioned as `p01-request-builder.v2.1`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.1 additionally disambiguates evidence caps and forces an upper-level calibration pass before fixing each score. P-02 v2.1 treats persisted current/target values as backend-owned and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
+The request assembly contracts are separately versioned as `p01-request-builder.v2.2`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.2 separates shared evidence extraction from independent per-element scoring, keeps exact evidence references, and forces an upper-level calibration pass before fixing each score. P-02 v2.1 treats persisted current/target values as backend-owned, rejects an empty target gap before a provider call, and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
 
 ## Install, run and test
 
@@ -91,6 +91,14 @@ Run lint and validate the deployable Sites artifact separately:
 npm run lint
 npm run validate:artifact
 ```
+
+The real Anna/Alina score comparison is deliberately outside CI and fails closed unless paid execution is explicitly unlocked:
+
+```bash
+ALLOW_PAID_AI_EVAL=true GOLDEN_CASE=alina npm run eval:p01:golden
+```
+
+Use `GOLDEN_CASE=anna` or `all` only after separate approval. The command prints scores, latency, retries, token usage and provider cost without exposing credentials.
 
 Target only the Stage 10 E2E suite:
 

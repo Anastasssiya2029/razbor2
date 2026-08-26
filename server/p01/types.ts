@@ -194,7 +194,7 @@ export type P01ResultV1_3 = Omit<
 };
 
 export type P01RuleVersions = {
-  requestBuilder: "p01-request-builder.v2.1";
+  requestBuilder: "p01-request-builder.v2.2";
   scoringRules: "scoring-rules.v2.0";
   evidenceRouting: "evidence-routing.v3.0";
   targetModelDictionary: "target-model-dictionary.v2.2";
@@ -213,6 +213,8 @@ export type P01ProviderRequest = {
   systemPrompt: string;
   outputSchema: Record<string, unknown>;
   correction: string | null;
+  /** Stable name for the concrete structured-output contract sent in this call. */
+  schemaName?: string;
 };
 
 export type P01ProviderResponse = {

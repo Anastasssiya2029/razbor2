@@ -363,6 +363,24 @@ class MemoryRepository implements P02Repository {
   async updateRun(_id: string, update: { status: "resolving_tasks" | "analysis_failed" }) { this.source.runStatus = update.status; }
 }
 
+test("P-02 preflight blocks an empty target gap before any paid provider call", async () => {
+  const source = upstream();
+  for (const elementId of SEVEN_K_ELEMENT_IDS) {
+    source.targetStage!.target.targetScores[elementId] = SCORES[elementId];
+    source.targetStage!.target.gap[elementId] = 0;
+  }
+  const repository = new MemoryRepository(source);
+  const provider = new QueueProvider([output()]);
+
+  await assert.rejects(
+    () => runP02Stage("run-1", { repository, provider }),
+    (error: unknown) =>
+      error instanceof P02Error && error.code === "P02_NO_ACTIONABLE_TARGET_GAP",
+  );
+  assert.equal(provider.requests.length, 0);
+  assert.equal(repository.source.runStatus, "analysis_failed");
+});
+
 test("23. same upstream and versions replay the persisted P-02 result", async () => { const repository = new MemoryRepository(upstream()); const first = await runP02Stage("run-1", { repository, provider: new QueueProvider([output()]), createId: () => "p02-1" }); const second = await runP02Stage("run-1", { repository, provider: new QueueProvider([]) }); assert.equal(first.status, "resolving_tasks"); assert.equal(second.idempotentReplay, true); assert.equal(second.result.id, "p02-1"); });
 test("failed P-02 snapshot also replays idempotently without another provider call", async () => { const source = upstream(); const repository = new MemoryRepository(source); const blocked = output(); blocked.analysisStatus = "blocked_by_inconsistency"; blocked.bundle = { priority_element: null, build_elements: [], maintain_elements: [...SEVEN_K_ELEMENT_IDS], later_elements: [], why_this_bundle: "Нельзя продолжать", why_not_now: [] }; blocked.elementSequence = []; blocked.candidateAudit = []; const first = await runP02Stage("run-1", { repository, provider: new QueueProvider([blocked]) }); const second = await runP02Stage("run-1", { repository, provider: new QueueProvider([]) }); assert.equal(first.status, "analysis_failed"); assert.equal(second.status, "analysis_failed"); assert.equal(second.idempotentReplay, true); });
 test("failed technical P-02 can be replaced by a plan-only retry without replaying P-01", async () => {
