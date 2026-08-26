@@ -194,7 +194,7 @@ export type P01ResultV1_3 = Omit<
 };
 
 export type P01RuleVersions = {
-  requestBuilder: "p01-request-builder.v2";
+  requestBuilder: "p01-request-builder.v2.1";
   scoringRules: "scoring-rules.v2.0";
   evidenceRouting: "evidence-routing.v3.0";
   targetModelDictionary: "target-model-dictionary.v2.2";

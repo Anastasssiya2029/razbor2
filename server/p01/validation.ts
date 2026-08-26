@@ -58,6 +58,14 @@ const SCORING_RULE_IDS = new Set(
     SCORING_RULES.elements[elementId].levels.map((level) => level.ruleId),
   ),
 );
+const SCORING_RULE_BY_ELEMENT_SCORE = Object.fromEntries(
+  SEVEN_K_ELEMENT_IDS.map((elementId) => [
+    elementId,
+    new Map(
+      SCORING_RULES.elements[elementId].levels.map((level) => [level.score, level.ruleId]),
+    ),
+  ]),
+) as Record<(typeof SEVEN_K_ELEMENT_IDS)[number], Map<number, string>>;
 
 function schemaIssue(error: ErrorObject): P01ValidationIssue {
   return {
@@ -449,6 +457,26 @@ export function validateP01Invariants(result: P01ResultV1_4_2): P01ResultV1_4_2 
     }
     if (element.next_level_rule_id !== null && !SCORING_RULE_IDS.has(element.next_level_rule_id)) {
       issues.push({ path: `/current7k/${elementId}/next_level_rule_id`, code: "unknown_scoring_rule", message: "Неизвестный next scoring rule ID." });
+    }
+    if (element.score !== null) {
+      const expectedMatchedRule = SCORING_RULE_BY_ELEMENT_SCORE[elementId].get(element.score) ?? null;
+      const expectedNextRule = element.score < 10
+        ? SCORING_RULE_BY_ELEMENT_SCORE[elementId].get(element.score + 1) ?? null
+        : null;
+      if (element.matched_level_rule_id !== expectedMatchedRule) {
+        issues.push({
+          path: `/current7k/${elementId}/matched_level_rule_id`,
+          code: "matched_rule_score_mismatch",
+          message: `Score ${element.score} требует matched rule ${expectedMatchedRule}.`,
+        });
+      }
+      if (element.next_level_rule_id !== expectedNextRule) {
+        issues.push({
+          path: `/current7k/${elementId}/next_level_rule_id`,
+          code: "next_rule_score_mismatch",
+          message: `Score ${element.score} требует next rule ${expectedNextRule}.`,
+        });
+      }
     }
   }
 

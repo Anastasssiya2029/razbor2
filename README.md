@@ -62,7 +62,7 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 
 The machine-readable manifest is [VERSION_MANIFEST.json](./VERSION_MANIFEST.json).
 
-The request assembly contracts are separately versioned as `p01-request-builder.v2`, `p02-request-builder.v2` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
+The request assembly contracts are separately versioned as `p01-request-builder.v2.1`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.1 additionally disambiguates evidence caps and forces an upper-level calibration pass before fixing each score. P-02 v2.1 treats persisted current/target values as backend-owned and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
 
 ## Install, run and test
 

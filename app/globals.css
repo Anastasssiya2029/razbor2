@@ -2278,6 +2278,78 @@ body :is(
   display: block;
 }
 
+.current-score-details {
+  margin-top: 10px;
+}
+
+.current-score-details > summary {
+  width: fit-content;
+  margin: 0 auto;
+  color: #702273;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.current-score-argument-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.current-score-argument-grid article {
+  min-width: 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(109, 47, 182, 0.11);
+  border-radius: 12px;
+}
+
+.current-score-argument-grid article.soft {
+  border-color: rgba(187, 39, 132, 0.18);
+}
+
+.current-score-argument-grid header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.current-score-argument-grid header strong {
+  color: #4f2859;
+  font-size: 12px;
+}
+
+.current-score-argument-grid header span {
+  flex: 0 0 auto;
+  color: #8b2c78;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.current-score-argument-grid p,
+.current-score-argument-grid div {
+  margin: 7px 0 0;
+  color: #66536b;
+  font-size: 10.5px;
+  line-height: 1.42;
+}
+
+.current-score-argument-grid b {
+  color: #52385a;
+}
+
+.current-score-argument-grid ul {
+  margin: 4px 0 0;
+  padding-left: 17px;
+}
+
+.current-score-argument-grid li + li {
+  margin-top: 3px;
+}
+
 .current-system-conclusion span {
   color: #9b286f;
   font-size: 10px;
@@ -2296,7 +2368,8 @@ body :is(
 }
 
 @media (max-width: 600px) {
-  .current-system-conclusion {
+  .current-system-conclusion,
+  .current-score-argument-grid {
     grid-template-columns: 1fr;
   }
 }

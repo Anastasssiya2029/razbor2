@@ -99,17 +99,34 @@ export async function runP02Stage(
     if (existing.inputHash !== inputHash || existing.p01ResultHash !== p01ResultHash || existing.targetResultHash !== targetResultHash) {
       throw new P02Error("P02_VERSION_CONFLICT", "P-02 already exists for a different upstream/version snapshot.", "version_conflict");
     }
-    const status = existing.failureCode ? "analysis_failed" : "resolving_tasks";
-    await repository.updateRun(analysisRunId, {
-      status,
-      errorCode: existing.failureCode,
-      errorMessage: existing.failureMessage,
-      promptVersion: existing.promptVersion,
-      metadata: { stageVersion: "p02-transition-strategist-stage.v1", inputHash, ruleVersions: existing.ruleVersions, idempotentReplay: true },
-    });
-    return { analysisRunId, status, idempotentReplay: true, result: existing };
+    if (!existing.failureCode || !options.retryFailed) {
+      const status = existing.failureCode ? "analysis_failed" : "resolving_tasks";
+      await repository.updateRun(analysisRunId, {
+        status,
+        errorCode: existing.failureCode,
+        errorMessage: existing.failureMessage,
+        promptVersion: existing.promptVersion,
+        metadata: { stageVersion: "p02-transition-strategist-stage.v1", inputHash, ruleVersions: existing.ruleVersions, idempotentReplay: true },
+      });
+      return { analysisRunId, status, idempotentReplay: true, result: existing };
+    }
+    if (!repository.replaceFailedResult) {
+      throw new P02Error("P02_RETRY_UNSUPPORTED", "Repository cannot replace a failed P-02 attempt.", "technical");
+    }
   }
-  if (source.runStatus !== "strategizing") throw new P02Error("P02_RESULT_MISSING", "Run is resolving_tasks but persisted P-02 result is missing.", "validation");
+  if (source.runStatus !== "strategizing" && !(source.runStatus === "analysis_failed" && existing?.failureCode && options.retryFailed)) {
+    throw new P02Error("P02_RESULT_MISSING", "Run is not ready for a new P-02 attempt.", "validation");
+  }
+
+  const persistCandidate = async (candidate: StoredP02Result) => {
+    if (existing?.failureCode && options.retryFailed) {
+      if (!await repository.replaceFailedResult!(candidate)) {
+        throw new P02Error("P02_PERSISTENCE_CONFLICT", "Failed P-02 attempt changed before retry could be saved.", "technical");
+      }
+      return { result: { ...candidate, id: existing.id }, replay: false };
+    }
+    return persistOrLoad(repository, candidate);
+  };
 
   const createId = options.createId ?? (() => crypto.randomUUID());
   try {
@@ -132,7 +149,7 @@ export async function runP02Stage(
       failureCode,
       failureMessage,
     });
-    const persisted = await persistOrLoad(repository, candidate);
+    const persisted = await persistCandidate(candidate);
     const status = persisted.result.failureCode ? "analysis_failed" : "resolving_tasks";
     await repository.updateRun(analysisRunId, {
       status,
@@ -149,6 +166,8 @@ export async function runP02Stage(
         retryCount: persisted.result.retryCount,
         usage: { inputTokens: persisted.result.inputTokens, outputTokens: persisted.result.outputTokens, totalTokens: persisted.result.totalTokens, costUsd: persisted.result.costUsd },
         idempotentReplay: persisted.replay,
+        retriedFailedResultId: existing?.failureCode && options.retryFailed ? existing.id : null,
+        previousFailureCode: existing?.failureCode && options.retryFailed ? existing.failureCode : null,
       },
     });
     return { analysisRunId, status, idempotentReplay: persisted.replay, result: persisted.result };
@@ -170,13 +189,21 @@ export async function runP02Stage(
       failureCode: unknownError.failureCode,
       failureMessage: unknownError.message,
     });
-    const persisted = await persistOrLoad(repository, failed);
+    const persisted = await persistCandidate(failed);
     await repository.updateRun(analysisRunId, {
       status: "analysis_failed",
       errorCode: persisted.result.failureCode,
       errorMessage: persisted.result.failureMessage,
       promptVersion: persisted.result.promptVersion,
-      metadata: { stageVersion: "p02-transition-strategist-stage.v1", inputHash, ruleVersions: P02_RULE_VERSIONS, retryCount: persisted.result.retryCount, idempotentReplay: persisted.replay },
+      metadata: {
+        stageVersion: "p02-transition-strategist-stage.v1",
+        inputHash,
+        ruleVersions: P02_RULE_VERSIONS,
+        retryCount: persisted.result.retryCount,
+        idempotentReplay: persisted.replay,
+        retriedFailedResultId: existing?.failureCode && options.retryFailed ? existing.id : null,
+        previousFailureCode: existing?.failureCode && options.retryFailed ? existing.failureCode : null,
+      },
     });
     return { analysisRunId, status: "analysis_failed", idempotentReplay: persisted.replay, result: persisted.result };
   }

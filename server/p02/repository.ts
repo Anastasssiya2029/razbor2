@@ -4,7 +4,7 @@ import type { TargetConfigurationResult } from "@/server/7k";
 import type { SevenKScores } from "@/server/7k/types";
 import type { P01ResultV1_4_2 } from "@/server/p01/types";
 import type { TargetArchetypeResourceVersions } from "@/server/stage4/types";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import type { P02UpstreamSource } from "./projections";
 import type { P02Repository, StoredP02Result } from "./stage-types";
 import type { P01StrategyContext, P02ResultV1_3, P02RuleVersions, TargetConfigProjection } from "./types";
@@ -172,6 +172,43 @@ export function createD1P02Repository(): P02Repository {
         failureMessage: result.failureMessage,
       }).onConflictDoNothing({ target: p02AnalysisResults.analysisRunId }).returning({ id: p02AnalysisResults.id });
       return inserted.length === 1;
+    },
+    async replaceFailedResult(result) {
+      const db = await getDb();
+      const updated = await db.update(p02AnalysisResults).set({
+        p01AnalysisResultId: result.p01AnalysisResultId,
+        targetArchetypeResultId: result.targetArchetypeResultId,
+        p01ResultHash: result.p01ResultHash,
+        targetResultHash: result.targetResultHash,
+        promptVersion: result.promptVersion,
+        outputSchemaVersion: result.outputSchemaVersion,
+        ruleVersionsJson: JSON.stringify(result.ruleVersions),
+        inputHash: result.inputHash,
+        strategyContextJson: JSON.stringify(result.strategyContext),
+        targetConfigJson: JSON.stringify(result.targetConfig),
+        resultJson: safeJson(result.result),
+        providerRawResponseJson: safeJson(result.providerRawResponse),
+        provider: result.provider,
+        model: result.model,
+        startedAt: result.startedAt,
+        finishedAt: result.finishedAt,
+        latencyMs: result.latencyMs,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        totalTokens: result.totalTokens,
+        costUsd: result.costUsd,
+        retryCount: result.retryCount,
+        technicalRetryCount: result.technicalRetryCount,
+        reevaluationRetryCount: result.reevaluationRetryCount,
+        failureCode: result.failureCode,
+        failureMessage: result.failureMessage,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      }).where(and(
+        eq(p02AnalysisResults.analysisRunId, result.analysisRunId),
+        eq(p02AnalysisResults.inputHash, result.inputHash),
+        isNotNull(p02AnalysisResults.failureCode),
+      )).returning({ id: p02AnalysisResults.id });
+      return updated.length === 1;
     },
     async updateRun(analysisRunId, update) {
       const db = await getDb();

@@ -52,6 +52,33 @@ export function normalizeP02CanonicalFields(
   input: { targetConfig: TargetConfigProjection; currentScores: SevenKScores },
 ): P02ResultV1_3 {
   const priority = result.bundle.priority_element;
+  const priorityCandidate = priority === null
+    ? undefined
+    : result.candidateAudit.find((candidate) => candidate.element_id === priority);
+  if (priorityCandidate) {
+    result.candidateAudit = result.candidateAudit.map((candidate) => {
+      if (candidate.element_id === priority) {
+        return {
+          ...candidate,
+          decision: "selected" as const,
+          rejection_reason: null,
+          tie_break_step: null,
+        };
+      }
+      if (candidate.decision !== "selected") return candidate;
+      return {
+        ...candidate,
+        decision: "rejected" as const,
+        rejection_reason:
+          "Итоговый причинный узел зафиксирован в bundle.priority_element; этот кандидат не выбран.",
+        tie_break_step: 7,
+      };
+    });
+  }
+  result.sanityChecks = result.sanityChecks.filter(
+    (check) => check.code !== "CURRENT_SCORE_INCONSISTENCY"
+      && check.code !== "TARGET_CONFIG_INCONSISTENCY",
+  );
   result.bundle.build_elements = [...new Set(result.bundle.build_elements)].filter(
     (elementId) => elementId !== priority,
   );

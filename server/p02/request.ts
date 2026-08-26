@@ -45,6 +45,8 @@ export function buildP02SystemPrompt(
   const canonicalGuard = [
     "<P02_CANONICAL_INPUT_RULES>",
     "TARGET_CONFIG уже детерминированно проверен backend и не является гипотезой AI.",
+    "CURRENT_SCORE также сверён backend между persisted P-01 и Target Configuration до вызова P-02.",
+    "Не возвращай sanity errors CURRENT_SCORE_INCONSISTENCY или TARGET_CONFIG_INCONSISTENCY: реальное расхождение остановило бы этап до AI-вызова.",
     "modelFamily/modelComponents описывают ближайшую достижимую конфигурацию под денежную цель.",
     "visionModelFamily/visionModelComponents описывают выбранную клиентом более дальнюю модель.",
     "Различие между ближайшей и дальней моделью намеренно и НЕ является TARGET_CONFIG_INCONSISTENCY.",
@@ -56,6 +58,7 @@ export function buildP02SystemPrompt(
     "baseline_value может быть только одним из этих чисел; если список пуст или подходящего числа нет, верни null.",
     "Не извлекай baseline_value из свободного текста evidenceLedger, businessMap или описания выручки.",
     "target_value также не является рыночной нормой: без разрешённого числа либо доказанной формулы верни null.",
+    "candidateAudit — объяснение уже выбранного bundle: ровно candidate с element_id=bundle.priority_element имеет decision=selected; у остальных decision=rejected.",
     "</P02_CANONICAL_INPUT_RULES>",
   ].join("\n");
   let contracted = `${injected}\n\n${canonicalGuard}\n\nВерни один JSON-объект строго по переданной провайдеру P02_OUTPUT_SCHEMA. Не добавляй другие корневые поля и не заменяй структуру собственной.`;

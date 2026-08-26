@@ -59,6 +59,7 @@ export type AnalysisPipelineDependencies = {
   runP01(snapshot: PipelineRunSnapshot): Promise<StageStatusResult>;
   runTarget(analysisRunId: string): Promise<StageStatusResult>;
   runP02(analysisRunId: string): Promise<StageStatusResult>;
+  retryP02(analysisRunId: string): Promise<StageStatusResult>;
   resolveTasks(analysisRunId: string): Promise<StageStatusResult>;
   selectMoneyNow(analysisRunId: string): Promise<StageStatusResult>;
   runP03(analysisRunId: string): Promise<StageStatusResult>;
@@ -124,6 +125,7 @@ export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies =
   }),
   runTarget: runTargetAndArchetypeStage,
   runP02: runP02Stage,
+  retryP02: (analysisRunId) => runP02Stage(analysisRunId, { retryFailed: true }),
   resolveTasks: runTaskResolverStage,
   selectMoneyNow: runMoneyNowSelectorStage,
   runP03: runP03Stage,
@@ -268,6 +270,40 @@ export async function advanceAnalysisPipeline(
       return { status: "ready", ...assembled };
     }
     throw new AnalysisPipelineError("ANALYSIS_PIPELINE_STATE_INVALID", 409, "Разбор находится в неизвестном состоянии.");
+  } finally {
+    await dependencies.releaseLock(analysisRunId, lockToken);
+  }
+}
+
+export async function retryFailedP02Pipeline(
+  analysisRunId: string,
+  dependencies: AnalysisPipelineDependencies = defaultAnalysisPipelineDependencies,
+): Promise<{ status: "resolving_tasks"; result: null; idempotentReplay: false }> {
+  let snapshot = await dependencies.loadRun(analysisRunId);
+  if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
+  if (snapshot.status !== "analysis_failed" || !snapshot.errorCode?.startsWith("P02_")) {
+    throw new AnalysisPipelineError(
+      "ANALYSIS_PIPELINE_STATE_INVALID",
+      409,
+      "Повтор без нового расчёта доступен только для ошибки этапа стратегии.",
+    );
+  }
+
+  const lockToken = await dependencies.acquireLock(analysisRunId);
+  if (!lockToken) throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Разбор уже выполняется.");
+  try {
+    snapshot = await dependencies.loadRun(analysisRunId);
+    if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
+    if (snapshot.status !== "analysis_failed" || !snapshot.errorCode?.startsWith("P02_")) {
+      throw new AnalysisPipelineError(
+        "ANALYSIS_PIPELINE_STATE_INVALID",
+        409,
+        "Состояние разбора изменилось; обновите страницу.",
+      );
+    }
+    const executed = await dependencies.retryP02(analysisRunId);
+    assertStage(executed.status, "resolving_tasks", "повторной стратегии P‑02");
+    return { status: "resolving_tasks", result: null, idempotentReplay: false };
   } finally {
     await dependencies.releaseLock(analysisRunId, lockToken);
   }

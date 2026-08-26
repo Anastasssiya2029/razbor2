@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   AnalysisPipelineError,
   advanceAnalysisPipeline,
+  retryFailedP02Pipeline,
   runAnalysisPipeline,
   type AnalysisPipelineDependencies,
   type AnalysisPipelineStatus,
@@ -39,6 +40,7 @@ function pipelineHarness(initialStatus: AnalysisPipelineStatus, options: { lock?
     runP01: async () => advance("p01", "targeting")(),
     runTarget: advance("target", "strategizing"),
     runP02: advance("p02", "resolving_tasks"),
+    retryP02: advance("p02-retry", "resolving_tasks"),
     resolveTasks: advance("tasks", "money_now"),
     selectMoneyNow: async () => {
       calls.push("money-selector");
@@ -153,6 +155,30 @@ test("draft cannot spend provider credits", async () => {
   await assert.rejects(
     runAnalysisPipeline("run-1", harness.dependencies),
     (error: unknown) => error instanceof AnalysisPipelineError && error.code === "ANALYSIS_RUN_NOT_SUBMITTED",
+  );
+  assert.deepEqual(harness.calls, []);
+});
+
+test("failed P-02 can retry only that stage under the pipeline lock", async () => {
+  const harness = pipelineHarness("analysis_failed");
+  const originalLoadRun = harness.dependencies.loadRun;
+  harness.dependencies.loadRun = async (analysisRunId) => ({
+    ...(await originalLoadRun(analysisRunId))!,
+    errorCode: "P02_INVARIANT_FAILED",
+  });
+
+  const result = await retryFailedP02Pipeline("run-1", harness.dependencies);
+
+  assert.equal(result.status, "resolving_tasks");
+  assert.deepEqual(harness.calls, ["lock", "p02-retry", "unlock:lock-token"]);
+});
+
+test("failed non-P02 stage cannot use plan-only retry", async () => {
+  const harness = pipelineHarness("analysis_failed");
+  await assert.rejects(
+    retryFailedP02Pipeline("run-1", harness.dependencies),
+    (error: unknown) => error instanceof AnalysisPipelineError
+      && error.code === "ANALYSIS_PIPELINE_STATE_INVALID",
   );
   assert.deepEqual(harness.calls, []);
 });

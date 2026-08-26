@@ -37,6 +37,7 @@ export interface P02Repository {
   loadSource(analysisRunId: string): Promise<P02UpstreamSource | null>;
   loadResult(analysisRunId: string): Promise<StoredP02Result | null>;
   createResult(result: StoredP02Result): Promise<boolean>;
+  replaceFailedResult?(result: StoredP02Result): Promise<boolean>;
   updateRun(analysisRunId: string, update: {
     status: "resolving_tasks" | "analysis_failed";
     errorCode: string | null;
@@ -51,6 +52,7 @@ export type RunP02StageOptions = {
   provider?: P02Provider;
   now?: () => Date;
   createId?: () => string;
+  retryFailed?: boolean;
 };
 
 export type P02StageExecutionResult = {
@@ -59,4 +61,3 @@ export type P02StageExecutionResult = {
   idempotentReplay: boolean;
   result: StoredP02Result;
 };
-

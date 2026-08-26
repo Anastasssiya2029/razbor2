@@ -60,14 +60,15 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.match(page, /Мягкие элементы системы/u);
   assert.match(page, /Твёрдые элементы системы/u);
   assert.match(page, /buildCurrentSystemSummary/u);
-  assert.doesNotMatch(page, /systemElementDefinitions\[argument\.id\]\.name/u);
+  assert.match(page, /systemElementDefinitions\[argument\.id\]\.name/u);
   assert.match(page, /currentModelGroups\.soft/u);
   assert.match(page, /currentModelGroups\.hard/u);
   assert.match(page, /<p>\{currentModelGroups\.soft\}<\/p>/u);
   assert.match(page, /<p>\{currentModelGroups\.hard\}<\/p>/u);
   assert.doesNotMatch(page, /<strong>\{currentModelGroups\.(?:soft|hard)\}<\/strong>/u);
-  assert.doesNotMatch(page, /current-score-argument-grid/u);
-  assert.doesNotMatch(page, /Почему не выше:/u);
+  assert.match(page, /current-score-argument-grid/u);
+  assert.match(page, /Почему выставлены такие баллы/u);
+  assert.match(page, /Почему не выше:/u);
   assert.match(page, /Итоговый балл:/u);
   assert.match(page, /currentTotal/u);
   assert.doesNotMatch(page, /Проанализировано ответов:/u);

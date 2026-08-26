@@ -1009,18 +1009,22 @@ function AnalysisSection({
   activeSlide,
   setActiveSlide,
   onOpenPlan,
+  onRetryPlan,
   planReady,
   progressStatus,
   backgroundError,
+  retrying,
   result,
 }: {
   analysis: AnalysisOverview;
   activeSlide: number;
   setActiveSlide: (slide: number) => void;
   onOpenPlan: () => void;
+  onRetryPlan: () => void;
   planReady: boolean;
   progressStatus: AnalysisProgressStatus;
   backgroundError: string | null;
+  retrying: boolean;
   result: AnalysisResultV1 | null;
 }) {
   const pointerStart = useRef<number | null>(null);
@@ -1119,6 +1123,31 @@ function AnalysisSection({
                     <p>{currentModelGroups.hard}</p>
                   </article>
                 </div>
+                <details className="current-score-details">
+                  <summary>Почему выставлены такие баллы</summary>
+                  <div className="current-score-argument-grid">
+                    {analysis.currentScoreArguments.map((argument) => (
+                      <article className={argument.kind} key={argument.id}>
+                        <header>
+                          <strong>{systemElementDefinitions[argument.id].name}</strong>
+                          <span>{argument.score} из 10</span>
+                        </header>
+                        {argument.matchedCriterion && (
+                          <p><b>Что означает этот уровень:</b> {argument.matchedCriterion}</p>
+                        )}
+                        {argument.evidence.length > 0 && (
+                          <div>
+                            <b>Что учтено из ответов:</b>
+                            <ul>{argument.evidence.map((fact) => <li key={fact}>{fact}</li>)}</ul>
+                          </div>
+                        )}
+                        {argument.whyNotHigher && (
+                          <p><b>Почему не выше:</b> {argument.whyNotHigher}</p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </details>
               </aside>
             </article>
 
@@ -1184,8 +1213,14 @@ function AnalysisSection({
               ? "Все рекомендации и задачи готовы."
               : "Текущая и целевая модели уже готовы — их можно обсуждать с клиентом, пока система собирает рекомендации."}
         </p>
-        <button type="button" className="primary-button route-button" onClick={onOpenPlan} disabled={!planReady}>
-          {planReady ? "Маршрут перехода" : "План ещё собирается"} {planReady && <ArrowIcon />}
+        <button
+          type="button"
+          className="primary-button route-button"
+          onClick={backgroundError ? onRetryPlan : onOpenPlan}
+          disabled={retrying || (!planReady && !backgroundError)}
+        >
+          {retrying ? "Собираем план…" : backgroundError ? "Повторить сборку плана" : planReady ? "Маршрут перехода" : "План ещё собирается"}
+          {(planReady || backgroundError) && <ArrowIcon />}
         </button>
       </div>
 
@@ -1590,7 +1625,7 @@ export default function Home() {
     setAnalysisBackgroundError(null);
     setIsSubmittingDiagnostic(true);
     const rawValues = { ...values };
-    let overviewAvailable = false;
+    let overviewAvailable = analysisResult !== null;
 
     try {
       let reusableDiagnostic = submittedDiagnostic;
@@ -1618,7 +1653,22 @@ export default function Home() {
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
         if (statusResponse.ok && status?.status === "analysis_failed") {
-          reusableDiagnostic = null;
+          if (status.errorCode?.startsWith("P02_")) {
+            const retryResponse = await fetch(`/api/analysis-runs/${reusableDiagnostic.analysisRunId}/retry`, {
+              method: "POST",
+              credentials: "include",
+            });
+            if (redirectToLoginAfterExpiredSession(retryResponse)) {
+              throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+            }
+            const retried = await readJsonObject<RunAnalysisResponse>(retryResponse);
+            if (!retryResponse.ok) {
+              throw new Error(retried?.message ?? "Не удалось повторно собрать стратегию.");
+            }
+            if (retried?.status) setAnalysisProgressStatus(retried.status);
+          } else {
+            reusableDiagnostic = null;
+          }
         }
       }
 
@@ -1677,7 +1727,7 @@ export default function Home() {
         };
         setSubmittedDiagnostic(diagnostic);
       }
-      setLoadingTarget("analysis");
+      setLoadingTarget(overviewAvailable ? null : "analysis");
       setAnalysisProgressStatus("queued");
       setAnalysisStartedAt(Date.now());
       setAnalysisSlide(0);
@@ -1709,7 +1759,6 @@ export default function Home() {
           }
           if (analysisResponse.ok && analysis?.status === "ready" && analysis.result) break;
           if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
-            setSubmittedDiagnostic(null);
             throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
           }
           if (analysisResponse.ok && analysis?.status && analysis.status !== "ready") {
@@ -1732,7 +1781,6 @@ export default function Home() {
           setAnalysisProgressStatus(status.status as AnalysisProgressStatus);
         }
         if (status?.status === "analysis_failed") {
-          setSubmittedDiagnostic(null);
           throw new Error("Разбор не удалось завершить. Ответы сохранены в кабинете.");
         }
         if (status?.status === "ready") {
@@ -1799,6 +1847,7 @@ export default function Home() {
       id: score.id,
       score: score.currentScore,
       evidence: [],
+      matchedCriterion: null,
       whyNotHigher: null,
       kind: score.id === "authenticity" || score.id === "audience" ? "soft" : "hard",
     })),
@@ -2037,9 +2086,11 @@ export default function Home() {
           activeSlide={analysisSlide}
           setActiveSlide={setAnalysisSlide}
           onOpenPlan={openTransitionPlan}
+          onRetryPlan={() => void openAnalysis()}
           planReady={Boolean(realAnalysisResult)}
           progressStatus={realAnalysisResult ? "ready" : analysisProgressStatus}
           backgroundError={analysisBackgroundError}
+          retrying={isSubmittingDiagnostic}
           result={realAnalysisResult}
         />
       ) : realAnalysisResult ? (

@@ -21,12 +21,18 @@ test("expired authentication redirects only after the draft has a recovery path"
   assert.match(session, /window\.addEventListener\("focus"/u);
 });
 
-test("a recovered failed or stale analysis run is not reused for changed answers", () => {
+test("a recovered run is reused only for unchanged answers and P-02 gets a plan-only retry", () => {
   const page = readFileSync("app/page.tsx", "utf8");
+  const retryRoute = readFileSync("app/api/analysis-runs/[analysisRunId]/retry/route.ts", "utf8");
   assert.match(page, /submittedDiagnosticMatchesForm/u);
   assert.match(page, /status\?\.status === "analysis_failed"/u);
+  assert.match(page, /status\.errorCode\?\.startsWith\("P02_"\)/u);
+  assert.match(page, /\/retry/u);
+  assert.match(page, /Повторить сборку плана/u);
+  assert.match(page, /function AnalysisSection\(\{[\s\S]*?onRetryPlan,[\s\S]*?onClick=\{backgroundError \? onRetryPlan : onOpenPlan\}/u);
   assert.match(page, /reusableDiagnostic = null/u);
-  assert.match(page, /setSubmittedDiagnostic\(null\)/u);
+  assert.match(retryRoute, /ownerOnly: true/u);
+  assert.match(retryRoute, /retryFailedP02Pipeline/u);
 });
 
 test("the situation summary is split into four paragraphs and rubles are formatted", () => {

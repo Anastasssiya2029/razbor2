@@ -1,12 +1,14 @@
 import type { ArchetypeId, SystemElementId, SystemScore } from "./business-analysis";
 import type { BusinessArchetypeResult, TargetConfigurationResult } from "../server/7k";
 import type { P01ResultV1_4_2 } from "../server/p01/types";
+import { SCORING_RULES } from "../server/7k/config/scoring-rules.v2.0";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId, type SevenKScores } from "../server/7k/types";
 
 export type AnalysisScoreArgument = {
   id: SystemElementId;
   score: number;
   evidence: string[];
+  matchedCriterion: string | null;
   whyNotHigher: string | null;
   kind: "soft" | "hard";
 };
@@ -64,11 +66,15 @@ export function buildAnalysisOverview(input: {
         .map((evidenceId) => conciseArgument(evidenceById.get(evidenceId)))
         .filter((fact): fact is string => Boolean(fact))
         .filter((fact, index, facts) => facts.indexOf(fact) === index)
-        .slice(0, 1);
+        .slice(0, 3);
+      const matchedCriterion = SCORING_RULES.elements[elementId].levels.find(
+        (level) => level.score === input.currentScores[elementId],
+      )?.criterion ?? null;
       return {
         id: presentationElementIds[elementId],
         score: input.currentScores[elementId],
         evidence,
+        matchedCriterion: conciseArgument(matchedCriterion, 360),
         whyNotHigher: conciseArgument(score.why_not_higher),
         kind: elementId === "authenticity" || elementId === "audience" ? "soft" : "hard",
       };

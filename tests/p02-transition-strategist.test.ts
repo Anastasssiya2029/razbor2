@@ -230,7 +230,7 @@ test("21a. an exact markdown JSON fence is accepted without a paid retry", async
 test("21b. malformed JSON fails after one paid provider response", async () => { const provider = new QueueProvider(["Ответ: {}", output()]); await assert.rejects(() => runP02TransitionStrategist(prepared(), { provider }), (error: unknown) => error instanceof P02RunExecutionError && error.failureCode === "P02_MALFORMED_JSON"); assert.equal(provider.requests.length, 1); });
 test("21c. schema-invalid JSON fails after one paid provider response", async () => { const provider = new QueueProvider([{}, output()]); await assert.rejects(() => runP02TransitionStrategist(prepared(), { provider }), (error: unknown) => error instanceof P02RunExecutionError && error.failureCode === "P02_SCHEMA_VALIDATION_FAILED"); assert.equal(provider.requests.length, 1); });
 test("22. semantic invariant gets one targeted reevaluation", async () => { const broken = output(); broken.constraint.root_evidence_ids = ["E99"]; const provider = new QueueProvider([broken, output()]); const result = await runP02TransitionStrategist(prepared(), { provider }); assert.equal(result.kind, "success"); assert.equal(result.metadata.reevaluationRetryCount, 1); assert.match(provider.requests[1].correction ?? "", /backend semantic invariants/u); });
-test("22a. reevaluation explains unsupported baselines and intentional target staging", async () => {
+test("22a. canonical inputs suppress false AI inconsistency and reevaluate only unsupported baselines", async () => {
   const broken = output();
   broken.businessValidation.baseline_value = 120000;
   broken.sanityChecks = [{ code: "TARGET_CONFIG_INCONSISTENCY", severity: "error", message: "Ближняя и дальняя модели различаются", element_ids: ["product_method"], evidence_ids: ["E03"] }];
@@ -239,7 +239,34 @@ test("22a. reevaluation explains unsupported baselines and intentional target st
   assert.equal(result.kind, "success");
   assert.equal(provider.requests.length, 2);
   assert.match(provider.requests[1].correction ?? "", /baseline_value=null/u);
-  assert.match(provider.requests[1].correction ?? "", /намеренным поэтапным переходом/u);
+  assert.doesNotMatch(provider.requests[1].correction ?? "", /TARGET_CONFIG_INCONSISTENCY/u);
+});
+test("P-02 canonicalizes duplicate selected candidates and backend-owned sanity checks", () => {
+  const input = prepared();
+  const value = output();
+  value.candidateAudit.push({
+    element_id: "funnel",
+    hypothesis: "Альтернативный узел",
+    supporting_evidence_ids: ["E04"],
+    counterevidence_ids: [],
+    dependency_position: "После продукта",
+    target_necessity: "Нужен позже",
+    decision: "selected",
+    rejection_reason: null,
+    tie_break_step: null,
+  });
+  value.sanityChecks = [
+    { code: "CURRENT_SCORE_INCONSISTENCY", severity: "error", message: "Ложная перепроверка", element_ids: ["product_method"], evidence_ids: ["E03"] },
+    { code: "TARGET_CONFIG_INCONSISTENCY", severity: "error", message: "Ложная перепроверка", element_ids: ["product_method"], evidence_ids: ["E03"] },
+  ];
+
+  const normalized = normalizeP02CanonicalFields(value, input);
+
+  assert.deepEqual(normalized.sanityChecks, []);
+  assert.equal(normalized.candidateAudit.filter((candidate) => candidate.decision === "selected").length, 1);
+  assert.equal(normalized.candidateAudit.find((candidate) => candidate.element_id === "product_method")?.decision, "selected");
+  assert.equal(normalized.candidateAudit.find((candidate) => candidate.element_id === "funnel")?.decision, "rejected");
+  assert.equal(validateP02Invariants(normalized, input), normalized);
 });
 test("P-02 canonicalizes zero-gap build elements and clamps milestones to persisted target", () => {
   const input = prepared();
@@ -328,11 +355,40 @@ class MemoryRepository implements P02Repository {
   async loadSource() { return this.source; }
   async loadResult() { return this.stored; }
   async createResult(result: StoredP02Result) { if (this.stored) return false; this.stored = structuredClone(result); return true; }
+  async replaceFailedResult(result: StoredP02Result) {
+    if (!this.stored?.failureCode || this.stored.inputHash !== result.inputHash) return false;
+    this.stored = { ...structuredClone(result), id: this.stored.id };
+    return true;
+  }
   async updateRun(_id: string, update: { status: "resolving_tasks" | "analysis_failed" }) { this.source.runStatus = update.status; }
 }
 
 test("23. same upstream and versions replay the persisted P-02 result", async () => { const repository = new MemoryRepository(upstream()); const first = await runP02Stage("run-1", { repository, provider: new QueueProvider([output()]), createId: () => "p02-1" }); const second = await runP02Stage("run-1", { repository, provider: new QueueProvider([]) }); assert.equal(first.status, "resolving_tasks"); assert.equal(second.idempotentReplay, true); assert.equal(second.result.id, "p02-1"); });
 test("failed P-02 snapshot also replays idempotently without another provider call", async () => { const source = upstream(); const repository = new MemoryRepository(source); const blocked = output(); blocked.analysisStatus = "blocked_by_inconsistency"; blocked.bundle = { priority_element: null, build_elements: [], maintain_elements: [...SEVEN_K_ELEMENT_IDS], later_elements: [], why_this_bundle: "Нельзя продолжать", why_not_now: [] }; blocked.elementSequence = []; blocked.candidateAudit = []; const first = await runP02Stage("run-1", { repository, provider: new QueueProvider([blocked]) }); const second = await runP02Stage("run-1", { repository, provider: new QueueProvider([]) }); assert.equal(first.status, "analysis_failed"); assert.equal(second.status, "analysis_failed"); assert.equal(second.idempotentReplay, true); });
+test("failed technical P-02 can be replaced by a plan-only retry without replaying P-01", async () => {
+  const source = upstream();
+  const repository = new MemoryRepository(source);
+  const broken = output();
+  broken.constraint.root_evidence_ids = ["E99"];
+  const failed = await runP02Stage("run-1", {
+    repository,
+    provider: new QueueProvider([broken, broken]),
+    createId: () => "p02-original",
+  });
+  assert.equal(failed.status, "analysis_failed");
+
+  const retried = await runP02Stage("run-1", {
+    repository,
+    provider: new QueueProvider([output()]),
+    retryFailed: true,
+    createId: () => "p02-retry",
+  });
+
+  assert.equal(retried.status, "resolving_tasks");
+  assert.equal(retried.idempotentReplay, false);
+  assert.equal(retried.result.id, "p02-original");
+  assert.equal(repository.source.runStatus, "resolving_tasks");
+});
 test("24. changed upstream after persistence returns explicit version conflict", async () => { const repository = new MemoryRepository(upstream()); await runP02Stage("run-1", { repository, provider: new QueueProvider([output()]) }); repository.source.p01Result!.businessMap.sales = "changed"; await assert.rejects(() => runP02Stage("run-1", { repository, provider: new QueueProvider([]) }), (error: unknown) => error instanceof P02Error && error.code === "P02_VERSION_CONFLICT"); });
 test("25. regression guard preserves stages 1–4 and excludes forbidden P-02 inputs/actions", () => { const repositoryCode = readFileSync("server/p02/repository.ts", "utf8"); const routeCode = readFileSync("app/api/analysis-runs/[analysisRunId]/p02/route.ts", "utf8"); assert.doesNotMatch(repositoryCode, /diagnostics|normalizedInputJson|rawAnswersJson|archetypeResultJson/u); assert.doesNotMatch(routeCode, /resolveTransitionSequence|MoneyNow|P-03|P-04|AnalysisResult/u); const prompt = buildP02SystemPrompt(prepared().strategyContext, prepared().targetConfig); assert.doesNotMatch(prompt, /moneyNowSignals|moneyNowHistory|providerRawResponse|products_method/u); assert.match(prompt, /product_method/u); });
 test("P01_STRATEGY_CONTEXT and TARGET_CONFIG projections have exact approved keys", () => { const input = prepared(); assert.deepEqual(Object.keys(input.strategyContext).sort(), ["businessMap", "current7k", "desiredRoleSummary", "desiredSystemWeeklyHours", "evidenceLedger", "moneyChainFacts"].sort()); assert.deepEqual(Object.keys(input.targetConfig).sort(), ["appliedModifiers", "capabilities", "desiredOwnerRole", "gap", "modelComponents", "modelFamily", "modelTransitionNote", "requiredMinimum", "targetScores", "visionModelComponents", "visionModelFamily"].sort()); });

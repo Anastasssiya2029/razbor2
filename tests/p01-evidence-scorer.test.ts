@@ -524,6 +524,18 @@ test("score above evidence cap fails invariant", () => {
   assert.throws(() => validateP01Invariants(fixture), P01InvariantError);
 });
 
+test("score must reference the exact matched and next methodology levels", () => {
+  const fixture = validP01Fixture();
+  fixture.current7k.audience.matched_level_rule_id = "SR2-AUTHENTICITY-02";
+  fixture.current7k.audience.next_level_rule_id = "SR2-AUDIENCE-04";
+  assert.throws(
+    () => validateP01Invariants(fixture),
+    (error: unknown) => error instanceof P01InvariantError
+      && error.issues.some((issue) => issue.code === "matched_rule_score_mismatch")
+      && error.issues.some((issue) => issue.code === "next_rule_score_mismatch"),
+  );
+});
+
 test("dangling evidence ID fails invariant", () => {
   const fixture = validP01Fixture();
   fixture.current7k.funnel.evidence_ids = ["E99"];
@@ -1003,6 +1015,16 @@ test("production P-01 prompt requires closed evidence references", () => {
   assert.match(prompt, /<EVIDENCE_REFERENCE_INTEGRITY>/u);
   assert.match(prompt, /Разность обязана быть пустой/u);
   assert.match(prompt, /не выдумывай ID/u);
+});
+
+test("production P-01 prompt distinguishes a one-off case from a described operating system", () => {
+  const prompt = buildP01SystemPrompt(ALINA_GOLDEN_CASE.input, null, { moneyNowEnabled: false });
+  assert.match(prompt, /<CURRENT_SCORE_CALIBRATION_CONTROL>/u);
+  assert.match(prompt, /единичному клиентскому кейсу/u);
+  assert.match(prompt, /НЕ относится к подробно описанному действующему процессу/u);
+  assert.match(prompt, /upper-level challenge/u);
+  assert.match(prompt, /authenticity=7/u);
+  assert.ok(prompt.indexOf("<CURRENT_SCORE_CALIBRATION_CONTROL>") < prompt.indexOf("<CLIENT_DATA"));
 });
 
 test("runner retries technical/schema failures once and invariant failures once", async () => {

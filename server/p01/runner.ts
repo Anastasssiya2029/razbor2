@@ -61,7 +61,7 @@ export class P01RunExecutionError extends Error {
 }
 
 const P01_RULE_VERSIONS = {
-  requestBuilder: "p01-request-builder.v2",
+  requestBuilder: "p01-request-builder.v2.1",
   scoringRules: SCORING_RULES_RESOURCE_VERSION,
   evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
   targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,
