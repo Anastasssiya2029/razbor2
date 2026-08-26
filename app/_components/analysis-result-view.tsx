@@ -101,7 +101,7 @@ export function AnalysisResultView({ result, analysisRunId, initialManagerPlan, 
         deadlineLabel={deadlineLabel}
         managerPlan={managerPlan}
       />
-      {(showAnalysis || showPlanCover) && <section className={`result-cover ${showPlanCover ? "plan-cover" : ""}`}>
+      {(showPlanCover || view === "full") && <section className={`result-cover ${showPlanCover ? "plan-cover" : ""}`}>
         <span className="admin-eyebrow">Персональная стратегия 7К</span>
         <h1>Индивидуальный план системного роста проекта для {clientNameGenitive}</h1>
         {currentRevenueRub != null && targetRevenueRub != null && (

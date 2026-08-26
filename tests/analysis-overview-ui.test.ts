@@ -124,10 +124,15 @@ test("saved result restores the step navigation and separates review from plan",
   assert.match(savedResultPage, />План перехода</u);
   assert.match(savedResultPage, /<GiftWheel analysisRunId=\{analysisRunId\}/u);
   assert.match(savedResultPage, /activeStage === 1 && <header/u);
+  assert.match(savedResultPage, /className="journey-stage saved-diagnostic-stage"/u);
+  assert.match(savedResultPage, /saved-diagnostic-stage"[\s\S]*disabled[\s\S]*>Диагностика</u);
+  assert.doesNotMatch(savedResultPage, /<Link className="journey-stage" href="\/">/u);
   assert.match(resultRoute, /overview:\s*await getAnalysisOverview\(analysisRunId\)/u);
   assert.match(savedResultPage, /scoreArguments=\{overview\?\.currentScoreArguments\}/u);
   assert.match(resultView, /Почему выставлен этот балл/u);
   assert.match(resultView, /Что учтено из ответов:/u);
+  assert.match(resultView, /\(showPlanCover \|\| view === "full"\)/u);
+  assert.doesNotMatch(resultView, /\(showAnalysis \|\| showPlanCover\)/u);
 });
 
 test("client-facing progress copy does not expose internal pipeline names or raw failure codes", () => {

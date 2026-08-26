@@ -3910,6 +3910,18 @@ body :is(
 .saved-result-journey { margin-top: 34px; }
 .journey.journey-spacious { margin-top: 42px; padding-bottom: 14px; }
 
+.saved-result-journey .saved-diagnostic-stage:disabled {
+  opacity: .5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.saved-result-journey .saved-diagnostic-stage:disabled .journey-number {
+  color: #817486;
+  background: #e4e8ef;
+  box-shadow: none;
+}
+
 .journey-stage:disabled {
   cursor: default;
 }

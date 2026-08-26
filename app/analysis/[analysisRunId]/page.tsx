@@ -73,9 +73,15 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
         view={activeStage === 1 ? "analysis" : "plan"}
       />}
       <nav className={`journey saved-result-journey ${activeStage >= 2 ? "journey-spacious" : ""} no-print`} aria-label="Этапы работы">
-        <Link className="journey-stage" href="/">
+        <button
+          type="button"
+          className="journey-stage saved-diagnostic-stage"
+          disabled
+          aria-disabled="true"
+          title="Ответы диагностики нельзя открыть из сохранённого результата"
+        >
           <span className="journey-number">1</span><span>Диагностика</span>
-        </Link>
+        </button>
         <button type="button" className={`journey-stage ${activeStage === 1 ? "active" : ""}`} aria-current={activeStage === 1 ? "step" : undefined} onClick={() => { setActiveStage(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
           <span className="journey-number">2</span><span>Разбор</span>
         </button>
