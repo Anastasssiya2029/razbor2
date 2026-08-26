@@ -29,6 +29,7 @@ import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { GiftWheel } from "@/app/_components/gift-wheel";
 import { buildCurrentSystemSummary } from "@/lib/current-system-summary";
 import type { AnalysisOverview } from "@/lib/analysis-overview";
+import { failedRunRecovery } from "@/lib/analysis-run-recovery";
 
 type FieldProps = {
   label: string;
@@ -1653,10 +1654,7 @@ export default function Home() {
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
         if (statusResponse.ok && status?.status === "analysis_failed") {
-          if (
-            status.errorCode?.startsWith("P02_") &&
-            status.errorCode !== "P02_NO_ACTIONABLE_TARGET_GAP"
-          ) {
+          if (failedRunRecovery(status.errorCode) === "retry_strategy") {
             const retryResponse = await fetch(`/api/analysis-runs/${reusableDiagnostic.analysisRunId}/retry`, {
               method: "POST",
               credentials: "include",
@@ -1666,7 +1664,24 @@ export default function Home() {
             }
             const retried = await readJsonObject<RunAnalysisResponse>(retryResponse);
             if (!retryResponse.ok) {
-              throw new Error(retried?.message ?? "Не удалось повторно собрать стратегию.");
+              const refreshedStatusResponse = await fetch(`/api/analysis-runs/${reusableDiagnostic.analysisRunId}/run`, {
+                method: "GET",
+                credentials: "include",
+                headers: { accept: "application/json" },
+              });
+              if (redirectToLoginAfterExpiredSession(refreshedStatusResponse)) {
+                throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+              }
+              const refreshedStatus = await readJsonObject<AnalysisRunStatusResponse>(refreshedStatusResponse);
+              if (
+                refreshedStatusResponse.ok
+                && refreshedStatus?.status === "analysis_failed"
+                && failedRunRecovery(refreshedStatus.errorCode) === "start_fresh"
+              ) {
+                reusableDiagnostic = null;
+              } else {
+                throw new Error(retried?.message ?? "Не удалось повторно собрать стратегию.");
+              }
             }
             if (retried?.status) setAnalysisProgressStatus(retried.status);
           } else {
