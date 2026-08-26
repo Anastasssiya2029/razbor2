@@ -7,7 +7,7 @@ import {
   type NormalizedDiagnosticSubmission,
 } from "@/lib/diagnostic-input";
 import { canAccessOwnedAnalysis, type AuthenticatedAppUser } from "@/server/auth";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
 export class DiagnosticAccessError extends Error {
   constructor(
@@ -24,6 +24,45 @@ function clientDisplayName(normalized: NormalizedDiagnosticSubmission): string {
   return normalized.input.identity.expertName?.trim() || "Без имени";
 }
 
+const REUSABLE_SUBMITTED_STATUSES = [
+  "queued",
+  "scoring",
+  "targeting",
+  "strategizing",
+  "resolving_tasks",
+  "money_now",
+  "writing_report",
+  "ready",
+] as const;
+
+async function findReusableSubmittedDiagnostic(input: {
+  ownerUserId: string;
+  normalizedInputJson: string;
+  excludeDiagnosticId?: string;
+}) {
+  const db = await getDb();
+  const filters = [
+    eq(diagnostics.ownerUserId, input.ownerUserId),
+    eq(diagnostics.methodologyVersion, METHODOLOGY_VERSION),
+    eq(diagnostics.normalizedInputJson, input.normalizedInputJson),
+    inArray(analysisRuns.status, REUSABLE_SUBMITTED_STATUSES),
+  ];
+  if (input.excludeDiagnosticId) filters.push(ne(diagnostics.id, input.excludeDiagnosticId));
+  const rows = await db
+    .select({
+      clientId: diagnostics.clientId,
+      diagnosticId: diagnostics.id,
+      analysisRunId: analysisRuns.id,
+      status: analysisRuns.status,
+    })
+    .from(diagnostics)
+    .innerJoin(analysisRuns, eq(analysisRuns.diagnosticId, diagnostics.id))
+    .where(and(...filters))
+    .orderBy(desc(analysisRuns.createdAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function createDiagnosticRecord(input: {
   actor: AuthenticatedAppUser;
   payload?: unknown;
@@ -31,6 +70,19 @@ export async function createDiagnosticRecord(input: {
   intent: "draft" | "submit";
 }) {
   const normalized = input.normalized ?? normalizeDiagnosticSubmission(input.payload);
+  if (input.intent === "submit") {
+    const reusable = await findReusableSubmittedDiagnostic({
+      ownerUserId: input.actor.id,
+      normalizedInputJson: JSON.stringify(normalized.input),
+    });
+    if (reusable) {
+      return {
+        ...reusable,
+        normalized,
+        idempotentReplay: true,
+      };
+    }
+  }
   const clientId = crypto.randomUUID();
   const diagnosticId = crypto.randomUUID();
   const analysisRunId = crypto.randomUUID();
@@ -62,7 +114,7 @@ export async function createDiagnosticRecord(input: {
       modelMetadataJson: "{}",
     }),
   ]);
-  return { clientId, diagnosticId, analysisRunId, normalized };
+  return { clientId, diagnosticId, analysisRunId, normalized, idempotentReplay: false };
 }
 
 async function loadEditableDiagnostic(diagnosticId: string, actor: AuthenticatedAppUser) {
@@ -97,6 +149,21 @@ export async function updateDiagnosticDraft(input: {
     throw new DiagnosticAccessError("DIAGNOSTIC_NOT_DRAFT", 409, "Запущенный разбор нельзя изменить как черновик.");
   }
   const normalized = normalizeDiagnosticSubmission(input.payload);
+  if (input.submit) {
+    const reusable = await findReusableSubmittedDiagnostic({
+      ownerUserId: input.actor.id,
+      normalizedInputJson: JSON.stringify(normalized.input),
+      excludeDiagnosticId: input.diagnosticId,
+    });
+    if (reusable) {
+      return {
+        ...reusable,
+        status: "queued" as const,
+        normalized,
+        idempotentReplay: true,
+      };
+    }
+  }
   const db = await getDb();
   const now = new Date().toISOString();
   const diagnosticUpdate = db.update(diagnostics).set({
@@ -125,6 +192,7 @@ export async function updateDiagnosticDraft(input: {
     analysisRunId: current.run.id,
     status: input.submit ? "queued" as const : "draft" as const,
     normalized,
+    idempotentReplay: false,
   };
 }
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
+import { ALINA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "../server/7k/types";
@@ -273,6 +274,26 @@ test("target mapping uses only P-01 current7k and targetIntent plus current capa
   assert.deepEqual(computed.target.capabilities, ["delegated_sales"]);
   assert.deepEqual(computed.target.appliedModifiers, ["delegate_individual_sales"]);
   assert.equal(computed.target.desiredOwnerRole, "delegate_sales");
+});
+
+test("explicit owner-not-executor target restores Alina's near-term owner role and function heads", () => {
+  const p01 = p01Fixture(ALINA_GOLDEN_CASE.currentScores);
+  p01.targetIntent.rawBusinessModel = ALINA_GOLDEN_CASE.input.target.businessModel;
+  p01.targetIntent.normalizedModelFamily = "autoproduct";
+  p01.targetIntent.primaryModelFamily = "autoproduct";
+  p01.targetIntent.desiredRoleSummary =
+    "Целевая роль — собственник проекта, а не главный исполнитель.";
+  p01.targetIntent.desiredSystemWeeklyHours = 25;
+  const alinaSource = source(p01);
+  alinaSource.normalizedInput = structuredClone(ALINA_GOLDEN_CASE.input);
+
+  const computed = computeTargetAndArchetype(alinaSource);
+
+  assert.equal(computed.target.desiredOwnerRole, "delegate_sales");
+  assert.ok(computed.target.capabilities.includes("function_heads"));
+  assert.ok(computed.target.appliedModifiers.includes("delegate_individual_sales"));
+  assert.equal(computed.target.targetScores.team, 8);
+  assert.equal(computed.targetInputAudit.desiredOwnerRoleDerivedFrom, "diagnostic.target.delegation");
 });
 
 test("hybrid model combines primary and secondary models with multiple target codes", () => {

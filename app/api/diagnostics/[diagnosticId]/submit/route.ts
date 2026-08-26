@@ -24,6 +24,7 @@ export async function POST(request: Request, context: RouteContext) {
         module: "analysis-orchestrator.v1",
       },
       input: updated.normalized.input,
+      idempotentReplay: updated.idempotentReplay,
     });
   } catch (error) {
     return diagnosticErrorResponse(error);

@@ -106,6 +106,44 @@ export function validateP01ElementScoreEnvelope(
   return value as P01ElementScoreEnvelope;
 }
 
+/**
+ * A corrected core response may keep evidence IDs from the previous response
+ * while returning a newly numbered ledger. Restore exact previous ledger items
+ * when possible and remove only references that cannot be grounded in either
+ * response. This keeps an optional narrative reference from failing the whole
+ * paid analysis run.
+ */
+export function reconcileP01CoreEvidenceReferences(
+  value: P01CoreContext,
+  previous: P01CoreContext | null = null,
+): P01CoreContext {
+  const result = structuredClone(value);
+  const previousById = new Map(
+    (previous?.evidenceLedger ?? []).map((evidence) => [evidence.id, evidence]),
+  );
+  const references: string[][] = [
+    ...result.businessMap.experience.attempts.map((attempt) => attempt.evidence_ids),
+    ...result.moneyChainFacts.map((fact) => fact.evidence_ids),
+    ...result.sanityChecks.map((check) => check.evidence_ids),
+  ];
+  const availableIds = new Set(result.evidenceLedger.map((evidence) => evidence.id));
+
+  for (const ids of references) {
+    for (const id of ids) {
+      if (availableIds.has(id)) continue;
+      const restored = previousById.get(id);
+      if (!restored) continue;
+      result.evidenceLedger.push(structuredClone(restored));
+      availableIds.add(id);
+    }
+  }
+  for (const ids of references) {
+    const grounded = ids.filter((id, index) => availableIds.has(id) && ids.indexOf(id) === index);
+    ids.splice(0, ids.length, ...grounded);
+  }
+  return result;
+}
+
 function promptJson(value: unknown): string {
   return JSON.stringify(value)
     .replaceAll("<", "\\u003c")

@@ -2287,11 +2287,25 @@ body :is(
 
 .current-score-details > summary {
   width: fit-content;
+  min-height: 36px;
+  padding: 8px 14px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
   color: #702273;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(109, 47, 182, 0.14);
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
+}
+
+.current-score-details > summary:hover,
+.current-score-details > summary:focus-visible {
+  background: #fff;
+  border-color: rgba(109, 47, 182, 0.28);
+  outline: none;
 }
 
 .current-score-argument-grid {

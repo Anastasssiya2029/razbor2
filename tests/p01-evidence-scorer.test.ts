@@ -11,6 +11,10 @@ import { adaptLegacyMaterializedAnalysisResult } from "../server/7k/legacy-resul
 import { buildMoneyNowHistoryGuardInput } from "../server/p01/money-now-history-adapter";
 import { buildP01SystemPrompt } from "../server/p01/request";
 import {
+  reconcileP01CoreEvidenceReferences,
+  type P01CoreContext,
+} from "../server/p01/split-request";
+import {
   P01RunExecutionError,
   runP01EvidenceScorer,
 } from "../server/p01/runner";
@@ -1017,10 +1021,9 @@ test("split P-01 re-evaluates only the score block that violates merged invarian
   assert.equal(outcome.result.current7k.team.score, valid.current7k.team.score);
 });
 
-test("split P-01 repairs the shared context before launching score calls", async () => {
+test("split P-01 drops an ungrounded optional context reference before launching score calls", async () => {
   const responses = splitP01Responses(validP01Fixture());
-  const validContext = structuredClone(responses[0]) as Record<string, unknown>;
-  const invalidContext = structuredClone(validContext);
+  const invalidContext = structuredClone(responses[0]) as Record<string, unknown>;
   invalidContext.moneyChainFacts = [{
     stage: "payment",
     summary: "Факт оплаты",
@@ -1030,7 +1033,7 @@ test("split P-01 repairs the shared context before launching score calls", async
     period: "месяц",
     evidence_ids: ["E99"],
   }];
-  const provider = new QueueProvider(invalidContext, validContext, ...responses.slice(1));
+  const provider = new QueueProvider(invalidContext, ...responses.slice(1));
 
   const outcome = await runP01EvidenceScorer(diagnosticInput(), {
     provider,
@@ -1038,12 +1041,30 @@ test("split P-01 repairs the shared context before launching score calls", async
     hashInput: async () => "hash",
   });
 
-  assert.equal(provider.requests.length, 9);
+  assert.equal(provider.requests.length, 8);
   assert.equal(provider.requests[0].schemaName, "p01_core_context_v1_4");
-  assert.equal(provider.requests[1].schemaName, "p01_core_context_v1_4");
-  assert.match(provider.requests[1].correction ?? "", /dangling_evidence_id/u);
-  assert.ok(provider.requests.slice(2).every((request) => request.schemaName?.startsWith("p01_score_")));
-  assert.equal(outcome.metadata.reevaluationRetryCount, 1);
+  assert.ok(provider.requests.slice(1).every((request) => request.schemaName?.startsWith("p01_score_")));
+  assert.equal(outcome.metadata.reevaluationRetryCount, 0);
+  assert.deepEqual(outcome.result.moneyChainFacts[0].evidence_ids, []);
+});
+
+test("split P-01 restores exact previous ledger items kept by a corrected context", () => {
+  const previous = structuredClone(splitP01Responses(validP01Fixture())[0]) as P01CoreContext;
+  previous.businessMap.experience.attempts = [{
+    attempt: "Проверяли воронку",
+    actual_result: "Получили оплаты",
+    client_explanation: null,
+    time_scope: "historical_repeatable",
+    evidence_ids: ["E01"],
+  }];
+  const corrected = structuredClone(previous);
+  corrected.evidenceLedger = corrected.evidenceLedger.filter((evidence) => evidence.id !== "E01");
+  corrected.businessMap.experience.attempts[0].evidence_ids.push("E99");
+
+  const reconciled = reconcileP01CoreEvidenceReferences(corrected, previous);
+
+  assert.ok(reconciled.evidenceLedger.some((evidence) => evidence.id === "E01"));
+  assert.deepEqual(reconciled.businessMap.experience.attempts[0].evidence_ids, ["E01"]);
 });
 
 test("production P-01 prompt injects only the extraction dictionary", () => {

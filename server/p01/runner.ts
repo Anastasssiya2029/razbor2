@@ -17,6 +17,7 @@ import {
   p01ElementScoreOutputSchema,
   validateP01CoreContext,
   validateP01ElementScoreEnvelope,
+  reconcileP01CoreEvidenceReferences,
   type P01CoreContext,
   type P01ElementScoreEnvelope,
 } from "./split-request";
@@ -504,7 +505,7 @@ export async function runP01EvidenceScorer(
       validateP01Invariants(probe);
     };
 
-    let context = await loadContext();
+    let context = reconcileP01CoreEvidenceReferences(await loadContext());
     try {
       validateCoreSemantics(context);
     } catch (error) {
@@ -517,11 +518,12 @@ export async function runP01EvidenceScorer(
         );
       }
       reevaluationRetryCount += 1;
-      context = await loadContext(issuesCorrection(
+      const previousContext = context;
+      context = reconcileP01CoreEvidenceReferences(await loadContext(issuesCorrection(
         "Нарушены backend invariants блока общего контекста",
         error.issues,
         context.evidenceLedger.map((evidence) => evidence.id),
-      ));
+      )), previousContext);
       try {
         validateCoreSemantics(context);
       } catch (retryError) {

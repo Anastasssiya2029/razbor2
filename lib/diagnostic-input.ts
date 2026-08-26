@@ -1,7 +1,7 @@
 import diagnosticInputSchema from "@/schemas/diagnostic-input.v1.2.schema.json";
 
 export const DIAGNOSTIC_SCHEMA_VERSION = "1.2" as const;
-export const METHODOLOGY_VERSION = "7k.v1.2" as const;
+export const METHODOLOGY_VERSION = "7k.v1.3" as const;
 export const FLAT_FORM_SCHEMA_VERSION = "diagnostic-flat-form.v1.2" as const;
 
 export const ANALYSIS_STATUSES = [

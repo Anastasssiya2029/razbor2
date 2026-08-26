@@ -170,9 +170,63 @@ function keepCapabilitiesForNearTermModel(
   });
 }
 
-function deriveDesiredOwnerRole(modifiers: readonly TargetModifierCode[]): {
+function inferOwnerRoleFromTargetText(text: string): {
+  role: DesiredOwnerRole;
+  modifier: TargetModifierCode | null;
+} | null {
+  if (!/(?:целев\w*\s+роль|роль\s*[-—:]|в\s+роли)/iu.test(text)) return null;
+  const rules: Array<{
+    role: DesiredOwnerRole;
+    modifier: TargetModifierCode | null;
+    pattern: RegExp;
+  }> = [
+    {
+      role: "autonomous_owner",
+      modifier: "autonomous_business",
+      pattern: /(?:полностью\s+автономн|бизнес\s+без\s+(?:моего|личного)\s+участия|не\s+участвовать\s+в\s+операцион)/iu,
+    },
+    {
+      role: "manage_through_leaders",
+      modifier: "manage_only_through_heads",
+      pattern: /управля(?:ть|ю)\s+(?:только\s+)?через\s+руководител/iu,
+    },
+    {
+      role: "exit_sales_management",
+      modifier: "exit_sales_management",
+      pattern: /(?:полностью\s+выйти\s+из\s+(?:управления\s+)?продаж|не\s+управлять\s+продаж)/iu,
+    },
+    {
+      role: "delegate_sales",
+      modifier: "delegate_individual_sales",
+      pattern: /(?:передать|делегировать)\s+(?:личные\s+|индивидуальные\s+)?продаж/iu,
+    },
+    {
+      role: "personal_premium_sales",
+      modifier: "personally_sell_high_ticket",
+      pattern: /лично\s+продавать\s+(?:дорог|премиальн|high.?ticket)/iu,
+    },
+  ];
+  const match = rules.find((rule) => rule.pattern.test(text));
+  return match ? { role: match.role, modifier: match.modifier } : null;
+}
+
+function inferNearTermTargetCapabilities(text: string): CapabilityCode[] {
+  const ownerNotExecutor =
+    /собственник\s+(?:проекта|бизнеса)/iu.test(text) &&
+    /не\s+(?:главн(?:ый|ым)\s+)?исполнител/iu.test(text);
+  const keepsTeamControl = /(?:контрол|управлен).{0,40}команд/iu.test(text);
+  return ownerNotExecutor && keepsTeamControl && /делегир/iu.test(text)
+    ? ["function_heads"]
+    : [];
+}
+
+function deriveDesiredOwnerRole(
+  modifiers: readonly TargetModifierCode[],
+  targetText: string,
+): {
   role: DesiredOwnerRole | null;
   derivedFrom: string | null;
+  impliedModifier: TargetModifierCode | null;
 } {
   const matches = modifiers
     .map((modifier) => ({ modifier, role: ROLE_BY_MODIFIER.get(modifier) ?? null }))
@@ -188,9 +242,20 @@ function deriveDesiredOwnerRole(modifiers: readonly TargetModifierCode[]): {
       { matches },
     );
   }
+  if (uniqueRoles.length === 0) {
+    const inferred = inferOwnerRoleFromTargetText(targetText);
+    if (inferred) {
+      return {
+        role: inferred.role,
+        derivedFrom: "diagnostic.target.delegation",
+        impliedModifier: inferred.modifier,
+      };
+    }
+  }
   return {
     role: uniqueRoles[0] ?? null,
     derivedFrom: uniqueRoles.length === 1 ? matches.find((match) => match.role === uniqueRoles[0])!.modifier : null,
+    impliedModifier: null,
   };
 }
 
@@ -257,13 +322,17 @@ export function mapP01ToTargetConfigurationInput(source: Stage4Source): {
     currentScores,
   );
   const targetCodes = splitTargetCodes(source);
+  const targetText = source.normalizedInput.target.delegation ?? "";
   const capabilities = keepCapabilitiesForNearTermModel(
-    targetCodes.capabilities,
+    [...targetCodes.capabilities, ...inferNearTermTargetCapabilities(targetText)],
     modelFamily,
     visionModel.modelFamily,
   );
-  const { modifiers } = targetCodes;
-  const ownerRole = deriveDesiredOwnerRole(modifiers);
+  const ownerRole = deriveDesiredOwnerRole(targetCodes.modifiers, targetText);
+  const modifiers = [...new Set([
+    ...targetCodes.modifiers,
+    ...(ownerRole.impliedModifier ? [ownerRole.impliedModifier] : []),
+  ])];
   const targetInput: TargetArchetypeComputation["targetInput"] = {
     currentScores,
     modelFamily,

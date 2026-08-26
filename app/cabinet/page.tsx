@@ -13,7 +13,7 @@ const STATUS_LABELS: Record<string, string> = {
   targeting: "Целевая система",
   strategizing: "Стратегия",
   resolving_tasks: "Подбор задач",
-  money_now: "Денежные действия",
+  money_now: "Проверка связности",
   writing_report: "Финальный отчёт",
   ready: "Готов",
   analysis_failed: "Нужна проверка",

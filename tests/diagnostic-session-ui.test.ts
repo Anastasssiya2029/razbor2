@@ -35,6 +35,16 @@ test("an architect-only QA link prefills the form without submitting an analysis
   assert.doesNotMatch(page, /readQaPrefillHash[\s\S]{0,1200}openAnalysis\(/u);
 });
 
+test("identical submitted diagnostics reuse an active or ready run instead of paying twice", () => {
+  const service = readFileSync("server/diagnostics/service.ts", "utf8");
+  const route = readFileSync("app/api/diagnostics/route.ts", "utf8");
+  assert.match(service, /findReusableSubmittedDiagnostic/u);
+  assert.match(service, /REUSABLE_SUBMITTED_STATUSES/u);
+  assert.match(service, /normalizedInputJson/u);
+  assert.match(service, /idempotentReplay:\s*true/u);
+  assert.match(route, /created\.idempotentReplay \? 200 : 201/u);
+});
+
 test("expired authentication redirects only after the draft has a recovery path", () => {
   const page = readFileSync("app/page.tsx", "utf8");
   const session = readFileSync("app/_components/app-session.tsx", "utf8");

@@ -34,6 +34,7 @@ export async function POST(request: Request) {
           schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
           methodologyVersion: METHODOLOGY_VERSION,
           input: created.normalized.input,
+          idempotentReplay: created.idempotentReplay,
         },
         { status: 201 },
       );
@@ -52,8 +53,9 @@ export async function POST(request: Request) {
         schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,
         methodologyVersion: METHODOLOGY_VERSION,
         input: created.normalized.input,
+        idempotentReplay: created.idempotentReplay,
       },
-      { status: 201 },
+      { status: created.idempotentReplay ? 200 : 201 },
     );
   } catch (error) {
     return diagnosticErrorResponse(error);

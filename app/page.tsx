@@ -129,15 +129,6 @@ function ArchetypeMedallion({ kind, className = "" }: { kind: ArchetypeKind; cla
   );
 }
 
-const archetypePortraitCaptions: Record<ArchetypeId, string> = {
-  altruist: "Готов всем помочь",
-  explorer: "Исследует возможности",
-  creator: "Создаёт формы",
-  hero: "Запускает маховик",
-  magician: "Создаёт собственную формулу",
-  ruler: "Масштабирует через команду и систему",
-};
-
 const archetypePortraits: Record<ArchetypeId, { src: string; position: string }> = {
   altruist: { src: "/archetype-altruist.jpg", position: "50% 28%" },
   explorer: { src: "/archetype-explorer.jpg", position: "50% 31%" },
@@ -164,7 +155,6 @@ function ArchetypePortrait({ kind }: { kind: ArchetypeId }) {
       </span>
       <span className="archetype-photo-plaque">
         <strong>{archetype.name}</strong>
-        <small>{archetypePortraitCaptions[kind]}</small>
       </span>
     </span>
   );
@@ -741,8 +731,8 @@ const analysisProgressByStatus: Record<AnalysisProgressStatus, {
   money_now: {
     step: 5,
     percent: 72,
-    title: "Ищу ближайший денежный фокус",
-    detail: "Проверяю, на какой существующий актив можно опереться уже сейчас.",
+    title: "Проверяю связность плана",
+    detail: "Проверяю, что выводы, приоритеты и последовательность действий согласованы между собой.",
   },
   writing_report: {
     step: 6,
@@ -1101,6 +1091,11 @@ function AnalysisSection({
             if (event.key === "ArrowRight") showSlide(activeSlide + 1);
           }}
           onPointerDown={(event) => {
+            const target = event.target as HTMLElement;
+            if (target.closest("summary, button, a, input, select, textarea, [role='button']")) {
+              pointerStart.current = null;
+              return;
+            }
             pointerStart.current = event.clientX;
             event.currentTarget.setPointerCapture(event.pointerId);
           }}
