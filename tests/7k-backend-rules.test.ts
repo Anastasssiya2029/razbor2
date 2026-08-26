@@ -74,7 +74,7 @@ test("imports exactly 70 unique sequential transitions with complete 0→10 cove
     transitionsPerElement: Object.fromEntries(SEVEN_K_ELEMENT_IDS.map((id) => [id, 10])),
   });
   assert.equal(TRANSITIONS_70_RESOURCE.source.sheet, "Переходы_70");
-  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v4");
+  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v5");
 
   const content = JSON.stringify(
     TRANSITIONS_70.map(
@@ -208,9 +208,9 @@ test("downgrades Hero, Magician and Ruler to the nearest confirmed gate", () => 
     scores({ authenticity: 10, audience: 10, product_method: 7, sales_technology: 8, funnel: 8, blog: 10, team: 7 }),
   );
   assert.equal(ruler.candidateArchetype, "ruler");
-  assert.equal(ruler.finalArchetype, "magician");
+  assert.equal(ruler.finalArchetype, "hero");
   assert.equal(ruler.gates.ruler.passed, false);
-  assert.equal(ruler.gates.magician.passed, true);
+  assert.equal(ruler.gates.magician.passed, false);
   assert.ok(ruler.downgradeReason);
 });
 

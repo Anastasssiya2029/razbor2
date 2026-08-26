@@ -34,7 +34,7 @@ test("target totals are exact and never replace the current archetype input", ()
   assert.equal(total(ANNA_GOLDEN_CASE.targetScores), 22);
   assert.equal(total(ALINA_GOLDEN_CASE.targetScores), 54);
   assert.equal(calculateBusinessArchetype(ANNA_GOLDEN_CASE.currentScores).finalArchetype, "explorer");
-  assert.equal(calculateBusinessArchetype(ALINA_GOLDEN_CASE.currentScores).finalArchetype, "magician");
+  assert.equal(calculateBusinessArchetype(ALINA_GOLDEN_CASE.currentScores).finalArchetype, "hero");
 });
 
 test("Anna next-level target excludes distant scale and autonomy", () => {

@@ -176,14 +176,14 @@ export const ALINA_GOLDEN_CASE: SevenKGoldenCase = {
   currentScores: {
     authenticity: 7,
     audience: 6,
-    product_method: 8,
+    product_method: 7,
     sales_technology: 9,
     funnel: 7,
     blog: 6,
     team: 6,
   },
-  currentTotal: 49,
-  currentArchetype: "magician",
+  currentTotal: 48,
+  currentArchetype: "hero",
   targetScores: {
     authenticity: 7,
     audience: 8,

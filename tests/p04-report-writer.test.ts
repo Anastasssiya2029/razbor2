@@ -134,7 +134,7 @@ test("6. REPORT_POLICY is derived on backend with exact immutable identities", a
   assert.deepEqual(input.reportPolicy.routeCardIdentities[0].task_ids, [
     "product_method_2_3",
   ]);
-  assert.equal(input.reportPolicy.firstTask.task, "Объединить несколько встреч или услуг в пакет, абонемент или тариф.");
+  assert.equal(input.reportPolicy.firstTask.task, "Оформить и начать регулярно продавать понятный пакет, абонемент или тариф.");
 });
 
 test("7. low-confidence upstream cannot be upgraded by P-04", async () => {
@@ -523,7 +523,7 @@ test("40. fixed task and done_when text remain byte-equal to the resolved plan c
   const sourceTasks = source.resolvedPlan!.plan!.cards.flatMap((card) => card.tasks);
   const contextTasks = input.context.resolvedPlan.cards.flatMap((card) => card.tasks);
   assert.deepEqual(contextTasks, sourceTasks);
-  assert.equal(contextTasks[0].task, "Объединить несколько встреч или услуг в пакет, абонемент или тариф.");
+  assert.equal(contextTasks[0].task, "Оформить и начать регулярно продавать понятный пакет, абонемент или тариф.");
   assert.ok(contextTasks[0].doneWhen.length > 0);
 });
 

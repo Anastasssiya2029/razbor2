@@ -392,7 +392,7 @@ test("Hero, Magician and Ruler downgrade through existing gates", () => {
   const cases: Array<[SevenKScores, string, string]> = [
     [{ authenticity: 10, audience: 10, product_method: 3, sales_technology: 4, funnel: 3, blog: 5, team: 0 }, "hero", "creator"],
     [{ authenticity: 8, audience: 8, product_method: 5, sales_technology: 6, funnel: 6, blog: 8, team: 4 }, "magician", "hero"],
-    [{ authenticity: 10, audience: 10, product_method: 7, sales_technology: 8, funnel: 8, blog: 10, team: 7 }, "ruler", "magician"],
+    [{ authenticity: 10, audience: 10, product_method: 7, sales_technology: 8, funnel: 8, blog: 10, team: 7 }, "ruler", "hero"],
   ];
   for (const [scores, candidate, final] of cases) {
     const result = computeTargetAndArchetype(source(p01Fixture(scores))).archetype;

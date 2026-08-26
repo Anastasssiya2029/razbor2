@@ -50,7 +50,7 @@ export const BUSINESS_ARCHETYPES = [
       { elementId: "product_method", minimumScore: 6 },
       { elementId: "sales_technology", minimumScore: 6 },
       { elementId: "funnel", minimumScore: 6 },
-      { elementId: "team", minimumScore: 4 },
+      { elementId: "team", minimumScore: 8 },
     ],
   },
   {

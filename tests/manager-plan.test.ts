@@ -103,7 +103,11 @@ test("an older saved manager copy does not hide a newly approved canonical bundl
 test("a bulleted transition is rendered as separate checklist checkpoints without bullet characters", () => {
   const transition = TRANSITIONS_70.find((item) => item.task_id === "funnel_2_3");
   assert.ok(transition);
-  const tasks = splitCanonicalTransitionTask(transition);
+  const bulleted = {
+    ...transition,
+    task: "• Выбрать несколько источников клиентов.\n• Простроить путь клиента до предложения.",
+  };
+  const tasks = splitCanonicalTransitionTask(bulleted);
   assert.equal(tasks.length, 2);
   assert.deepEqual(tasks.map((task) => task.id), ["funnel_2_3", "funnel_2_3:2"]);
   assert.ok(tasks.every((task) => !/[•●]/u.test(task.task)));
@@ -114,13 +118,17 @@ test("a bulleted transition is rendered as separate checklist checkpoints withou
 test("an older saved manager copy with combined bullets is normalized during merge", () => {
   const transition = TRANSITIONS_70.find((item) => item.task_id === "funnel_2_3");
   assert.ok(transition);
+  const bulleted = {
+    ...transition,
+    task: "• Выбрать несколько источников клиентов.\n• Простроить путь клиента до предложения.",
+  };
   const canonical = [{
     elementId: "funnel" as const,
     fromScore: 2,
     toScore: 3,
     order: 1,
     narrative: null,
-    tasks: splitCanonicalTransitionTask(transition),
+    tasks: splitCanonicalTransitionTask(bulleted),
   }];
   const version: ManagerPlanVersion = {
     version: MANAGER_PLAN_VERSION,
@@ -132,7 +140,7 @@ test("an older saved manager copy with combined bullets is normalized during mer
       tasks: [{
         id: transition.task_id,
         source: "canonical",
-        task: transition.task,
+        task: bulleted.task,
         doneWhen: transition.done_when,
       }],
     }],
