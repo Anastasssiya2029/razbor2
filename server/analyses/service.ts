@@ -1,7 +1,7 @@
 import { getDb } from "@/db";
 import { analysisGifts, analysisResults, analysisRuns, appUsers, clients, diagnostics } from "@/db/schema";
 import type { DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
-import { BUSINESS_ARCHETYPE_BY_ID, type BusinessArchetypeId } from "@/server/7k/config/archetypes.v1";
+import { BUSINESS_ARCHETYPE_BY_ID, type BusinessArchetypeId } from "@/server/7k/config/archetypes.v2";
 import type { SevenKScores } from "@/server/7k/types";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import { canViewAllAnalyses, type AuthenticatedAppUser } from "@/server/auth";

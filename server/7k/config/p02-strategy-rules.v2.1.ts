@@ -1,4 +1,4 @@
-import { SCORING_RULES, SCORING_RULES_RESOURCE_VERSION } from "./scoring-rules.v2.0";
+import { SCORING_RULES, SCORING_RULES_RESOURCE_VERSION } from "./scoring-rules.v3.0";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "../types";
 import {
   TRANSITIONS_70,

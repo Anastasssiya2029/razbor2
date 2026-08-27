@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import scoringRules from "../server/7k/config/scoring-rules.v2.0.json" with { type: "json" };
-import transitions from "../server/7k/config/transitions-70.v1.json" with { type: "json" };
+import { SCORING_RULES as scoringRules } from "../server/7k/config/scoring-rules.v3.0";
+import { TRANSITIONS_70_V2 as transitions } from "../server/7k/config/transitions-70.v2";
 
 test("blog levels introduce AI before regular systemized publishing", () => {
   const levels = scoringRules.elements.blog.levels;
@@ -10,14 +10,14 @@ test("blog levels introduce AI before regular systemized publishing", () => {
   assert.match(levels[2].criterion, /AI помогает.+нерегулярны/u);
   assert.match(levels[3].criterion, /большую часть недель.+AI регулярно/u);
   assert.match(levels[6].criterion, /масштабируемая механика привлечения/u);
-  assert.match(levels[7].criterion, /регулярно приходят обращения и оплаты/u);
-  assert.match(levels[9].criterion, /Помощник.+вместе с AI/u);
-  assert.match(levels[10].criterion, /Команда самостоятельно управляет несколькими площадками/u);
+  assert.match(levels[7].criterion, /Минимум две самостоятельные медиаплощадки.+обращения или продажи/u);
+  assert.match(levels[9].criterion, /делегированы.+роли имеют резерв/u);
+  assert.match(levels[10].criterion, /Команда автономно управляет многоплощадочной медиасистемой/u);
 });
 
 test("the 70-transition registry uses the same first blog maturity steps", () => {
   const blog = new Map(
-    transitions.transitions
+    transitions
       .filter((item) => item.element_id === "blog")
       .map((item) => [item.task_id, item]),
   );

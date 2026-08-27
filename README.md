@@ -51,9 +51,9 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 
 - Diagnostic input: `1.2`
 - P-01: `P-01.v1.4.2`, schema `1.4`
-- Target/Archetype: `target-archetype-stage.v1`, `target-rules.v2.2`, `archetypes.v1`
+- Target/Archetype: `target-archetype-stage.v1`, `target-rules.v2.2`, `archetypes.v2`
 - P-02: `P-02.v1.3`, schema `1.3`
-- Task Resolver: `task-resolver-stage.v1`, `transitions-70.v1`
+- Task Resolver: `task-resolver-stage.v1`, `transitions-70.v2`
 - Money Now selector: `money-now-selector-stage.v1`, contract `money-now-selector-contract.v1.2`, methodology `money-now.v2.2`
 - Money Now prescription: methodology `money-now.v2.3`
 - P-03: `P-03.v1.5`, schema `1.5`
@@ -62,7 +62,7 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 
 The machine-readable manifest is [VERSION_MANIFEST.json](./VERSION_MANIFEST.json).
 
-The request assembly contracts are separately versioned as `p01-request-builder.v2.2`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.2 separates shared evidence extraction from independent per-element scoring, keeps exact evidence references, and forces an upper-level calibration pass before fixing each score. P-02 v2.1 treats persisted current/target values as backend-owned, rejects an empty target gap before a provider call, and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
+The request assembly contracts are separately versioned as `p01-request-builder.v2.3`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.3 separates shared evidence extraction from independent per-element scoring, keeps exact evidence references, applies explicit mandatory/alternative/supporting/blocker rules, and evaluates resilience without a synthetic percentage threshold. P-02 v2.1 treats persisted current/target values as backend-owned, rejects an empty target gap before a provider call, and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
 
 ## Install, run and test
 

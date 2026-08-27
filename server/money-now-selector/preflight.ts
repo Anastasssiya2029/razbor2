@@ -103,11 +103,11 @@ export async function prepareMoneyNowSelectorInput(
   }
   if (
     taskResolver.stageVersion !== "task-resolver-stage.v1" ||
-    taskResolver.transitionRegistryVersion !== "transitions-70.v1"
+    taskResolver.transitionRegistryVersion !== "transitions-70.v2"
   ) {
     throw new MoneyNowSelectorStageError(
       "MONEY_NOW_SELECTOR_TASK_RESOLVER_VERSION_UNSUPPORTED",
-      "Stage 7 requires task-resolver-stage.v1 and transitions-70.v1.",
+      "Stage 7 requires task-resolver-stage.v1 and transitions-70.v2.",
       "upstream_blocked",
     );
   }

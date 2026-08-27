@@ -2,7 +2,7 @@ import { assertDiagnosticInputForAi, type DiagnosticInputV1_2 } from "@/lib/diag
 import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "@/server/7k/config/evidence-routing.v3.0";
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "@/server/7k/config/money-now-history-map.v2.2";
 import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "@/server/7k/config/money-now-fact-extraction.v1";
-import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v2.0";
+import { SCORING_RULES_RESOURCE_VERSION } from "@/server/7k/config/scoring-rules.v3.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "@/server/7k/config/target-model-dictionary.v2.2";
 import { P01_PROMPT_VERSION } from "@/server/7k/prompts/p01.v1.4";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
@@ -74,7 +74,7 @@ export class P01RunExecutionError extends Error {
 }
 
 const P01_RULE_VERSIONS = {
-  requestBuilder: "p01-request-builder.v2.2",
+  requestBuilder: "p01-request-builder.v2.3",
   scoringRules: SCORING_RULES_RESOURCE_VERSION,
   evidenceRouting: EVIDENCE_ROUTING_RESOURCE_VERSION,
   targetModelDictionary: TARGET_MODEL_DICTIONARY_RESOURCE_VERSION,

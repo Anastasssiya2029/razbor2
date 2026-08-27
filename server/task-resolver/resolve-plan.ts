@@ -95,7 +95,7 @@ function assertResolvedMatchesSource(
     resolvedMilestone.transitions.forEach((transition, transitionIndex) => {
       const expectedFrom = source.from_score + transitionIndex;
       const canonical = registryById.get(transition.task_id);
-      if (!canonical) fail("TASK_RESOLVER_TASK_NOT_IN_REGISTRY", `Task ${transition.task_id} is absent from transitions-70.v1.`);
+      if (!canonical) fail("TASK_RESOLVER_TASK_NOT_IN_REGISTRY", `Task ${transition.task_id} is absent from transitions-70.v2.`);
       if (taskIds.has(transition.task_id)) fail("TASK_RESOLVER_DUPLICATE_TASK_ID", `Task ${transition.task_id} is duplicated in the plan.`);
       taskIds.add(transition.task_id);
       if (
@@ -142,7 +142,7 @@ export function buildResolvedTransitionPlan(
     validateTransitionRegistry(registry);
   } catch (error) {
     if (error instanceof SevenKValidationError) {
-      fail("TASK_RESOLVER_REGISTRY_INTEGRITY_FAILED", "transitions-70.v1 failed integrity validation.", error.issues);
+      fail("TASK_RESOLVER_REGISTRY_INTEGRITY_FAILED", "transitions-70.v2 failed integrity validation.", error.issues);
     }
     throw error;
   }
@@ -153,7 +153,7 @@ export function buildResolvedTransitionPlan(
     );
   } catch (error) {
     if (error instanceof SevenKValidationError) {
-      fail("TASK_RESOLVER_TRANSITION_NOT_FOUND", "A required transition is absent from transitions-70.v1.", error.issues);
+      fail("TASK_RESOLVER_TRANSITION_NOT_FOUND", "A required transition is absent from transitions-70.v2.", error.issues);
     }
     throw error;
   }

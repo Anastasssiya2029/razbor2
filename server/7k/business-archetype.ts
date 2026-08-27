@@ -4,7 +4,7 @@ import {
   BUSINESS_ARCHETYPE_BY_ID,
   type ArchetypeGateRequirement,
   type BusinessArchetypeId,
-} from "./config/archetypes.v1";
+} from "./config/archetypes.v2";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores, validateSevenKScores } from "./types";
 
 export type ArchetypeGateCheck = {
@@ -30,11 +30,11 @@ export type BusinessArchetypeResult = {
 type GatedArchetypeId = "hero" | "magician" | "ruler";
 const FALLBACK_ORDER: Record<BusinessArchetypeId, readonly BusinessArchetypeId[]> = {
   altruist: ["altruist"],
-  explorer: ["explorer"],
-  creator: ["creator"],
-  hero: ["hero", "creator"],
-  magician: ["magician", "hero", "creator"],
-  ruler: ["ruler", "magician", "hero", "creator"],
+  explorer: ["explorer", "altruist"],
+  creator: ["creator", "explorer", "altruist"],
+  hero: ["hero", "creator", "explorer", "altruist"],
+  magician: ["magician", "hero", "creator", "explorer", "altruist"],
+  ruler: ["ruler", "magician", "hero", "creator", "explorer", "altruist"],
 };
 
 export function getCandidateArchetypeByTotal(totalScore: number): BusinessArchetypeId {
@@ -64,6 +64,20 @@ function evaluateGate(
   };
 }
 
+function passesArchetypeGate(archetypeId: BusinessArchetypeId, scores: SevenKScores): boolean {
+  const definition = BUSINESS_ARCHETYPE_BY_ID[archetypeId];
+  const mandatoryPassed = definition.gate.every(
+    (requirement) => scores[requirement.elementId] >= requirement.minimumScore,
+  );
+  if (!mandatoryPassed) return false;
+  if (!("gateAny" in definition) || !definition.gateAny) {
+    return true;
+  }
+  return definition.gateAny.some((group) =>
+    group.every((requirement) => scores[requirement.elementId] >= requirement.minimumScore),
+  );
+}
+
 export function calculateBusinessArchetype(scores: SevenKScores): BusinessArchetypeResult {
   validateSevenKScores(scores);
   const totalScore = SEVEN_K_ELEMENT_IDS.reduce((total, elementId) => total + scores[elementId], 0);
@@ -75,10 +89,7 @@ export function calculateBusinessArchetype(scores: SevenKScores): BusinessArchet
   };
 
   const finalArchetype = FALLBACK_ORDER[candidateArchetype].find((archetypeId) => {
-    if (archetypeId === "hero" || archetypeId === "magician" || archetypeId === "ruler") {
-      return gates[archetypeId].passed;
-    }
-    return true;
+    return passesArchetypeGate(archetypeId, scores);
   });
   if (!finalArchetype) throw new Error("Archetype fallback chain is empty");
 
@@ -99,7 +110,7 @@ export function calculateBusinessArchetype(scores: SevenKScores): BusinessArchet
                 `${requirement.elementId}: ${requirement.actualScore} < ${requirement.minimumScore}`,
             )
             .join(", ");
-          return `Кандидат ${BUSINESS_ARCHETYPE_BY_ID[candidateArchetype].name} не прошёл gate${failed ? ` (${failed})` : ""}; итоговый архетип — ${BUSINESS_ARCHETYPE_BY_ID[finalArchetype].name}.`;
+          return `Кандидат ${BUSINESS_ARCHETYPE_BY_ID[candidateArchetype].name} не прошёл критерии системной зрелости${failed ? ` (${failed})` : ""}; итоговый архетип — ${BUSINESS_ARCHETYPE_BY_ID[finalArchetype].name}.`;
         })();
 
   return {

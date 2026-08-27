@@ -30,7 +30,7 @@ export type ResolvedTransitionCard = {
 
 export type ResolvedTransitionPlan = {
   stageVersion: typeof TASK_RESOLVER_STAGE_VERSION;
-  transitionRegistryVersion: "transitions-70.v1";
+  transitionRegistryVersion: "transitions-70.v2";
   cards: ResolvedTransitionCard[];
   taskIds: string[];
   totalTasks: number;
@@ -92,7 +92,7 @@ export type StoredResolvedTransitionPlan = {
   p02ResultHash: string | null;
   targetResultHash: string | null;
   stageVersion: typeof TASK_RESOLVER_STAGE_VERSION;
-  transitionRegistryVersion: "transitions-70.v1";
+  transitionRegistryVersion: "transitions-70.v2";
   deterministicInputHash: string;
   plan: ResolvedTransitionPlan | null;
   startedAt: string;

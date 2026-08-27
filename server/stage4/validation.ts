@@ -63,7 +63,7 @@ export function validateTargetArchetypeComputation(
   if (stableJson(expectedArchetype) !== stableJson(computation.archetype)) {
     issues.push({
       code: "ARCHETYPE_RESULT_NOT_REPRODUCIBLE",
-      message: "Archetype result does not match archetypes.v1 pure function output.",
+      message: "Archetype result does not match archetypes.v2 pure function output.",
     });
   }
   const expectedTotal = SEVEN_K_ELEMENT_IDS.reduce(
@@ -102,4 +102,3 @@ export function validateTargetArchetypeComputation(
   }
   return computation;
 }
-

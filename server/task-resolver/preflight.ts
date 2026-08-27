@@ -86,15 +86,15 @@ export async function prepareTaskResolverInput(source: TaskResolverSource): Prom
   if (stage4.resourceVersions.targetRules !== "target-rules.v2.2" || stage4.target.resourceVersion !== "target-rules.v2.2") {
     throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_TARGET_VERSION", "Task Resolver requires target-rules.v2.2.", "upstream_blocked");
   }
-  if (TRANSITIONS_RESOURCE_VERSION !== "transitions-70.v1") {
-    throw new TaskResolverError("TASK_RESOLVER_REGISTRY_VERSION_MISMATCH", "Task Resolver requires transitions-70.v1.", "integrity");
+  if (TRANSITIONS_RESOURCE_VERSION !== "transitions-70.v2") {
+    throw new TaskResolverError("TASK_RESOLVER_REGISTRY_VERSION_MISMATCH", "Task Resolver requires transitions-70.v2.", "integrity");
   }
   try {
     validateTransitionRegistry(TRANSITIONS_70);
   } catch (error) {
     throw new TaskResolverError(
       "TASK_RESOLVER_REGISTRY_INTEGRITY_FAILED",
-      error instanceof Error ? error.message : "transitions-70.v1 failed integrity validation.",
+      error instanceof Error ? error.message : "transitions-70.v2 failed integrity validation.",
       "integrity",
     );
   }

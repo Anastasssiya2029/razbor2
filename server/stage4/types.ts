@@ -16,7 +16,7 @@ export type TargetArchetypeResourceVersions = {
   p01OutputSchemaVersion: "1.4";
   elements: "elements.v1";
   targetRules: "target-rules.v2.2";
-  archetypes: "archetypes.v1";
+  archetypes: "archetypes.v2";
 };
 
 export type Stage4Source = {

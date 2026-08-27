@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { AnalysisResultV1 } from "@/server/analysis-result/types";
-import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
+import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v2";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
 import { archetypeDefinitions } from "@/lib/business-analysis";

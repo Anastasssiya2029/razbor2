@@ -1,4 +1,4 @@
-import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
+import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v2";
 import { REPORT_GLOSSARY, REPORT_GLOSSARY_VERSION } from "@/server/7k/config/report-glossary.v1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKScores } from "@/server/7k/types";
 import { validateP01Invariants, validateP01Schema } from "@/server/p01/validation";
@@ -25,11 +25,11 @@ export const P04_RULE_VERSIONS: P04RuleVersions = {
   p01Schema: "1.4",
   targetStage: "target-archetype-stage.v1",
   targetRules: "target-rules.v2.2",
-  archetypes: "archetypes.v1",
+  archetypes: "archetypes.v2",
   p02Prompt: "P-02.v1.3",
   p02Schema: "1.3",
   taskResolver: "task-resolver-stage.v1",
-  transitions: "transitions-70.v1",
+  transitions: "transitions-70.v2",
   moneyNowSelector: "money-now-selector-stage.v1",
   moneyNowSelectorContract: "money-now-selector-contract.v1.2",
   p03Prompt: "P-03.v1.5",
@@ -199,8 +199,8 @@ export function buildP04SourceRegistry(context: P04Context): P04SourceRegistry {
 
 function validateResolvedPlan(context: P04Context): void {
   const plan = context.resolvedPlan;
-  if (plan.stageVersion !== "task-resolver-stage.v1" || plan.transitionRegistryVersion !== "transitions-70.v1") {
-    fail("P04_RESOLVED_PLAN_VERSION_UNSUPPORTED", "P-04 requires task-resolver-stage.v1/transitions-70.v1.", "upstream_blocked");
+  if (plan.stageVersion !== "task-resolver-stage.v1" || plan.transitionRegistryVersion !== "transitions-70.v2") {
+    fail("P04_RESOLVED_PLAN_VERSION_UNSUPPORTED", "P-04 requires task-resolver-stage.v1/transitions-70.v2.", "upstream_blocked");
   }
   if (stableJson(plan.businessValidation) !== stableJson(context.strategy.businessValidation)) {
     fail("P04_BUSINESS_VALIDATION_CONFLICT", "Resolved plan changed P-02 businessValidation.", "integrity");
@@ -241,7 +241,7 @@ export async function prepareP04Input(source: P04Source): Promise<P04PreparedInp
   if (p01.result.analysisStatus !== "ok" && p01.result.analysisStatus !== "low_confidence") fail("P04_P01_BLOCKED", `P-01 status ${p01.result.analysisStatus} is not reportable.`, "upstream_blocked");
 
   if (!target || target.failureCode || !target.target || !target.archetype || !target.currentScores) fail("P04_TARGET_MISSING", "Successful persisted Target + Archetype is required.", "upstream_blocked");
-  if (target.resourceVersions.stageVersion !== "target-archetype-stage.v1" || target.resourceVersions.targetRules !== "target-rules.v2.2" || target.resourceVersions.archetypes !== "archetypes.v1") fail("P04_TARGET_VERSION_UNSUPPORTED", "Target/Archetype versions are unsupported.", "upstream_blocked");
+  if (target.resourceVersions.stageVersion !== "target-archetype-stage.v1" || target.resourceVersions.targetRules !== "target-rules.v2.2" || target.resourceVersions.archetypes !== "archetypes.v2") fail("P04_TARGET_VERSION_UNSUPPORTED", "Target/Archetype versions are unsupported.", "upstream_blocked");
 
   if (!p02 || p02.failureCode || !p02.result) fail("P04_P02_MISSING", "Valid persisted P-02 is required.", "upstream_blocked");
   if (p02.promptVersion !== "P-02.v1.3" || p02.outputSchemaVersion !== "1.3") fail("P04_P02_VERSION_UNSUPPORTED", "P-04 requires P-02.v1.3/schema 1.3.", "upstream_blocked");

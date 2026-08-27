@@ -193,11 +193,11 @@ export type P04RuleVersions = {
   p01Schema: "1.4";
   targetStage: "target-archetype-stage.v1";
   targetRules: "target-rules.v2.2";
-  archetypes: "archetypes.v1";
+  archetypes: "archetypes.v2";
   p02Prompt: "P-02.v1.3";
   p02Schema: "1.3";
   taskResolver: "task-resolver-stage.v1";
-  transitions: "transitions-70.v1";
+  transitions: "transitions-70.v2";
   moneyNowSelector: "money-now-selector-stage.v1";
   moneyNowSelectorContract: "money-now-selector-contract.v1.2";
   p03Prompt: "P-03.v1.5";

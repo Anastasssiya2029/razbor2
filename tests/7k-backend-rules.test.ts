@@ -11,6 +11,7 @@ import {
   MONEY_NOW_RESOURCE_VERSION,
   MONEY_NOW_SCENARIOS,
   MONEY_NOW_STOP_RULES,
+  SCORING_RULES,
   SEVEN_K_ELEMENT_IDS,
   SEVEN_K_RESOURCE_VERSIONS,
   TARGET_MODIFIER_FLOORS,
@@ -42,12 +43,12 @@ function scores(overrides: Partial<SevenKScores> = {}): SevenKScores {
 test("declares the exact versioned 7K server resources", () => {
   assert.deepEqual(SEVEN_K_RESOURCE_VERSIONS, {
     elements: "elements.v1",
-    transitions: "transitions-70.v1",
-    archetypes: "archetypes.v1",
+    transitions: "transitions-70.v2",
+    archetypes: "archetypes.v2",
     targetRules: "target-rules.v2.2",
     moneyNow: "money-now.v2.2",
   });
-  assert.equal(ARCHETYPES_RESOURCE_VERSION, "archetypes.v1");
+  assert.equal(ARCHETYPES_RESOURCE_VERSION, "archetypes.v2");
   assert.equal(MONEY_NOW_RESOURCE_VERSION, "money-now.v2.2");
 });
 
@@ -74,7 +75,7 @@ test("imports exactly 70 unique sequential transitions with complete 0→10 cove
     transitionsPerElement: Object.fromEntries(SEVEN_K_ELEMENT_IDS.map((id) => [id, 10])),
   });
   assert.equal(TRANSITIONS_70_RESOURCE.source.sheet, "Переходы_70");
-  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v5");
+  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v5.2");
 
   const content = JSON.stringify(
     TRANSITIONS_70.map(
@@ -121,6 +122,31 @@ test("transition registry requires a causal revenue lever and mechanism for ever
         (issue) => issue.path === "/transitions/0/revenue_lever" && issue.code === "missing_transition_text",
       ),
   );
+});
+
+test("every transition starts from the exact machine level and keeps internal jargon out of client text", () => {
+  const internalJargon = /mandatoryCore|alternativeEvidencePaths|supportingSignals|blockers|resilience|single_(?:source|funnel|product|segment|salesperson|media)|owner_dependency|evidence_cap|ruleId/iu;
+  for (const transition of TRANSITIONS_70) {
+    assert.equal(
+      transition.current_state,
+      SCORING_RULES.elements[transition.element_id].levels[transition.from_score].criterion,
+      transition.task_id,
+    );
+    assert.doesNotMatch(
+      `${transition.task}\n${transition.done_when}\n${transition.revenue_mechanism}`,
+      internalJargon,
+      transition.task_id,
+    );
+  }
+});
+
+test("critical upper transitions remove single points of failure in plain business language", () => {
+  const byId = new Map(TRANSITIONS_70.map((transition) => [transition.task_id, transition]));
+  assert.match(byId.get("funnel_6_7")!.task, /второй независимый источник/u);
+  assert.match(byId.get("funnel_7_8")!.task, /вторую отличающуюся воронку/u);
+  assert.match(byId.get("sales_technology_8_9")!.task, /повторных продаж.+продлений.+допродаж/u);
+  assert.match(byId.get("blog_6_7")!.done_when, /Минимум две площадки/u);
+  assert.match(byId.get("team_7_8")!.done_when, /человек, способный подхватить работу/u);
 });
 
 test("transition registry rejects duplicate task IDs", () => {
@@ -212,6 +238,27 @@ test("downgrades Hero, Magician and Ruler to the nearest confirmed gate", () => 
   assert.equal(ruler.gates.ruler.passed, false);
   assert.equal(ruler.gates.magician.passed, false);
   assert.ok(ruler.downgradeReason);
+});
+
+test("lower archetypes require the business capability behind the score total", () => {
+  const annaLike = calculateBusinessArchetype(
+    scores({ authenticity: 4, audience: 3, product_method: 3, sales_technology: 4, funnel: 1, blog: 2, team: 1 }),
+  );
+  assert.equal(annaLike.totalScore, 18);
+  assert.equal(annaLike.candidateArchetype, "explorer");
+  assert.equal(annaLike.finalArchetype, "altruist");
+
+  const activeExplorer = calculateBusinessArchetype(
+    scores({ authenticity: 4, audience: 3, product_method: 3, sales_technology: 3, funnel: 2, blog: 2, team: 1 }),
+  );
+  assert.equal(activeExplorer.candidateArchetype, "explorer");
+  assert.equal(activeExplorer.finalArchetype, "explorer");
+
+  const creator = calculateBusinessArchetype(
+    scores({ authenticity: 4, audience: 4, product_method: 3, sales_technology: 4, funnel: 3, blog: 3, team: 1 }),
+  );
+  assert.equal(creator.candidateArchetype, "creator");
+  assert.equal(creator.finalArchetype, "creator");
 });
 
 test("target configuration never lowers a mature current element", () => {

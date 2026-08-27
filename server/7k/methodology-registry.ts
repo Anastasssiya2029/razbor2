@@ -1,4 +1,4 @@
-import { ARCHETYPES_RESOURCE_VERSION } from "./config/archetypes.v1";
+import { ARCHETYPES_RESOURCE_VERSION } from "./config/archetypes.v2";
 import { ELEMENTS_RESOURCE_VERSION } from "./config/elements.v1";
 import { MONEY_NOW_RESOURCE_VERSION } from "./config/money-now.v2.2";
 import { TARGET_RULES_RESOURCE_VERSION } from "./config/target-rules.v2.2";
@@ -6,7 +6,7 @@ import { EVIDENCE_ROUTING_RESOURCE_VERSION } from "./config/evidence-routing.v3.
 import { MONEY_NOW_HISTORY_MAP_RESOURCE_VERSION } from "./config/money-now-history-map.v2.2";
 import { MONEY_NOW_FACT_EXTRACTION_VERSION } from "./config/money-now-fact-extraction.v1";
 import { MONEY_NOW_SELECTOR_CONTRACT_VERSION } from "./config/money-now-selector-contract.v1";
-import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v2.0";
+import { SCORING_RULES_RESOURCE_VERSION } from "./config/scoring-rules.v3.0";
 import { TARGET_MODEL_DICTIONARY_RESOURCE_VERSION } from "./config/target-model-dictionary.v2.2";
 import { P01_PROMPT_VERSION } from "./prompts/p01.v1.4";
 import { P02_PROMPT_VERSION } from "./prompts/p02.v1.3";
@@ -56,7 +56,7 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
   aiModules: {
     p01: {
       promptVersion: P01_PROMPT_VERSION,
-      requestBuilder: "p01-request-builder.v2.2" as const,
+      requestBuilder: "p01-request-builder.v2.3" as const,
       outputSchemaVersion: "1.4",
       resources: {
         scoringRules: SCORING_RULES_RESOURCE_VERSION,

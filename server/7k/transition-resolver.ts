@@ -1,4 +1,9 @@
-import transitionsResource from "./config/transitions-70.v1.json";
+import {
+  TRANSITIONS_70_V2,
+  TRANSITIONS_70_V2_RESOURCE,
+  TRANSITIONS_V2_RESOURCE_VERSION,
+  TRANSITION_LEVERS_V2_RESOURCE_VERSION,
+} from "./config/transitions-70.v2";
 import {
   SEVEN_K_ELEMENT_IDS,
   SevenKValidationError,
@@ -7,8 +12,8 @@ import {
   type SevenKValidationIssue,
 } from "./types";
 
-export const TRANSITIONS_RESOURCE_VERSION = "transitions-70.v1" as const;
-export const TRANSITION_LEVERS_RESOURCE_VERSION = "transition-levers.v1" as const;
+export const TRANSITIONS_RESOURCE_VERSION = TRANSITIONS_V2_RESOURCE_VERSION;
+export const TRANSITION_LEVERS_RESOURCE_VERSION = TRANSITION_LEVERS_V2_RESOURCE_VERSION;
 
 export type TransitionTask = {
   task_id: string;
@@ -35,8 +40,8 @@ type TransitionsResource = {
   transitions: TransitionTask[];
 };
 
-export const TRANSITIONS_70_RESOURCE = transitionsResource as unknown as TransitionsResource;
-export const TRANSITIONS_70 = TRANSITIONS_70_RESOURCE.transitions;
+export const TRANSITIONS_70_RESOURCE = TRANSITIONS_70_V2_RESOURCE as unknown as TransitionsResource;
+export const TRANSITIONS_70 = TRANSITIONS_70_V2 as TransitionTask[];
 
 export type TransitionRegistryIntegrity = {
   count: 70;

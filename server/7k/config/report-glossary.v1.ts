@@ -1,4 +1,4 @@
-import { BUSINESS_ARCHETYPES } from "./archetypes.v1";
+import { BUSINESS_ARCHETYPES } from "./archetypes.v2";
 import { SEVEN_K_ELEMENTS } from "./elements.v1";
 import { SEVEN_K_BUSINESS_LEVERS } from "@/lib/7k-business-levers";
 

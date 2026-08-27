@@ -1,5 +1,5 @@
 import type { DiagnosticInputV1_2 } from "../../lib/diagnostic-input";
-import type { BusinessArchetypeId } from "../../server/7k/config/archetypes.v1";
+import type { BusinessArchetypeId } from "../../server/7k/config/archetypes.v2";
 import type { MoneyNowScenarioId } from "../../server/7k/config/money-now.v2.2";
 import type { TransitionMilestone } from "../../server/7k/transition-resolver";
 import type { SevenKElementId, SevenKScores } from "../../server/7k/types";

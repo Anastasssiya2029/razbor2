@@ -64,11 +64,11 @@ function assertFrozenVersions(source: AnalysisResultSource): void {
     versions.p01Schema !== "1.4" ||
     versions.targetStage !== "target-archetype-stage.v1" ||
     versions.targetRules !== "target-rules.v2.2" ||
-    versions.archetypes !== "archetypes.v1" ||
+    versions.archetypes !== "archetypes.v2" ||
     versions.p02Prompt !== "P-02.v1.3" ||
     versions.p02Schema !== "1.3" ||
     versions.taskResolver !== "task-resolver-stage.v1" ||
-    versions.transitions !== "transitions-70.v1" ||
+    versions.transitions !== "transitions-70.v2" ||
     versions.moneyNowSelector !== "money-now-selector-stage.v1" ||
     versions.moneyNowSelectorContract !== "money-now-selector-contract.v1.2" ||
     versions.p03Prompt !== "P-03.v1.5" ||

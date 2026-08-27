@@ -1,6 +1,6 @@
 import { DIAGNOSTIC_FORM_FIELDS } from "@/lib/diagnostic-field-map";
 import type { DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
-import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
+import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v2";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 

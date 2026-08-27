@@ -11,7 +11,7 @@ import {
 } from "@/server/7k/config/money-now-selector-contract.v1";
 import { MONEY_NOW_SCENARIO_IDS } from "@/server/7k/config/money-now.v2.2";
 import { MODEL_FAMILIES, BASE_MODEL_FAMILIES } from "@/server/7k/config/target-rules.v2.2";
-import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v2.0";
+import { SCORING_RULES } from "@/server/7k/config/scoring-rules.v3.0";
 import {
   TARGET_MODEL_TEXT_RULES,
   TARGET_RULE_CODE_SET,

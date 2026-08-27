@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { AnalysisResultV1 } from "@/server/analysis-result";
 import type { SevenKElementId } from "@/server/7k/types";
 import { SEVEN_K_ELEMENTS } from "@/server/7k/config/elements.v1";
-import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v1";
+import { BUSINESS_ARCHETYPE_BY_ID } from "@/server/7k/config/archetypes.v2";
 import { declineRussianNameGenitive } from "@/lib/russian-name";
 import { systemScoreTone } from "@/lib/business-analysis";
 import { AnalysisStrategySummary } from "@/app/_components/analysis-strategy-summary";

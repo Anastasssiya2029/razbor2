@@ -409,7 +409,8 @@ test("a distant product model is kept as vision while the scored target stays on
   p01.targetIntent.primaryModelFamily = "school_licensing";
   const result = computeTargetAndArchetype(source(p01));
   assert.equal(result.archetype.totalScore, 11);
-  assert.equal(result.archetype.finalArchetype, "explorer");
+  assert.equal(result.archetype.candidateArchetype, "explorer");
+  assert.equal(result.archetype.finalArchetype, "altruist");
   assert.equal(result.target.modelFamily, "package_1to1");
   assert.equal(result.target.visionModelFamily, "school_licensing");
   assert.deepEqual(result.target.visionModelComponents, ["school_licensing"]);

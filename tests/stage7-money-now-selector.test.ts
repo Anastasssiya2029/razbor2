@@ -210,7 +210,7 @@ function selectedTrace(
 function plan(): ResolvedTransitionPlan {
   return {
     stageVersion: "task-resolver-stage.v1",
-    transitionRegistryVersion: "transitions-70.v1",
+    transitionRegistryVersion: "transitions-70.v2",
     cards: [],
     taskIds: [],
     totalTasks: 0,
@@ -247,7 +247,7 @@ function source(result = baseP01()): MoneyNowSelectorSource {
       id: "task-plan-1",
       p01AnalysisResultId: "p01-1",
       stageVersion: "task-resolver-stage.v1",
-      transitionRegistryVersion: "transitions-70.v1",
+      transitionRegistryVersion: "transitions-70.v2",
       deterministicInputHash: "task-input",
       plan: plan(),
       failureCode: null,

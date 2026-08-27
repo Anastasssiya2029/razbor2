@@ -23,7 +23,7 @@ function stored(row: typeof resolvedTransitionPlans.$inferSelect): StoredResolve
     p02ResultHash: row.p02ResultHash,
     targetResultHash: row.targetResultHash,
     stageVersion: row.stageVersion as "task-resolver-stage.v1",
-    transitionRegistryVersion: row.transitionRegistryVersion as "transitions-70.v1",
+    transitionRegistryVersion: row.transitionRegistryVersion as "transitions-70.v2",
     deterministicInputHash: row.deterministicInputHash,
     plan: parseNullable<ResolvedTransitionPlan>(row.planJson),
     startedAt: row.startedAt,

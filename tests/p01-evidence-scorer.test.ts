@@ -5,7 +5,7 @@ import { ALINA_GOLDEN_CASE, ANNA_GOLDEN_CASE } from "./fixtures/anna-alina-golde
 import { unknownMoneyNowFacts } from "./helpers/p01-v1.4";
 import type { DiagnosticInputV1_2 } from "../lib/diagnostic-input";
 import { MONEY_NOW_SCENARIO_IDS } from "../server/7k/config/money-now.v2.2";
-import { SCORING_RULES } from "../server/7k/config/scoring-rules.v2.0";
+import { SCORING_RULES } from "../server/7k/config/scoring-rules.v3.0";
 import { getP01ResourceVersions, SEVEN_K_METHODOLOGY_REGISTRY } from "../server/7k/methodology-registry";
 import { adaptLegacyMaterializedAnalysisResult } from "../server/7k/legacy-result-adapter";
 import { buildMoneyNowHistoryGuardInput } from "../server/p01/money-now-history-adapter";
@@ -487,7 +487,8 @@ function splitP01Responses(value: P01ResultV1_4_2): unknown[] {
 
 test("P-01 resources and JSON use canonical product_method; legacy read adapter is isolated", () => {
   const files = [
-    "server/7k/config/scoring-rules.v2.0.json",
+    "server/7k/config/scoring-rules.v3.0.ts",
+    "server/7k/config/resilience-rules.v1.ts",
     "server/7k/config/evidence-routing.v3.0.ts",
     "server/7k/config/target-model-dictionary.v2.2.ts",
     "server/7k/config/money-now-history-map.v2.2.ts",
@@ -513,7 +514,7 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
 
 test("P-01 methodology registry pins the v1.4.2 extraction resources and 77 scoring levels", () => {
   assert.deepEqual(getP01ResourceVersions(), {
-    scoringRules: "scoring-rules.v2.0",
+    scoringRules: "scoring-rules.v3.0",
     evidenceRouting: "evidence-routing.v3.0",
     targetModelDictionary: "target-model-dictionary.v2.2",
     moneyNowHistoryMap: "money-now-history-map.v2.2",
