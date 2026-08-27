@@ -2,7 +2,7 @@ import baseScoringRules from "./scoring-rules.v2.0.json";
 import { RESILIENCE_RULES_RESOURCE_VERSION, getResilienceFrame, type ResilienceFrame } from "./resilience-rules.v1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "../types";
 
-export const SCORING_RULES_RESOURCE_VERSION = "scoring-rules.v3.2" as const;
+export const SCORING_RULES_RESOURCE_VERSION = "scoring-rules.v3.3" as const;
 
 export type ScoringLevelRuleV3 = {
   score: number;
@@ -48,6 +48,13 @@ const MACHINE_LEVEL_OVERRIDES: Partial<
     2: {
       mandatoryCore: ["Названа широкая аудитория, например эксперты, женщины или предприниматели."],
       boundarySignals: ["Конкретный запрос и ситуация клиента ещё не определены."],
+    },
+    3: {
+      mandatoryCore: [
+        "Названа конкретная группа клиентов и описана её жизненная или рабочая ситуация, проблема, барьер либо решение, которое она выбирает.",
+        "Понятен желаемый результат клиента; он может быть указан в отдельном поле о результате.",
+      ],
+      boundarySignals: ["Глубокая детализация страхов, переживаний, прошлых попыток и препятствий ещё не обязательна."],
     },
     4: {
       mandatoryCore: ["Подробно описаны боли, желания, страхи, переживания, прошлые попытки и препятствия аудитории."],
@@ -229,6 +236,29 @@ function machineFieldsFor(elementId: SevenKElementId, score: number, criterion: 
     blockers,
   };
 
+  if (elementId === "audience" && score === 2) {
+    return {
+      ...common,
+      blockers: [
+        ...common.blockers,
+        "Нельзя выбирать уровень 2 только потому, что ответ начинается с широкой категории вроде «женщины» или «эксперты»: если дальше названы конкретная ситуация, проблема, барьер, выбор или желаемый результат, проверь уровень 3.",
+      ],
+    };
+  }
+  if (elementId === "audience" && score === 3) {
+    return {
+      ...common,
+      alternativeEvidencePaths: [
+        "В одном ответе названы конкретная группа, её ситуация или проблема и желаемый результат.",
+        "В поле project.clients названы конкретная группа и её ситуация, проблема, барьер или выбор, а желаемый результат подтверждён полем project.result.",
+      ],
+      supportingSignals: [
+        ...common.supportingSignals,
+        "финансовый, смысловой, профессиональный или другой конкретный потолок либо барьер считается описанием проблемы, даже без буквального слова «боль»",
+      ],
+    };
+  }
+
   if (elementId === "product_method" && score === 7) {
     return {
       ...common,
@@ -328,11 +358,11 @@ function criterionFor(elementId: SevenKElementId, score: number): string {
 
 export const SCORING_RULES = {
   version: SCORING_RULES_RESOURCE_VERSION,
-  methodologyVersion: "7K-2026-08-v5.5",
+  methodologyVersion: "7K-2026-08-v5.6",
   source: {
     document: "Справочник_7К_v5_2_ОБЪЕДИНЕННЫЙ_УСТОЙЧИВОСТЬ_DRAFT.xlsx",
     sha256: "2D421B60862F0FA4D89B4EACA39055B5F26AF1AF8ACE6A2A13BD281FDABD3DE4",
-    importPolicy: "Сохранена согласованная человеческая шкала v5.2; runtime v5.5 отделяет приобретённую способность от ограничения ступени, поддерживает прямые доказательства зрелой способности, учитывает фактически делегированные существенные этапы продаж и не связывает зрелость блога с использованием AI.",
+    importPolicy: "Сохранена согласованная человеческая шкала v5.2; runtime v5.6 отделяет приобретённую способность от ограничения ступени, объединяет доказательства аудитории из полей клиента и результата, поддерживает прямые доказательства зрелой способности, учитывает фактически делегированные существенные этапы продаж и не связывает зрелость блога с использованием AI.",
   },
   algorithm: "highest_supported_capability_with_resilience" as const,
   evaluationPolicy: {
@@ -354,6 +384,7 @@ export const SCORING_RULES = {
     { ruleId: "SR3-GLOBAL-DIRECT-HIGHER-EVIDENCE", rule: "Прямой current-факт, удовлетворяющий mandatoryCore или alternativeEvidencePath более высокой ступени, имеет приоритет над missing_evidence промежуточных состояний. Не занижай доказанную способность из-за отсутствия буквального описания прошлых шагов." },
     { ruleId: "SR3-GLOBAL-BLOCKER", rule: "Прямой blocker запрещает только тот уровень, способности которого он непосредственно противоречит. Ограничение или недостающая способность одной ступени не отменяют отдельно доказанную способность другой; отсутствие упоминания записывается в missing_evidence, а не в counterevidence." },
     { ruleId: "SR3-GLOBAL-ARTIFACTS-NOT-SCORES", rule: "CRM, бот, AI, сотрудники, реклама и должности без работающей функции и результата не повышают score." },
+    { ruleId: "SR3-AUDIENCE-CROSS-FIELD", rule: "Для audience объединяй описание клиента и результата: конкретная группа плюс её ситуация, проблема, барьер или выбор и понятный желаемый результат подтверждают минимум способность уровня 3. Не требуй буквального слова «боль» и не занижай до 2 только из-за первого широкого существительного в более точной формулировке." },
     { ruleId: "SR3-GLOBAL-CAP-2", rule: "Без конкретного current-примера evidence_cap не выше 2." },
     { ruleId: "SR3-GLOBAL-CAP-3", rule: "Только один случай или только исторический опыт: evidence_cap не выше 3." },
     { ruleId: "SR3-GLOBAL-HIGH-LEVEL", rule: "Уровни 8–10 требуют повторяемости, результата, управляемости и отсутствия указанной единственной точки отказа." },

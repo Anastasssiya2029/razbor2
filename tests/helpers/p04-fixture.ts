@@ -408,7 +408,7 @@ export async function makeP04Source(
     ruleVersions: {
       requestBuilder: "p02-request-builder.v2.1",
       elements: "elements.v1",
-      levelCapabilities: "scoring-rules.v3.2",
+      levelCapabilities: "scoring-rules.v3.3",
       constraintRules: "constraint-rules.v2.1",
       dependencyRules: "dependency-rules.v2.1",
       targetRules: "target-rules.v2.2",

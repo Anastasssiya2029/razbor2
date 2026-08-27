@@ -5,11 +5,11 @@ import { EVIDENCE_ROUTING } from "../server/7k/config/evidence-routing.v3.0";
 import { SCORING_RULES } from "../server/7k/config/scoring-rules.v3.0";
 import { buildP01SystemPrompt } from "../server/p01/request";
 import { buildP01ElementScorePrompt, type P01CoreContext } from "../server/p01/split-request";
-import { ALINA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
+import { ALINA_GOLDEN_CASE, ANNA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 
-test("v5.5 scoring separates capability anchors from level boundaries", () => {
+test("v5.6 scoring separates capability anchors from level boundaries", () => {
   assert.equal(METHODOLOGY_VERSION, "7k.v1.4");
-  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.5");
+  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.6");
   assert.equal(SCORING_RULES.algorithm, "highest_supported_capability_with_resilience");
   assert.equal(SCORING_RULES.evaluationPolicy.criterionRole, "mandatory_core");
   assert.equal(SCORING_RULES.evaluationPolicy.supportingCoveragePolicy, "confidence_only_not_a_score_gate");
@@ -22,6 +22,9 @@ test("v5.5 scoring separates capability anchors from level boundaries", () => {
 
 test("audience levels reserve multiple segments for level 8 and above", () => {
   const levels = SCORING_RULES.elements.audience.levels;
+  assert.match(levels[2].blockers.join(" "), /если дальше названы конкретная ситуация, проблема, барьер, выбор или желаемый результат/u);
+  assert.match(levels[3].alternativeEvidencePaths.join(" "), /project\.clients.+project\.result/u);
+  assert.match(levels[3].supportingSignals.join(" "), /без буквального слова «боль»/u);
   assert.doesNotMatch(levels[3].criterion, /несколько сегмент/iu);
   assert.match(levels[6].criterion, /подходящего и неподходящего клиента/u);
   assert.match(levels[7].criterion, /отказывает «не своим»/u);
@@ -131,7 +134,7 @@ test("Alina blog prompt receives paid growth, owned audience and selling evidenc
   assert.match(prompt, /Ограничение нижней ступени нельзя использовать против более высокого уровня/u);
 });
 
-test("legacy single-call prompt is normalized to the v5.5 machine policy", () => {
+test("legacy single-call prompt is normalized to the v5.6 machine policy", () => {
   const prompt = buildP01SystemPrompt(ALINA_GOLDEN_CASE.input, null, { moneyNowEnabled: false });
   assert.doesNotMatch(prompt, /примерно на 80%/u);
   assert.match(prompt, /alternativeEvidencePaths/u);
@@ -141,4 +144,17 @@ test("legacy single-call prompt is normalized to the v5.5 machine policy", () =>
   assert.match(prompt, /funnel=6.+уровень 7 требует второго независимого источника.+уровень 8 — второй отличающейся воронки/u);
   assert.match(prompt, /blog=6.+уровень 7 требует минимум двух самостоятельных медиаплощадок/u);
   assert.doesNotMatch(prompt, /Уровни 2–4 требуют фактического использования AI/u);
+});
+
+test("Anna audience prompt combines the concrete client situation with the result and forbids a level-2 downgrade", () => {
+  const prompt = buildP01ElementScorePrompt({
+    input: ANNA_GOLDEN_CASE.input,
+    context: { evidenceLedger: [] } as unknown as P01CoreContext,
+    elementId: "audience",
+  });
+  assert.match(prompt, /Женщины в найме, упёршиеся в финансовый и смысловой потолок/u);
+  assert.match(prompt, /Ясность предназначения и ближайшего вектора/u);
+  assert.match(prompt, /поддерживает минимум уровень 3/u);
+  assert.match(prompt, /не занижай до 2/u);
+  assert.match(prompt, /project\.clients.+project\.result/u);
 });
