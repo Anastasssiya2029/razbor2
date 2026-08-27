@@ -125,10 +125,16 @@ test("text answers match label size without inheriting label emphasis", () => {
 
 test("long analysis shows real pipeline progress and immediately advances completed stages", () => {
   const page = readFileSync("app/page.tsx", "utf8");
+  const runRoute = readFileSync("app/api/analysis-runs/[analysisRunId]/run/route.ts", "utf8");
   const styles = readFileSync("app/globals.css", "utf8");
   assert.match(page, /analysisProgressByStatus/u);
   assert.match(page, /Шаг \$\{progress\.step\} из 6/u);
   assert.match(page, /Первая часть разбора откроется сразу после оценки текущей системы/u);
   assert.match(page, /analysis\.status !== "ready"\) \{\s*continue;/u);
+  assert.match(page, /let pipelineBusy = false/u);
+  assert.match(page, /if \(!pipelineBusy\)/u);
+  assert.match(page, /pipelineBusy = status\?\.busy === true/u);
+  assert.match(runRoute, /getAnalysisPipelineLockStatus/u);
+  assert.match(runRoute, /"retry-after"/u);
   assert.match(styles, /\.neuro-progress-meter/u);
 });

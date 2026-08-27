@@ -30,9 +30,20 @@ function pipelineHarness(initialStatus: AnalysisPipelineStatus, options: { lock?
   };
   const dependencies: AnalysisPipelineDependencies = {
     loadRun: async () => snapshot(),
+    recoverInterruptedScoring: async (run) => {
+      calls.push("recover-scoring");
+      status = "queued";
+      return { ...run, status: "queued" };
+    },
     acquireLock: async () => {
       calls.push("lock");
-      return options.lock === undefined ? "lock-token" : options.lock;
+      return options.lock === null
+        ? { acquired: false, retryAfterSeconds: 42 }
+        : { acquired: true, token: options.lock ?? "lock-token" };
+    },
+    renewLock: async (_analysisRunId, token) => {
+      calls.push(`renew:${token}`);
+      return true;
     },
     releaseLock: async (_analysisRunId, token) => {
       calls.push(`unlock:${token}`);
@@ -132,9 +143,41 @@ test("concurrent execution is rejected before any provider stage", async () => {
   const harness = pipelineHarness("queued", { lock: null });
   await assert.rejects(
     runAnalysisPipeline("run-1", harness.dependencies),
-    (error: unknown) => error instanceof AnalysisPipelineError && error.code === "ANALYSIS_RUN_BUSY",
+    (error: unknown) => error instanceof AnalysisPipelineError
+      && error.code === "ANALYSIS_RUN_BUSY"
+      && error.retryAfterSeconds === 42,
   );
   assert.deepEqual(harness.calls, ["lock"]);
+});
+
+test("a long provider stage renews its short lease until the stage finishes", async () => {
+  const harness = pipelineHarness("strategizing");
+  harness.dependencies.lockHeartbeatMs = 5;
+  harness.dependencies.runP02 = async () => {
+    harness.calls.push("p02");
+    await new Promise((resolve) => setTimeout(resolve, 24));
+    return { status: "resolving_tasks" };
+  };
+
+  const result = await advanceAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(result.status, "resolving_tasks");
+  assert.ok(harness.calls.filter((call) => call === "renew:lock-token").length >= 2);
+  assert.equal(harness.calls.at(-1), "unlock:lock-token");
+});
+
+test("an orphaned scoring state is recovered after its lease expires", async () => {
+  const harness = pipelineHarness("scoring");
+
+  const result = await advanceAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(result.status, "targeting");
+  assert.deepEqual(harness.calls, [
+    "lock",
+    "recover-scoring",
+    "p01",
+    "unlock:lock-token",
+  ]);
 });
 
 test("failed stage stops the pipeline and always releases the lock", async () => {

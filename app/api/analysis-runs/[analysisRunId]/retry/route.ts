@@ -24,7 +24,16 @@ export async function POST(request: Request, context: RouteContext) {
     const accessResponse = analysisRunAccessErrorResponse(error);
     if (accessResponse) return accessResponse;
     if (error instanceof AnalysisPipelineError) {
-      return Response.json({ error: error.code, message: error.message }, { status: error.status });
+      return Response.json({
+        error: error.code,
+        message: error.message,
+        retryAfterSeconds: error.retryAfterSeconds,
+      }, {
+        status: error.status,
+        headers: error.retryAfterSeconds
+          ? { "retry-after": String(error.retryAfterSeconds) }
+          : undefined,
+      });
     }
     return Response.json(
       { error: "ANALYSIS_RETRY_TECHNICAL_ERROR", message: "Не удалось повторно собрать стратегию." },

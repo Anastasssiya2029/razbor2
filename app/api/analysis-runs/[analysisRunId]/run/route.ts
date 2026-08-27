@@ -4,6 +4,7 @@ import {
   AnalysisPipelineError,
   advanceAnalysisPipeline,
   analysisRunAccessErrorResponse,
+  getAnalysisPipelineLockStatus,
   getAnalysisOverview,
   requireAnalysisRunAccess,
 } from "@/server/analysis-runs";
@@ -50,8 +51,9 @@ export async function GET(request: Request, context: RouteContext) {
         }
       }
     }
+    const lock = await getAnalysisPipelineLockStatus(analysisRunId);
     return Response.json(
-      { analysisRunId, ...rows[0], validationIssues },
+      { analysisRunId, ...rows[0], validationIssues, ...lock },
       { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {
@@ -83,7 +85,16 @@ export async function POST(request: Request, context: RouteContext) {
     const accessResponse = analysisRunAccessErrorResponse(error);
     if (accessResponse) return accessResponse;
     if (error instanceof AnalysisPipelineError) {
-      return Response.json({ error: error.code, message: error.message }, { status: error.status });
+      return Response.json({
+        error: error.code,
+        message: error.message,
+        retryAfterSeconds: error.retryAfterSeconds,
+      }, {
+        status: error.status,
+        headers: error.retryAfterSeconds
+          ? { "retry-after": String(error.retryAfterSeconds) }
+          : undefined,
+      });
     }
     return Response.json(
       { error: "ANALYSIS_PIPELINE_TECHNICAL_ERROR", message: "Не удалось завершить разбор. Повторите позже." },

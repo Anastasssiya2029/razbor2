@@ -1,5 +1,5 @@
 import { getDb } from "@/db";
-import { analysisRunLocks, analysisRuns, diagnostics } from "@/db/schema";
+import { analysisRunLocks, analysisRuns, diagnostics, p01AnalysisResults } from "@/db/schema";
 import { validateDiagnosticInput, type DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 import { ANALYSIS_FEATURES } from "@/server/analysis-features";
 import { getOrCreateAnalysisResult, type AnalysisResultV1 } from "@/server/analysis-result";
@@ -10,9 +10,19 @@ import { runP03Stage } from "@/server/p03";
 import { runP04Stage } from "@/server/p04";
 import { runTargetAndArchetypeStage } from "@/server/stage4";
 import { runTaskResolverStage } from "@/server/task-resolver";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, gt, lte } from "drizzle-orm";
 
-const PIPELINE_LOCK_SECONDS = 9 * 60;
+export const PIPELINE_LOCK_LEASE_SECONDS = 60;
+export const PIPELINE_LOCK_HEARTBEAT_MS = 15_000;
+
+export type PipelineLockAttempt =
+  | { acquired: true; token: string }
+  | { acquired: false; retryAfterSeconds: number };
+
+export type PipelineLockStatus = {
+  busy: boolean;
+  retryAfterSeconds: number;
+};
 
 export type AnalysisPipelineStatus =
   | "draft"
@@ -44,6 +54,7 @@ export class AnalysisPipelineError extends Error {
       | "ANALYSIS_PIPELINE_STATE_INVALID",
     readonly status: 404 | 409 | 422,
     message: string,
+    readonly retryAfterSeconds: number | null = null,
   ) {
     super(message);
     this.name = "AnalysisPipelineError";
@@ -54,8 +65,11 @@ type StageStatusResult = { status: string };
 
 export type AnalysisPipelineDependencies = {
   loadRun(analysisRunId: string): Promise<PipelineRunSnapshot | null>;
-  acquireLock(analysisRunId: string): Promise<string | null>;
+  recoverInterruptedScoring(snapshot: PipelineRunSnapshot): Promise<PipelineRunSnapshot>;
+  acquireLock(analysisRunId: string): Promise<PipelineLockAttempt>;
+  renewLock(analysisRunId: string, token: string): Promise<boolean>;
   releaseLock(analysisRunId: string, token: string): Promise<void>;
+  lockHeartbeatMs?: number;
   runP01(snapshot: PipelineRunSnapshot): Promise<StageStatusResult>;
   runTarget(analysisRunId: string): Promise<StageStatusResult>;
   runP02(analysisRunId: string): Promise<StageStatusResult>;
@@ -92,17 +106,81 @@ async function loadRun(analysisRunId: string): Promise<PipelineRunSnapshot | nul
   };
 }
 
-async function acquireLock(analysisRunId: string): Promise<string | null> {
+async function recoverInterruptedScoring(
+  snapshot: PipelineRunSnapshot,
+): Promise<PipelineRunSnapshot> {
+  if (snapshot.status !== "scoring") return snapshot;
+  const db = await getDb();
+  const stored = await db
+    .select({
+      resultJson: p01AnalysisResults.resultJson,
+      failureCode: p01AnalysisResults.failureCode,
+    })
+    .from(p01AnalysisResults)
+    .where(eq(p01AnalysisResults.analysisRunId, snapshot.analysisRunId))
+    .limit(1);
+
+  const recoveredStatus: AnalysisPipelineStatus = stored[0]?.resultJson
+    ? "targeting"
+    : stored[0]?.failureCode
+      ? "analysis_failed"
+      : "queued";
+  await db
+    .update(analysisRuns)
+    .set({
+      status: recoveredStatus,
+      errorCode: stored[0]?.failureCode ?? null,
+      errorMessage: stored[0]?.failureCode
+        ? "Предыдущая попытка P-01 завершилась ошибкой."
+        : null,
+    })
+    .where(and(
+      eq(analysisRuns.id, snapshot.analysisRunId),
+      eq(analysisRuns.status, "scoring"),
+    ));
+  return {
+    ...snapshot,
+    status: recoveredStatus,
+    errorCode: stored[0]?.failureCode ?? null,
+  };
+}
+
+async function acquireLock(analysisRunId: string): Promise<PipelineLockAttempt> {
   const db = await getDb();
   const now = Math.floor(Date.now() / 1000);
   await db.delete(analysisRunLocks).where(lte(analysisRunLocks.expiresAt, now));
   const token = crypto.randomUUID();
   const inserted = await db
     .insert(analysisRunLocks)
-    .values({ analysisRunId, token, expiresAt: now + PIPELINE_LOCK_SECONDS })
+    .values({ analysisRunId, token, expiresAt: now + PIPELINE_LOCK_LEASE_SECONDS })
     .onConflictDoNothing({ target: analysisRunLocks.analysisRunId })
     .returning({ token: analysisRunLocks.token });
-  return inserted[0]?.token ?? null;
+  if (inserted[0]?.token) return { acquired: true, token: inserted[0].token };
+
+  const active = await db
+    .select({ expiresAt: analysisRunLocks.expiresAt })
+    .from(analysisRunLocks)
+    .where(eq(analysisRunLocks.analysisRunId, analysisRunId))
+    .limit(1);
+  return {
+    acquired: false,
+    retryAfterSeconds: Math.max(1, (active[0]?.expiresAt ?? now + 1) - now),
+  };
+}
+
+async function renewLock(analysisRunId: string, token: string): Promise<boolean> {
+  const db = await getDb();
+  const now = Math.floor(Date.now() / 1000);
+  const renewed = await db
+    .update(analysisRunLocks)
+    .set({ expiresAt: now + PIPELINE_LOCK_LEASE_SECONDS })
+    .where(and(
+      eq(analysisRunLocks.analysisRunId, analysisRunId),
+      eq(analysisRunLocks.token, token),
+      gt(analysisRunLocks.expiresAt, now),
+    ))
+    .returning({ token: analysisRunLocks.token });
+  return renewed[0]?.token === token;
 }
 
 async function releaseLock(analysisRunId: string, token: string): Promise<void> {
@@ -113,9 +191,32 @@ async function releaseLock(analysisRunId: string, token: string): Promise<void> 
   ));
 }
 
+export async function getAnalysisPipelineLockStatus(
+  analysisRunId: string,
+): Promise<PipelineLockStatus> {
+  const db = await getDb();
+  const now = Math.floor(Date.now() / 1000);
+  await db.delete(analysisRunLocks).where(and(
+    eq(analysisRunLocks.analysisRunId, analysisRunId),
+    lte(analysisRunLocks.expiresAt, now),
+  ));
+  const active = await db
+    .select({ expiresAt: analysisRunLocks.expiresAt })
+    .from(analysisRunLocks)
+    .where(eq(analysisRunLocks.analysisRunId, analysisRunId))
+    .limit(1);
+  if (!active[0]) return { busy: false, retryAfterSeconds: 0 };
+  return {
+    busy: true,
+    retryAfterSeconds: Math.max(1, active[0].expiresAt - now),
+  };
+}
+
 export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies = {
   loadRun,
+  recoverInterruptedScoring,
   acquireLock,
+  renewLock,
   releaseLock,
   runP01: (snapshot) => executeP01AnalysisRun({
     analysisRunId: snapshot.analysisRunId,
@@ -134,6 +235,58 @@ export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies =
   }),
   assemble: getOrCreateAnalysisResult,
 };
+
+async function withPipelineLock<T>(
+  analysisRunId: string,
+  dependencies: AnalysisPipelineDependencies,
+  execute: () => Promise<T>,
+): Promise<T> {
+  const attempt = await dependencies.acquireLock(analysisRunId);
+  if (!attempt.acquired) {
+    throw new AnalysisPipelineError(
+      "ANALYSIS_RUN_BUSY",
+      409,
+      "Разбор уже выполняется.",
+      attempt.retryAfterSeconds,
+    );
+  }
+
+  const lockToken = attempt.token;
+  let leaseLost = false;
+  let heartbeatRunning = false;
+  const heartbeat = setInterval(() => {
+    if (heartbeatRunning || leaseLost) return;
+    heartbeatRunning = true;
+    void dependencies.renewLock(analysisRunId, lockToken)
+      .then((renewed) => {
+        if (!renewed) leaseLost = true;
+      })
+      .catch(() => {
+        // A transient storage error must not trigger a duplicate paid call.
+        // The next heartbeat can still renew the active lease.
+      })
+      .finally(() => {
+        heartbeatRunning = false;
+      });
+  }, dependencies.lockHeartbeatMs ?? PIPELINE_LOCK_HEARTBEAT_MS);
+  if (typeof heartbeat === "object" && "unref" in heartbeat) heartbeat.unref();
+
+  try {
+    const result = await execute();
+    if (leaseLost) {
+      throw new AnalysisPipelineError(
+        "ANALYSIS_RUN_BUSY",
+        409,
+        "Выполнение было продолжено другой попыткой; обновите состояние разбора.",
+        1,
+      );
+    }
+    return result;
+  } finally {
+    clearInterval(heartbeat);
+    await dependencies.releaseLock(analysisRunId, lockToken);
+  }
+}
 
 function assertStage(status: string, expected: AnalysisPipelineStatus, code: string): void {
   if (status === "analysis_failed") {
@@ -157,13 +310,12 @@ export async function runAnalysisPipeline(
     throw new AnalysisPipelineError("ANALYSIS_RUN_FAILED", 422, "Разбор завершился ошибкой.");
   }
 
-  const lockToken = await dependencies.acquireLock(analysisRunId);
-  if (!lockToken) throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Разбор уже выполняется.");
-  try {
+  return withPipelineLock(analysisRunId, dependencies, async () => {
     snapshot = await dependencies.loadRun(analysisRunId);
     if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
-    if (snapshot.status === "scoring") {
-      throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Предыдущий запуск P‑01 ещё не завершён.");
+    if (snapshot.status === "scoring") snapshot = await dependencies.recoverInterruptedScoring(snapshot);
+    if (snapshot.status === "analysis_failed") {
+      throw new AnalysisPipelineError("ANALYSIS_RUN_FAILED", 422, "Разбор завершился ошибкой.");
     }
     if (snapshot.status === "queued") {
       const executed = await dependencies.runP01(snapshot);
@@ -202,9 +354,7 @@ export async function runAnalysisPipeline(
     }
     const assembled = await dependencies.assemble(analysisRunId);
     return { status: "ready", ...assembled };
-  } finally {
-    await dependencies.releaseLock(analysisRunId, lockToken);
-  }
+  });
 }
 
 export async function advanceAnalysisPipeline(
@@ -224,13 +374,12 @@ export async function advanceAnalysisPipeline(
     throw new AnalysisPipelineError("ANALYSIS_RUN_FAILED", 422, "Разбор завершился ошибкой.");
   }
 
-  const lockToken = await dependencies.acquireLock(analysisRunId);
-  if (!lockToken) throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Разбор уже выполняется.");
-  try {
+  return withPipelineLock(analysisRunId, dependencies, async () => {
     snapshot = await dependencies.loadRun(analysisRunId);
     if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
-    if (snapshot.status === "scoring") {
-      throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Предыдущий запуск P‑01 ещё не завершён.");
+    if (snapshot.status === "scoring") snapshot = await dependencies.recoverInterruptedScoring(snapshot);
+    if (snapshot.status === "analysis_failed") {
+      throw new AnalysisPipelineError("ANALYSIS_RUN_FAILED", 422, "Разбор завершился ошибкой.");
     }
     if (snapshot.status === "queued") {
       const executed = await dependencies.runP01(snapshot);
@@ -270,9 +419,7 @@ export async function advanceAnalysisPipeline(
       return { status: "ready", ...assembled };
     }
     throw new AnalysisPipelineError("ANALYSIS_PIPELINE_STATE_INVALID", 409, "Разбор находится в неизвестном состоянии.");
-  } finally {
-    await dependencies.releaseLock(analysisRunId, lockToken);
-  }
+  });
 }
 
 export async function retryFailedP02Pipeline(
@@ -293,9 +440,7 @@ export async function retryFailedP02Pipeline(
     );
   }
 
-  const lockToken = await dependencies.acquireLock(analysisRunId);
-  if (!lockToken) throw new AnalysisPipelineError("ANALYSIS_RUN_BUSY", 409, "Разбор уже выполняется.");
-  try {
+  return withPipelineLock(analysisRunId, dependencies, async () => {
     snapshot = await dependencies.loadRun(analysisRunId);
     if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
     if (
@@ -312,7 +457,5 @@ export async function retryFailedP02Pipeline(
     const executed = await dependencies.retryP02(analysisRunId);
     assertStage(executed.status, "resolving_tasks", "повторной стратегии P‑02");
     return { status: "resolving_tasks", result: null, idempotentReplay: false };
-  } finally {
-    await dependencies.releaseLock(analysisRunId, lockToken);
-  }
+  });
 }

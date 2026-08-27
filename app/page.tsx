@@ -1381,12 +1381,15 @@ type RunAnalysisResponse = {
   result?: AnalysisResultV1;
   error?: string;
   message?: string;
+  retryAfterSeconds?: number | null;
 };
 
 type AnalysisRunStatusResponse = {
   status?: string;
   errorCode?: string | null;
   error?: string;
+  busy?: boolean;
+  retryAfterSeconds?: number;
 };
 
 async function readJsonObject<T>(response: Response): Promise<T | null> {
@@ -1820,37 +1823,47 @@ export default function Home() {
 
       const deadlineAt = Date.now() + 15 * 60 * 1000;
       let analysis: RunAnalysisResponse | null = null;
+      let pipelineBusy = false;
       while (Date.now() < deadlineAt) {
-        try {
-          const analysisResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
-            method: "POST",
-            credentials: "include",
-          });
-          if (redirectToLoginAfterExpiredSession(analysisResponse)) {
-            throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+        if (!pipelineBusy) {
+          try {
+            const analysisResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
+              method: "POST",
+              credentials: "include",
+            });
+            if (redirectToLoginAfterExpiredSession(analysisResponse)) {
+              throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
+            }
+            analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
+            if (analysisResponse.ok && analysis?.status) {
+              setAnalysisProgressStatus(analysis.status);
+            }
+            if (analysisResponse.ok && analysis?.overview && !overviewAvailable) {
+              overviewAvailable = true;
+              setAnalysisResult(analysis.overview);
+              setCurrentStage(1);
+              setMaxUnlockedStage((current) => Math.max(current, 1));
+              setLoadingTarget(null);
+              setAnalysisStartedAt(null);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+            if (analysisResponse.ok && analysis?.status === "ready" && analysis.result) break;
+            if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
+              throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
+            }
+            if (analysisResponse.status === 409 && analysis?.error === "ANALYSIS_RUN_BUSY") {
+              pipelineBusy = true;
+            } else if (analysisResponse.ok && analysis?.status && analysis.status !== "ready") {
+              continue;
+            } else if (!analysisResponse.ok) {
+              pipelineBusy = true;
+            }
+          } catch (error) {
+            if (error instanceof Error && /завершился ошибкой|Сессия входа завершилась/u.test(error.message)) throw error;
+            // The provider stage may still be running after a lost HTTP response.
+            // Poll server state first instead of issuing another paid POST.
+            pipelineBusy = true;
           }
-          analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
-          if (analysisResponse.ok && analysis?.status) {
-            setAnalysisProgressStatus(analysis.status);
-          }
-          if (analysisResponse.ok && analysis?.overview && !overviewAvailable) {
-            overviewAvailable = true;
-            setAnalysisResult(analysis.overview);
-            setCurrentStage(1);
-            setMaxUnlockedStage((current) => Math.max(current, 1));
-            setLoadingTarget(null);
-            setAnalysisStartedAt(null);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-          if (analysisResponse.ok && analysis?.status === "ready" && analysis.result) break;
-          if (analysisResponse.status === 422 || analysis?.error === "ANALYSIS_RUN_FAILED") {
-            throw new Error(analysis?.message ?? "Разбор завершился ошибкой. Ответы сохранены в кабинете.");
-          }
-          if (analysisResponse.ok && analysis?.status && analysis.status !== "ready") {
-            continue;
-          }
-        } catch (error) {
-          if (error instanceof Error && /завершился ошибкой|Сессия входа завершилась/u.test(error.message)) throw error;
         }
 
         const statusResponse = await fetch(`/api/analysis-runs/${diagnostic.analysisRunId}/run`, {
@@ -1862,6 +1875,11 @@ export default function Home() {
           throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
+        if (!statusResponse.ok || !status) {
+          pipelineBusy = true;
+          await wait(3000);
+          continue;
+        }
         if (status?.status && status.status in analysisProgressByStatus) {
           setAnalysisProgressStatus(status.status as AnalysisProgressStatus);
         }
@@ -1882,7 +1900,8 @@ export default function Home() {
             break;
           }
         }
-        await wait(3000);
+        pipelineBusy = status?.busy === true;
+        await wait(pipelineBusy ? 3000 : 250);
       }
       if (!analysis?.result) {
         throw new Error("Анализ занимает больше обычного. Ответы сохранены; результат появится в кабинете после завершения.");
