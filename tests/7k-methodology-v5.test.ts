@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { METHODOLOGY_VERSION } from "../lib/diagnostic-input";
 import { EVIDENCE_ROUTING } from "../server/7k/config/evidence-routing.v3.0";
 import { SCORING_RULES } from "../server/7k/config/scoring-rules.v2.0";
 import { buildP01ElementScorePrompt, type P01CoreContext } from "../server/p01/split-request";
 import { ALINA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 
 test("v5 scoring uses cumulative mandatory-core policy with an 80 percent support target", () => {
+  assert.equal(METHODOLOGY_VERSION, "7k.v1.4");
   assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5");
   assert.equal(SCORING_RULES.algorithm, "highest_fully_supported_cumulative");
   assert.equal(SCORING_RULES.evaluationPolicy.criterionRole, "mandatory_core");

@@ -24,7 +24,7 @@ function clientDisplayName(normalized: NormalizedDiagnosticSubmission): string {
   return normalized.input.identity.expertName?.trim() || "Без имени";
 }
 
-const REUSABLE_SUBMITTED_STATUSES = [
+const REUSABLE_ACTIVE_STATUSES = [
   "queued",
   "scoring",
   "targeting",
@@ -32,10 +32,9 @@ const REUSABLE_SUBMITTED_STATUSES = [
   "resolving_tasks",
   "money_now",
   "writing_report",
-  "ready",
 ] as const;
 
-async function findReusableSubmittedDiagnostic(input: {
+async function findReusableActiveDiagnostic(input: {
   ownerUserId: string;
   normalizedInputJson: string;
   excludeDiagnosticId?: string;
@@ -45,7 +44,7 @@ async function findReusableSubmittedDiagnostic(input: {
     eq(diagnostics.ownerUserId, input.ownerUserId),
     eq(diagnostics.methodologyVersion, METHODOLOGY_VERSION),
     eq(diagnostics.normalizedInputJson, input.normalizedInputJson),
-    inArray(analysisRuns.status, REUSABLE_SUBMITTED_STATUSES),
+    inArray(analysisRuns.status, REUSABLE_ACTIVE_STATUSES),
   ];
   if (input.excludeDiagnosticId) filters.push(ne(diagnostics.id, input.excludeDiagnosticId));
   const rows = await db
@@ -71,7 +70,7 @@ export async function createDiagnosticRecord(input: {
 }) {
   const normalized = input.normalized ?? normalizeDiagnosticSubmission(input.payload);
   if (input.intent === "submit") {
-    const reusable = await findReusableSubmittedDiagnostic({
+    const reusable = await findReusableActiveDiagnostic({
       ownerUserId: input.actor.id,
       normalizedInputJson: JSON.stringify(normalized.input),
     });
@@ -150,7 +149,7 @@ export async function updateDiagnosticDraft(input: {
   }
   const normalized = normalizeDiagnosticSubmission(input.payload);
   if (input.submit) {
-    const reusable = await findReusableSubmittedDiagnostic({
+    const reusable = await findReusableActiveDiagnostic({
       ownerUserId: input.actor.id,
       normalizedInputJson: JSON.stringify(normalized.input),
       excludeDiagnosticId: input.diagnosticId,

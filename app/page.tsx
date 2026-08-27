@@ -1462,6 +1462,7 @@ export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisOverview | null>(null);
   const [realAnalysisResult, setRealAnalysisResult] = useState<AnalysisResultV1 | null>(null);
   const [analysisBackgroundError, setAnalysisBackgroundError] = useState<string | null>(null);
+  const [recalculationDraft, setRecalculationDraft] = useState(false);
   const [recoveryReady, setRecoveryReady] = useState(false);
 
   const situationParagraphs = useMemo(() => {
@@ -1535,6 +1536,7 @@ export default function Home() {
       setAnalysisResult(null);
       setRealAnalysisResult(null);
       setAnalysisBackgroundError(null);
+      setRecalculationDraft(false);
       setSubmissionError(null);
       setLoadingTarget(null);
       setAnalysisProgressStatus("queued");
@@ -1578,6 +1580,7 @@ export default function Home() {
     setAnalysisResult(null);
     setRealAnalysisResult(null);
     setAnalysisBackgroundError(null);
+    setRecalculationDraft(false);
     setSubmissionError(null);
     setLoadingTarget(null);
     setAnalysisProgressStatus("queued");
@@ -1614,6 +1617,7 @@ export default function Home() {
     setSubmissionError(null);
     setIsSavingStart(true);
     const rawValues = { ...values };
+    const replacesExistingResult = analysisResult !== null || realAnalysisResult !== null;
     try {
       const response = submittedDiagnostic?.status === "draft"
         ? await fetch(`/api/diagnostics/${submittedDiagnostic.diagnosticId}`, {
@@ -1645,6 +1649,14 @@ export default function Home() {
         analysisRunId: result.analysisRunId,
         status: result.status,
       });
+      setRecalculationDraft((current) => current || replacesExistingResult);
+      setAnalysisResult(null);
+      setRealAnalysisResult(null);
+      setAnalysisBackgroundError(null);
+      setAnalysisSlide(0);
+      setMaxUnlockedStage(0);
+      setAnalysisProgressStatus("queued");
+      setAnalysisStartedAt(null);
       goToTab(1);
     } catch (error) {
       setSubmissionError(error instanceof Error ? error.message : "Не удалось сохранить начало разбора.");
@@ -1653,12 +1665,31 @@ export default function Home() {
     }
   };
 
-  const openAnalysis = async () => {
+  const openAnalysis = async (mode: "form_submit" | "retry_plan" = "form_submit") => {
+    const preserveOverview = mode === "retry_plan";
+    const intentionalRecalculation = mode === "form_submit" && (recalculationDraft || realAnalysisResult !== null);
+    const confirmPaidRecalculation = () => window.confirm(
+      "Запустить новый платный расчёт по этим ответам? Предыдущий результат сохранится в кабинете, новый будет создан отдельно.",
+    );
+    let recalculationConfirmed = false;
+    if (intentionalRecalculation) {
+      if (!confirmPaidRecalculation()) return;
+      recalculationConfirmed = true;
+    }
+
     setSubmissionError(null);
     setAnalysisBackgroundError(null);
     setIsSubmittingDiagnostic(true);
     const rawValues = { ...values };
-    let overviewAvailable = analysisResult !== null;
+    let overviewAvailable = preserveOverview && analysisResult !== null;
+
+    if (!preserveOverview) {
+      setAnalysisResult(null);
+      setRealAnalysisResult(null);
+      setCurrentStage(0);
+      setMaxUnlockedStage(0);
+      setAnalysisSlide(0);
+    }
 
     try {
       let reusableDiagnostic = submittedDiagnostic;
@@ -1685,7 +1716,11 @@ export default function Home() {
           throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
-        if (statusResponse.ok && status?.status === "analysis_failed") {
+        if (statusResponse.ok && status?.status === "ready" && mode === "form_submit") {
+          if (!recalculationConfirmed && !confirmPaidRecalculation()) return;
+          recalculationConfirmed = true;
+          reusableDiagnostic = null;
+        } else if (statusResponse.ok && status?.status === "analysis_failed") {
           if (failedRunRecovery(status.errorCode) === "retry_strategy") {
             const retryResponse = await fetch(`/api/analysis-runs/${reusableDiagnostic.analysisRunId}/retry`, {
               method: "POST",
@@ -1857,6 +1892,7 @@ export default function Home() {
       setMaxUnlockedStage(2);
       setLoadingTarget(null);
       setAnalysisStartedAt(null);
+      setRecalculationDraft(false);
       window.sessionStorage.removeItem(FORM_RECOVERY_STORAGE_KEY);
     } catch (error) {
       setLoadingTarget(null);
@@ -2115,10 +2151,14 @@ export default function Home() {
                 <button
                   type="button"
                   className="primary-button compact"
-                  onClick={openAnalysis}
+                  onClick={() => void openAnalysis("form_submit")}
                   disabled={isSubmittingDiagnostic}
                 >
-                  {isSubmittingDiagnostic ? "Сохраняю ответы…" : "Да, всё верно"} {!isSubmittingDiagnostic && <ArrowIcon />}
+                  {isSubmittingDiagnostic
+                    ? "Сохраняю ответы…"
+                    : recalculationDraft || realAnalysisResult
+                      ? "Пересчитать разбор"
+                      : "Да, всё верно"} {!isSubmittingDiagnostic && <ArrowIcon />}
                 </button>
               </div>
               {submissionError && <p className="diagnostic-submit-error" role="alert">{submissionError}</p>}
@@ -2136,7 +2176,7 @@ export default function Home() {
           activeSlide={analysisSlide}
           setActiveSlide={setAnalysisSlide}
           onOpenPlan={openTransitionPlan}
-          onRetryPlan={() => void openAnalysis()}
+          onRetryPlan={() => void openAnalysis("retry_plan")}
           planReady={Boolean(realAnalysisResult)}
           progressStatus={realAnalysisResult ? "ready" : analysisProgressStatus}
           backgroundError={analysisBackgroundError}

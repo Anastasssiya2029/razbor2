@@ -35,14 +35,32 @@ test("an architect-only QA link prefills the form without submitting an analysis
   assert.doesNotMatch(page, /readQaPrefillHash[\s\S]{0,1200}openAnalysis\(/u);
 });
 
-test("identical submitted diagnostics reuse an active or ready run instead of paying twice", () => {
+test("identical submissions reuse only an active run and allow an intentional recalculation after ready", () => {
   const service = readFileSync("server/diagnostics/service.ts", "utf8");
   const route = readFileSync("app/api/diagnostics/route.ts", "utf8");
-  assert.match(service, /findReusableSubmittedDiagnostic/u);
-  assert.match(service, /REUSABLE_SUBMITTED_STATUSES/u);
+  const reusableStatuses = service.match(/const REUSABLE_ACTIVE_STATUSES = \[([\s\S]*?)\] as const;/u)?.[1] ?? "";
+  assert.match(service, /findReusableActiveDiagnostic/u);
+  assert.match(service, /REUSABLE_ACTIVE_STATUSES/u);
+  assert.doesNotMatch(reusableStatuses, /"ready"/u);
   assert.match(service, /normalizedInputJson/u);
   assert.match(service, /idempotentReplay:\s*true/u);
   assert.match(route, /created\.idempotentReplay \? 200 : 201/u);
+});
+
+test("starting or recalculating a diagnostic clears stale result state", () => {
+  const page = readFileSync("app/page.tsx", "utf8");
+  assert.match(page, /setRecalculationDraft\(\(current\) => current \|\| replacesExistingResult\)/u);
+  assert.match(page, /setAnalysisResult\(null\);\s*setRealAnalysisResult\(null\);/u);
+  assert.match(page, /status\?\.status === "ready" && mode === "form_submit"/u);
+  assert.match(page, /reusableDiagnostic = null/u);
+  assert.match(page, /Пересчитать разбор/u);
+  assert.match(page, /Запустить новый платный расчёт по этим ответам/u);
+  assert.match(page, /openAnalysis\("retry_plan"\)/u);
+});
+
+test("business model element numbers use the purple filled treatment", () => {
+  const styles = readFileSync("app/globals.css", "utf8");
+  assert.match(styles, /\.model-number\s*\{[\s\S]*?color:\s*#fff;[\s\S]*?linear-gradient\(135deg, #57166f 0%, #a8208e 100%\);[\s\S]*?border:\s*0;/u);
 });
 
 test("expired authentication redirects only after the draft has a recovery path", () => {
