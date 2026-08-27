@@ -7,6 +7,12 @@ import { ANALYSIS_RESULT_VERSIONS, type AnalysisResultV1 } from "./types";
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const validateSchema = ajv.compile(analysisResultSchema);
 
+const LEGACY_ANALYSIS_RESULT_VERSIONS = {
+  ...ANALYSIS_RESULT_VERSIONS,
+  archetypes: "archetypes.v1",
+  transitions: "transitions-70.v1",
+} as const;
+
 function schemaMessage(error: ErrorObject): string {
   return `${error.instancePath || "/"}: ${error.message ?? error.keyword}`;
 }
@@ -82,6 +88,49 @@ export function validateAnalysisResult(value: unknown): AnalysisResultV1 {
     throw new AnalysisResultError("ANALYSIS_RESULT_FORBIDDEN_DATA", `Final result contains forbidden server-only data at ${forbidden}.`, "integrity");
   }
   return result;
+}
+
+/**
+ * Уже выданный клиенту результат остаётся читаемым после обновления
+ * справочников. Для проверки структуры временно нормализуются только три
+ * явно версионированных поля; сам сохранённый результат не переписывается.
+ */
+export function validateReadableAnalysisResult(value: unknown): AnalysisResultV1 {
+  if (
+    value &&
+    typeof value === "object" &&
+    stableJson((value as { versions?: unknown }).versions) === stableJson(ANALYSIS_RESULT_VERSIONS)
+  ) {
+    return validateAnalysisResult(value);
+  }
+  if (
+    !value ||
+    typeof value !== "object" ||
+    stableJson((value as { versions?: unknown }).versions) !== stableJson(LEGACY_ANALYSIS_RESULT_VERSIONS)
+  ) {
+    throw new AnalysisResultError(
+      "ANALYSIS_RESULT_VERSION_MANIFEST_CHANGED",
+      "Final result version manifest is neither current nor an approved historical version.",
+      "version_conflict",
+    );
+  }
+
+  const historical = value as AnalysisResultV1 & {
+    route?: { transitionRegistryVersion?: string };
+  };
+  if (historical.route?.transitionRegistryVersion !== "transitions-70.v1") {
+    throw new AnalysisResultError(
+      "ANALYSIS_RESULT_HISTORICAL_ROUTE_VERSION_CHANGED",
+      "Historical final result has an unsupported transition registry version.",
+      "version_conflict",
+    );
+  }
+
+  const normalized = structuredClone(value) as AnalysisResultV1;
+  (normalized as { versions: unknown }).versions = ANALYSIS_RESULT_VERSIONS;
+  (normalized.route as { transitionRegistryVersion: string }).transitionRegistryVersion = "transitions-70.v2";
+  validateAnalysisResult(normalized);
+  return value as AnalysisResultV1;
 }
 
 export const ANALYSIS_RESULT_SCHEMA = analysisResultSchema as Record<string, unknown>;

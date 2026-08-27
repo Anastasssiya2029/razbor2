@@ -7,6 +7,7 @@ import {
   authorizeAnalysisResultDebugRequest,
   getOrCreateAnalysisResult,
   validateAnalysisResult,
+  validateReadableAnalysisResult,
   type AnalysisResultRepository,
   type AnalysisResultSource,
   type AnalysisResultV1,
@@ -86,6 +87,29 @@ async function assertDeterministicFixture(source: AnalysisResultSource): Promise
   assert.deepEqual(replayed.result, created.result);
   return first;
 }
+
+test("historical saved result remains readable after methodology resources advance", async () => {
+  const source = await makeAnalysisResultFixture("available");
+  const historical = structuredClone(await assembleAnalysisResult(source));
+  (historical.versions as { archetypes: string }).archetypes = "archetypes.v1";
+  (historical.versions as { transitions: string }).transitions = "transitions-70.v1";
+  (historical.route as { transitionRegistryVersion: string }).transitionRegistryVersion = "transitions-70.v1";
+  assert.throws(() => validateAnalysisResult(historical), /must be equal to constant|manifest/iu);
+  assert.deepEqual(validateReadableAnalysisResult(historical), historical);
+
+  const repository = new MemoryAnalysisResultRepository(source);
+  repository.stored = {
+    id: "historical-final",
+    diagnosticId: source.diagnosticId,
+    analysisRunId: source.analysisRunId,
+    schemaVersion: "analysis-result.v1",
+    methodologyVersion: "7k.v1.2",
+    result: historical,
+  };
+  const replayed = await getOrCreateAnalysisResult(source.analysisRunId, { repository });
+  assert.equal(replayed.idempotentReplay, true);
+  assert.deepEqual(replayed.result, historical);
+});
 
 test("E2E 1: normal result preserves available Money Now prescription", async () => {
   const source = await makeAnalysisResultFixture("available");

@@ -8,7 +8,7 @@ import {
   type AssembleAnalysisResultOptions,
   type StoredAnalysisResult,
 } from "./types";
-import { validateAnalysisResult } from "./validation";
+import { validateAnalysisResult, validateReadableAnalysisResult } from "./validation";
 
 function assertReplayCompatible(
   existing: StoredAnalysisResult,
@@ -37,6 +37,14 @@ export async function getOrCreateAnalysisResult(
   if (!source) {
     throw new AnalysisResultError("ANALYSIS_RESULT_RUN_NOT_FOUND", "Analysis run was not found.", "not_found");
   }
+  const existing = await repository.loadResult(analysisRunId);
+  if (
+    existing &&
+    (existing.result.versions as { archetypes?: string }).archetypes === "archetypes.v1" &&
+    (existing.result.versions as { transitions?: string }).transitions === "transitions-70.v1"
+  ) {
+    return { result: validateReadableAnalysisResult(existing.result), idempotentReplay: true };
+  }
   const result = validateAnalysisResult(await assembleAnalysisResult(source));
   const candidate: StoredAnalysisResult = {
     id: (options.createId ?? (() => crypto.randomUUID()))(),
@@ -46,7 +54,6 @@ export async function getOrCreateAnalysisResult(
     methodologyVersion: ANALYSIS_RESULT_METHODOLOGY_VERSION,
     result,
   };
-  const existing = await repository.loadResult(analysisRunId);
   if (existing) {
     assertReplayCompatible(existing, candidate);
     return { result: existing.result, idempotentReplay: true };
