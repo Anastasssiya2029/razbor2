@@ -514,7 +514,7 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
 
 test("P-01 methodology registry pins the v1.4.2 extraction resources and 77 scoring levels", () => {
   assert.deepEqual(getP01ResourceVersions(), {
-    scoringRules: "scoring-rules.v3.1",
+    scoringRules: "scoring-rules.v3.2",
     evidenceRouting: "evidence-routing.v3.0",
     targetModelDictionary: "target-model-dictionary.v2.2",
     moneyNowHistoryMap: "money-now-history-map.v2.2",

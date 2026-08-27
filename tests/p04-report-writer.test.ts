@@ -435,6 +435,26 @@ test("runner replaces model-controlled immutable echoes with backend policy valu
   assert.doesNotMatch(JSON.stringify(result.result), /P01:E999/u);
 });
 
+test("runner deterministically bounds and deduplicates oversized source refs", async () => {
+  const input = await prepared();
+  const output = makeValidP04Output(input);
+  output.currentConfiguration.source_refs = [
+    ...input.sourceRegistry.refs.slice(0, 13),
+    input.sourceRegistry.refs[0],
+  ];
+  const provider = new QueueProvider([output]);
+
+  const result = await runP04ReportWriter(input, { provider });
+
+  assert.equal(provider.requests.length, 1);
+  assert.ok(result.result.currentConfiguration.source_refs.length <= 12);
+  assert.equal(
+    new Set(result.result.currentConfiguration.source_refs).size,
+    result.result.currentConfiguration.source_refs.length,
+  );
+  assert.ok(result.result.currentConfiguration.source_refs.includes("P01:businessMap"));
+});
+
 test("34. a second semantic failure terminates without an unbounded retry", async () => {
   const input = await prepared();
   const invalid = makeValidP04Output(input);
@@ -485,6 +505,38 @@ test("35a. retryFailed replaces only a failed P-04 attempt and keeps upstream ha
   assert.equal(repository.stored?.failureCode, null);
   assert.equal(repository.stored?.id, "p04-retried");
   assert.deepEqual(repository.stored?.upstreamHashes, upstreamHashes);
+});
+
+test("35b. retryFailed recovers a stored schema failure without another provider call", async () => {
+  const source = await makeP04Source();
+  const input = await prepareP04Input(source);
+  const repository = new MemoryRepository(source);
+  await runP04Stage("run-1", {
+    repository,
+    provider: new QueueProvider([{}, {}]),
+    createId: () => "p04-failed",
+  });
+  assert.equal(repository.stored?.failureCode, "P04_SCHEMA_VALIDATION_FAILED");
+
+  const recoverable = makeValidP04Output(input);
+  recoverable.currentConfiguration.source_refs = input.sourceRegistry.refs.slice(0, 13);
+  repository.stored!.providerRawResponse = {
+    choices: [{ message: { content: JSON.stringify(recoverable) } }],
+  };
+  const previousCost = repository.stored!.costUsd;
+  const externalProvider = new QueueProvider([new Error("external provider must not be called")]);
+
+  const retried = await runP04Stage("run-1", {
+    repository,
+    provider: externalProvider,
+    createId: () => "p04-recovered",
+    retryFailed: true,
+  });
+
+  assert.equal(retried.status, "ready");
+  assert.equal(externalProvider.requests.length, 0);
+  assert.equal(repository.stored?.costUsd, previousCost);
+  assert.ok((repository.stored?.result?.currentConfiguration.source_refs.length ?? 99) <= 12);
 });
 
 test("36. an existing report with another deterministic hash is a version conflict", async () => {

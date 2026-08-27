@@ -7,9 +7,9 @@ import { buildP01SystemPrompt } from "../server/p01/request";
 import { buildP01ElementScorePrompt, type P01CoreContext } from "../server/p01/split-request";
 import { ALINA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 
-test("v5.4 scoring separates capability anchors from level boundaries", () => {
+test("v5.5 scoring separates capability anchors from level boundaries", () => {
   assert.equal(METHODOLOGY_VERSION, "7k.v1.4");
-  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.4");
+  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.5");
   assert.equal(SCORING_RULES.algorithm, "highest_supported_capability_with_resilience");
   assert.equal(SCORING_RULES.evaluationPolicy.criterionRole, "mandatory_core");
   assert.equal(SCORING_RULES.evaluationPolicy.supportingCoveragePolicy, "confidence_only_not_a_score_gate");
@@ -31,7 +31,7 @@ test("audience levels reserve multiple segments for level 8 and above", () => {
 test("product and sales ladders distinguish method, ecosystem and delegation", () => {
   assert.match(SCORING_RULES.elements.product_method.levels[7].criterion, /Авторский метод/u);
   assert.match(SCORING_RULES.elements.product_method.levels[8].criterion, /повторные покупки/u);
-  assert.match(SCORING_RULES.elements.sales_technology.levels[8].criterion, /первая продажа до оплаты.+менеджер/u);
+  assert.match(SCORING_RULES.elements.sales_technology.levels[8].criterion, /этапы первой продажи выполняет менеджер или команда/u);
   assert.match(SCORING_RULES.elements.sales_technology.levels[9].criterion, /первая и повторная продажи/u);
   assert.match(SCORING_RULES.elements.sales_technology.levels[10].criterion, /Руководитель продаж/u);
 });
@@ -63,7 +63,7 @@ test("transitional limitations never remain inside the machine capability core",
   assert.match(sales[2].boundarySignals.join(" "), /интуитивной/u);
   assert.doesNotMatch(sales[5].mandatoryCore.join(" "), /непоследовательно/u);
   assert.match(sales[5].boundarySignals.join(" "), /непоследовательно/u);
-  assert.match(sales[8].alternativeEvidencePaths.join(" "), /продажах, пути клиента, команде.+несколько способных продавцов/u);
+  assert.match(sales[8].alternativeEvidencePaths.join(" "), /технологии продаж, пути клиента и команде.+существенных этапах продажи/u);
   assert.match(sales[8].blockers.join(" "), /Само наличие помощника, менеджера или отдела/u);
   assert.match(sales[9].blockers.join(" "), /повторной выручки и LTV/u);
 
@@ -112,8 +112,8 @@ test("Alina sales prompt receives delegated sales facts and cumulative scoring i
   assert.match(prompt, /прямо доказанную способность/u);
   assert.match(prompt, /единственные точки отказа/u);
   assert.match(prompt, /CRM, бот, AI, реклама, помощник/u);
-  assert.match(prompt, /первая продажа до оплаты.+уровень 8/u);
-  assert.match(prompt, /уровень 9 требует действующей системы повторных продаж/u);
+  assert.match(prompt, /делегированными менеджеру или команде существенными этапами.+уровень 8/u);
+  assert.match(prompt, /отсутствие системы повторных продаж и LTV ограничивает уровень 9/u);
 });
 
 test("Alina blog prompt receives paid growth, owned audience and selling evidence", () => {
@@ -131,7 +131,7 @@ test("Alina blog prompt receives paid growth, owned audience and selling evidenc
   assert.match(prompt, /Ограничение нижней ступени нельзя использовать против более высокого уровня/u);
 });
 
-test("legacy single-call prompt is normalized to the v5.4 machine policy", () => {
+test("legacy single-call prompt is normalized to the v5.5 machine policy", () => {
   const prompt = buildP01SystemPrompt(ALINA_GOLDEN_CASE.input, null, { moneyNowEnabled: false });
   assert.doesNotMatch(prompt, /примерно на 80%/u);
   assert.match(prompt, /alternativeEvidencePaths/u);

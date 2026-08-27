@@ -10,7 +10,39 @@ import type {
   StoredP04Result,
   P04PreparedInput,
 } from "./stage-types";
-import { P04_OUTPUT_SCHEMA_VERSION, P04_STAGE_VERSION } from "./types";
+import { P04_OUTPUT_SCHEMA_VERSION, P04_STAGE_VERSION, type P04Provider } from "./types";
+
+function providerTextFromRawResponse(raw: unknown): string | null {
+  if (typeof raw === "string") return raw;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const choices = (raw as Record<string, unknown>).choices;
+  if (!Array.isArray(choices)) return null;
+  for (const choice of choices) {
+    if (!choice || typeof choice !== "object" || Array.isArray(choice)) continue;
+    const message = (choice as Record<string, unknown>).message;
+    if (!message || typeof message !== "object" || Array.isArray(message)) continue;
+    const content = (message as Record<string, unknown>).content;
+    if (typeof content === "string" && content.trim()) return content;
+  }
+  return null;
+}
+
+function recoveryProviderFor(existing: StoredP04Result): P04Provider | null {
+  if (existing.failureCode !== "P04_SCHEMA_VALIDATION_FAILED") return null;
+  const text = providerTextFromRawResponse(existing.providerRawResponse);
+  if (!text) return null;
+  return {
+    provider: existing.provider,
+    model: existing.model,
+    async complete() {
+      return {
+        text,
+        rawResponse: existing.providerRawResponse,
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0 },
+      };
+    },
+  };
+}
 
 async function persistOrLoad(
   repository: P04Repository,
@@ -176,31 +208,35 @@ export async function runP04Stage(
 
   const createId = options.createId ?? (() => crypto.randomUUID());
   try {
+    const recoveryProvider = options.retryFailed && existing
+      ? recoveryProviderFor(existing)
+      : null;
     const outcome = await runP04ReportWriter(prepared, {
-      provider: options.provider,
+      provider: recoveryProvider ?? options.provider,
       now: options.now,
       moneyNowEnabled: options.moneyNowEnabled ?? true,
     });
+    const recoveredWithoutProviderCall = recoveryProvider !== null;
     const candidate: StoredP04Result = {
       ...baseStored(
         source,
         prepared,
         createId(),
-        outcome.metadata.startedAt,
-        outcome.metadata.finishedAt,
+        recoveredWithoutProviderCall ? existing!.startedAt : outcome.metadata.startedAt,
+        recoveredWithoutProviderCall ? existing!.finishedAt : outcome.metadata.finishedAt,
       ),
       result: outcome.result,
-      providerRawResponse: outcome.providerRawResponse,
-      provider: outcome.metadata.provider,
-      model: outcome.metadata.model,
-      latencyMs: outcome.metadata.latencyMs,
-      inputTokens: outcome.metadata.usage.inputTokens,
-      outputTokens: outcome.metadata.usage.outputTokens,
-      totalTokens: outcome.metadata.usage.totalTokens,
-      costUsd: outcome.metadata.usage.costUsd,
-      retryCount: outcome.metadata.retryCount,
-      technicalRetryCount: outcome.metadata.technicalRetryCount,
-      reevaluationRetryCount: outcome.metadata.reevaluationRetryCount,
+      providerRawResponse: recoveredWithoutProviderCall ? existing!.providerRawResponse : outcome.providerRawResponse,
+      provider: recoveredWithoutProviderCall ? existing!.provider : outcome.metadata.provider,
+      model: recoveredWithoutProviderCall ? existing!.model : outcome.metadata.model,
+      latencyMs: recoveredWithoutProviderCall ? existing!.latencyMs : outcome.metadata.latencyMs,
+      inputTokens: recoveredWithoutProviderCall ? existing!.inputTokens : outcome.metadata.usage.inputTokens,
+      outputTokens: recoveredWithoutProviderCall ? existing!.outputTokens : outcome.metadata.usage.outputTokens,
+      totalTokens: recoveredWithoutProviderCall ? existing!.totalTokens : outcome.metadata.usage.totalTokens,
+      costUsd: recoveredWithoutProviderCall ? existing!.costUsd : outcome.metadata.usage.costUsd,
+      retryCount: recoveredWithoutProviderCall ? existing!.retryCount : outcome.metadata.retryCount,
+      technicalRetryCount: recoveredWithoutProviderCall ? existing!.technicalRetryCount : outcome.metadata.technicalRetryCount,
+      reevaluationRetryCount: recoveredWithoutProviderCall ? existing!.reevaluationRetryCount : outcome.metadata.reevaluationRetryCount,
       failureCode: null,
       failureMessage: null,
     };
@@ -233,6 +269,7 @@ export async function runP04Stage(
         reportStoredServerSide: true,
         finalAnalysisResultBuilt: false,
         p03AttachedToPublicReport: false,
+        recoveredFromStoredRawResponse: recoveredWithoutProviderCall,
         idempotentReplay: persisted.replay,
       },
     });

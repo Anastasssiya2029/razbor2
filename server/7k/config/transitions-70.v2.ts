@@ -185,7 +185,7 @@ export const TRANSITIONS_70_V2 = legacyTransitions.transitions.map((transition) 
     ...transition,
     current_state: SCORING_RULES.elements[elementId].levels[transition.from_score].criterion,
     ...(override ?? {}),
-    version: "7K-2026-08-v5.3",
+    version: "7K-2026-08-v5.5",
   };
 });
 
@@ -195,8 +195,8 @@ export const TRANSITIONS_70_V2_RESOURCE = {
     file: "Справочник_7К_v5_2_ОБЪЕДИНЕННЫЙ_УСТОЙЧИВОСТЬ_DRAFT.xlsx",
     sheet: "Переходы_70",
     sha256: "2D421B60862F0FA4D89B4EACA39055B5F26AF1AF8ACE6A2A13BD281FDABD3DE4",
-    contentSha256: "bb42891ffa86032178b58f1fa41fda68a5a6c2771f7ce0cb00a47fc8855a8a3d",
-    sourceVersion: "7K-2026-08-v5.3",
+    contentSha256: "18f68760bb777f7b90a3bf6abf53e8edeacbdb9aa100a62394e8674ff84c7766",
+    sourceVersion: "7K-2026-08-v5.5",
   },
   transitions: TRANSITIONS_70_V2,
 } as const;

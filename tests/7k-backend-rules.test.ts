@@ -75,7 +75,7 @@ test("imports exactly 70 unique sequential transitions with complete 0→10 cove
     transitionsPerElement: Object.fromEntries(SEVEN_K_ELEMENT_IDS.map((id) => [id, 10])),
   });
   assert.equal(TRANSITIONS_70_RESOURCE.source.sheet, "Переходы_70");
-  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v5.3");
+  assert.equal(TRANSITIONS_70_RESOURCE.source.sourceVersion, "7K-2026-08-v5.5");
 
   const content = JSON.stringify(
     TRANSITIONS_70.map(

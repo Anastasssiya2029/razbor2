@@ -25,6 +25,7 @@ export class P04InvariantError extends Error {
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const validateSchema = ajv.compile(p04OutputSchema);
+const MAX_SOURCE_REFS = 12;
 
 function schemaIssue(error: ErrorObject): P04ValidationIssue {
   return {
@@ -51,11 +52,31 @@ function canonicalSourceRefs(
   input: P04PreparedInput,
 ): string[] {
   const allowed = new Set(input.sourceRegistry.refs);
-  const normalizedRefs = refs.filter((ref) => allowed.has(ref));
-  for (const ref of required) {
+  const normalizedRefs: string[] = [];
+  for (const ref of [...required, ...refs]) {
     if (allowed.has(ref) && !normalizedRefs.includes(ref)) normalizedRefs.push(ref);
   }
-  return normalizedRefs;
+  return normalizedRefs.slice(0, MAX_SOURCE_REFS);
+}
+
+function sanitizeSourceRefArrays(value: unknown, input: P04PreparedInput): void {
+  if (Array.isArray(value)) {
+    value.forEach((item) => sanitizeSourceRefArrays(item, input));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  const record = value as Record<string, unknown>;
+  for (const [key, child] of Object.entries(record)) {
+    if (key === "source_refs" && Array.isArray(child)) {
+      record[key] = canonicalSourceRefs(
+        child.filter((ref): ref is string => typeof ref === "string"),
+        [],
+        input,
+      );
+      continue;
+    }
+    sanitizeSourceRefArrays(child, input);
+  }
 }
 
 function hydrateP04ImmutableSkeleton(value: unknown, input: P04PreparedInput): unknown {
@@ -127,6 +148,7 @@ function hydrateP04ImmutableSkeleton(value: unknown, input: P04PreparedInput): u
     finalFocus.first_action = policy.firstTask.task;
     finalFocus.wait_for_signal = policy.validationSignal;
   }
+  sanitizeSourceRefArrays(result, input);
   return result;
 }
 
