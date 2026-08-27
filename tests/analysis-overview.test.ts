@@ -61,9 +61,9 @@ test("analysis overview exposes persisted 7K scores and canonical archetype for 
   assert.deepEqual(overview.currentScoreArguments[0], {
     id: "authenticity",
     score: 4,
-    evidence: ["Эксперт описывает сильные стороны, но пока не связал их в ясную систему."],
-    matchedCriterion: "Особенности соединены в цельную и понятную формулу: ясно, какой способ мышления и работы отличает эксперта.",
-    whyNotHigher: "Не подтверждён следующий уровень authenticity.",
+    evidence: [],
+    matchedCriterion: null,
+    whyNotHigher: null,
     kind: "soft",
   });
   assert.equal(overview.currentScoreArguments[1].kind, "soft");

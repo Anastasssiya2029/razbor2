@@ -989,6 +989,14 @@ test("disabled Money Now is absent from the paid P-01 request and hydrated fail-
   assert.doesNotMatch(request.systemPrompt, /MONEY NOW|moneyNowFacts|moneyNowHistory|MN01/iu);
   assert.match(request.systemPrompt, /НЕ выставляй баллы 7К/u);
   assert.ok(provider.requests.slice(1).every((scoreRequest) => scoreRequest.schemaName?.startsWith("p01_score_")));
+  const scoreSchema = provider.requests[1].outputSchema as {
+    properties: { scorecard: { properties: Record<string, unknown>; required: string[] } };
+  };
+  assert.equal("why_not_higher" in scoreSchema.properties.scorecard.properties, false);
+  assert.equal("cap_reason" in scoreSchema.properties.scorecard.properties, false);
+  assert.equal(scoreSchema.properties.scorecard.required.includes("why_not_higher"), false);
+  assert.equal(scoreSchema.properties.scorecard.required.includes("cap_reason"), false);
+  assert.ok(Object.values(outcome.result.current7k).every((score) => score.why_not_higher === null && score.cap_reason === null));
   assert.ok(provider.requests.slice(1).every((scoreRequest) => !/target\.businessModel|target\.delegation/u.test(scoreRequest.systemPrompt)));
   assert.equal(outcome.result.moneyNowSignals.length, 0);
   assert.ok(Object.values(outcome.result.moneyNowFacts).every((fact) => fact.state === "unknown"));

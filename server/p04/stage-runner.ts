@@ -137,6 +137,10 @@ export async function runP04Stage(
         "version_conflict",
       );
     }
+    if (options.retryFailed && existing.failureCode) {
+      // Keep all deterministic upstream stages and rerun only the failed final
+      // writer. The failed row is replaced atomically after the new attempt.
+    } else {
     const status = existing.failureCode ? "analysis_failed" : "ready";
     await repository.updateRun(analysisRunId, {
       status,
@@ -160,8 +164,9 @@ export async function runP04Stage(
       nextStep: null,
       reportStoredServerSide: existing.result !== null,
     };
+    }
   }
-  if (source.runStatus !== "writing_report") {
+  if (source.runStatus !== "writing_report" && !(options.retryFailed && source.runStatus === "analysis_failed")) {
     throw new P04Error(
       "P04_RESULT_MISSING",
       `${source.runStatus} run has no persisted P-04 result.`,
@@ -199,7 +204,11 @@ export async function runP04Stage(
       failureCode: null,
       failureMessage: null,
     };
-    const persisted = await persistOrLoad(repository, candidate);
+    const retryReplacement = options.retryFailed && Boolean(existing?.failureCode);
+    const replaced = retryReplacement ? await repository.replaceFailedResult(candidate) : false;
+    const persisted = replaced
+      ? { result: candidate, replay: false }
+      : await persistOrLoad(repository, candidate);
     await repository.updateRun(analysisRunId, {
       status: "ready",
       errorCode: null,
@@ -259,7 +268,11 @@ export async function runP04Stage(
       failureCode: unknownError.failureCode,
       failureMessage: unknownError.message,
     };
-    const persisted = await persistOrLoad(repository, failed);
+    const retryReplacement = options.retryFailed && Boolean(existing?.failureCode);
+    const replaced = retryReplacement ? await repository.replaceFailedResult(failed) : false;
+    const persisted = replaced
+      ? { result: failed, replay: false }
+      : await persistOrLoad(repository, failed);
     await repository.updateRun(analysisRunId, {
       status: "analysis_failed",
       errorCode: persisted.result.failureCode,

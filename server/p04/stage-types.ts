@@ -101,6 +101,7 @@ export interface P04Repository {
   loadSource(analysisRunId: string): Promise<P04Source | null>;
   loadResult(analysisRunId: string): Promise<StoredP04Result | null>;
   createResult(result: StoredP04Result): Promise<boolean>;
+  replaceFailedResult(result: StoredP04Result): Promise<boolean>;
   updateRun(
     analysisRunId: string,
     update: {
@@ -119,6 +120,7 @@ export type RunP04StageOptions = {
   now?: () => Date;
   createId?: () => string;
   moneyNowEnabled?: boolean;
+  retryFailed?: boolean;
 };
 
 export type P04StageExecutionResult = {

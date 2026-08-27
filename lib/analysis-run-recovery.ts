@@ -7,5 +7,6 @@ export function failedRunRecovery(errorCode: string | null | undefined): FailedR
   ) {
     return "retry_strategy";
   }
+  if (errorCode?.startsWith("P04_")) return "retry_strategy";
   return "start_fresh";
 }

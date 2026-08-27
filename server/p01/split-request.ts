@@ -52,7 +52,21 @@ function scorecardSchema(): Record<string, unknown> {
       current7k: { properties: Record<SevenKElementId, Record<string, unknown>> };
     };
   };
-  return structuredClone(full.properties.current7k.properties.authenticity);
+  const schema = structuredClone(full.properties.current7k.properties.authenticity) as {
+    required?: string[];
+    properties?: Record<string, unknown>;
+  };
+  // These two narrative fields used to make every scoring call longer and less
+  // stable. The backend still hydrates them as null for persisted v1.4
+  // compatibility, but the provider now returns only machine-verifiable data.
+  schema.required = (schema.required ?? []).filter(
+    (field) => field !== "cap_reason" && field !== "why_not_higher",
+  );
+  if (schema.properties) {
+    delete schema.properties.cap_reason;
+    delete schema.properties.why_not_higher;
+  }
+  return schema;
 }
 
 export const P01_CORE_CONTEXT_OUTPUT_SCHEMA = projectCoreSchema();
@@ -99,11 +113,30 @@ export function validateP01ElementScoreEnvelope(
   elementId: SevenKElementId,
   value: unknown,
 ): P01ElementScoreEnvelope {
+  const normalized = structuredClone(value) as {
+    scorecard?: Record<string, unknown>;
+  };
+  // Be tolerant of a provider replaying the previous contract during rollout.
+  // These fields are discarded and never reach persistence or the client.
+  if (normalized?.scorecard) {
+    delete normalized.scorecard.cap_reason;
+    delete normalized.scorecard.why_not_higher;
+  }
   const validator = validateScoreSchemas[elementId];
-  if (!validator(value)) {
+  if (!validator(normalized)) {
     throw new P01SchemaValidationError((validator.errors ?? []).map(schemaIssue));
   }
-  return value as P01ElementScoreEnvelope;
+  const envelope = normalized as Omit<P01ElementScoreEnvelope, "scorecard"> & {
+    scorecard: Omit<P01ElementScore, "cap_reason" | "why_not_higher">;
+  };
+  return {
+    ...envelope,
+    scorecard: {
+      ...envelope.scorecard,
+      cap_reason: null,
+      why_not_higher: null,
+    },
+  };
 }
 
 /**
@@ -276,7 +309,7 @@ export function buildP01ElementScorePrompt(options: {
 3. Построй накопительный портрет каждого уровня. mandatoryCore подтверждается полностью. Если у уровня есть alternativeEvidencePaths, достаточно одного доказанного пути. supportingSignals усиливают confidence, но не заменяют обязательное ядро и не образуют процентный порог. Прямой blocker запрещает уровень; отсутствие упоминания является missing_evidence, а не counterevidence.
 4. Проверь уровни 10→0 и выбери самый высокий полностью подтверждённый уровень. Прямой факт высокого уровня может логически подтвердить нижние способности, но формальный артефакт сам по себе этого не делает.
 5. Не требуй дословного перечисления всех промежуточных инструментов: CRM, бот, AI, реклама, помощник или должность оцениваются только по фактически выполняемой функции и результату.
-6. Проведи upper-level challenge для score+1…10. why_not_higher называет конкретный недостающий критерий ближайшего уровня и не отрицает факт из ledger.
+6. Проведи upper-level challenge для score+1…10 внутренне. Не пиши пользовательское объяснение балла: верни только предусмотренные provider schema машинные поля.
 7. Для уровней с полем resilience отдельно проверь указанное требование и единственные точки отказа. Работающая способность и её устойчивость — разные вещи: не занижай уже доказанную способность, но не присваивай верхний уровень, если его resilience requirement прямо не выполнен.
 8. score не выше evidence_cap. Без конкретного current-примера cap≤2; только единичный случай или только история cap≤3; уровни 8–10 требуют повторяемости, результата, понимания причин и управляемости согласно правилам.
 9. Используй максимум 5 strongest evidence_ids и только exact ID из ledger. Нельзя придумывать или переименовывать ID.

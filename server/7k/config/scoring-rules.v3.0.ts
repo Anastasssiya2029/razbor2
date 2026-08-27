@@ -67,17 +67,110 @@ const LEVEL_CRITERION_OVERRIDES: Partial<Record<SevenKElementId, Record<number, 
     10: "Команда автономно управляет портфелем источников и воронок до и после оплаты, перераспределяет ресурсы и заменяет просевшие связки без ежедневного участия владельца.",
   },
   blog: {
+    1: "Есть рабочая площадка, первые публикации и подписчики, но контент выходит редко и пока не создаёт устойчивого присутствия.",
+    2: "Есть повторяемый способ готовить контент: понятны базовые темы или форматы, но публикации остаются нерегулярными и зависят от ручного усилия владельца.",
+    3: "Контент выходит большую часть недель в устойчивом ритме, но темы и форматы ещё не собраны в единую систему и слабо связаны с продажами.",
+    4: "Создана контентная система: понятны аудитория, ключевые смыслы, темы, рубрики, форматы и ритм; контент можно выпускать по понятным правилам.",
+    5: "Блог регулярно привлекает подходящих людей; сформировано активное ядро аудитории и понятно, какие темы особенно интересуют целевых клиентов.",
+    6: "Работает хотя бы одна масштабируемая органическая или платная механика привлечения целевой аудитории; рост не зависит только от случайных рекомендаций и единичных публикаций.",
     7: "Минимум две самостоятельные медиаплощадки имеют реальную целевую аудиторию и дают измеримые обращения или продажи; бизнес не зависит от одного аккаунта или платформы.",
     8: "Несколько каналов выполняют разные роли, связаны между собой и ведут в продукты и воронки; у бизнеса есть собственная база контактов и измеримый коммерческий вклад каналов.",
     9: "Производство и распространение контента делегированы, ключевые роли имеют резерв, а ритм, качество, аудитория и продажи сохраняются без ежедневной работы эксперта.",
     10: "Команда автономно управляет многоплощадочной медиасистемой, её аудиторией, производством, распространением, аналитикой и коммерческим результатом.",
   },
   team: {
+    1: "AI или автоматизация регулярно выполняют отдельные повторяющиеся операции и реально сокращают ручную работу, но владелец по-прежнему организует и контролирует весь результат.",
     8: "Критические функции имеют владельцев измеримого результата, полномочия, описанный процесс и рабочий резерв; отсутствие отдельного сотрудника не останавливает функцию.",
     9: "Работает управленческий слой: руководители самостоятельно управляют функциями, людьми, бюджетами и показателями; есть преемственность и сценарии непрерывности.",
     10: "Бизнес автономно работает, достигает показателей, улучшает процессы и адаптируется; руководители управляют людьми, функциями и изменениями без ежедневного участия владельца.",
   },
 };
+
+function machineFieldsFor(elementId: SevenKElementId, score: number, criterion: string) {
+  const common = {
+    mandatoryCore: [criterion] as string[],
+    alternativeEvidencePaths: [] as string[],
+    supportingSignals: legacy.elements[elementId].evidenceDimensions.filter(
+      (signal) => elementId !== "blog" || !/\bAI\b|нейросет/iu.test(signal),
+    ),
+    blockers: legacy.elements[elementId].falseFriends,
+  };
+
+  if (elementId === "product_method" && score === 7) {
+    return {
+      ...common,
+      mandatoryCore: [
+        "Авторский метод, технология или система сформулированы и имеют объяснимые этапы и логику.",
+        "Флагман построен по этому методу, а линейка ведёт клиента к ключевому результату.",
+      ],
+      alternativeEvidencePaths: [
+        "Метод прямо назван в описании продуктов.",
+        "Метод раскрыт в уникальности и подтверждён тем, как устроены продукт, упаковка, продажи или клиентский результат.",
+      ],
+    };
+  }
+  if (elementId === "sales_technology" && score === 7) {
+    return {
+      ...common,
+      mandatoryCore: [
+        "Продажи управляются по фактам: есть квалификация, устойчивый учёт, причины отказов и анализ мест потери клиента.",
+        "Технология улучшается по результатам, а не только по ощущениям владельца.",
+      ],
+      alternativeEvidencePaths: [
+        "Владелец сам ведёт и анализирует продажи по этой системе.",
+        "Менеджер или команда ведут продажи, а владелец получает показатели и контролирует качество.",
+      ],
+    };
+  }
+  if (elementId === "sales_technology" && score >= 8) {
+    return {
+      ...common,
+      supportingSignals: [
+        ...common.supportingSignals,
+        "делегированный полный цикл до оплаты",
+        "контроль качества и замена продавца",
+        "повторные продажи, продления, допродажи и реактивация",
+        "измерение повторной выручки и LTV",
+      ],
+    };
+  }
+  if (elementId === "blog" && score === 6) {
+    return {
+      ...common,
+      alternativeEvidencePaths: [
+        "Работает масштабируемая органическая механика привлечения подходящей аудитории.",
+        "Работает платная механика привлечения подходящей аудитории с наблюдаемым результатом.",
+      ],
+      blockers: [
+        ...common.blockers,
+        "Разовый прирост, случайный вирусный охват или число подписчиков без повторяемой механики не подтверждают уровень.",
+      ],
+    };
+  }
+  if (elementId === "blog") {
+    return {
+      ...common,
+      blockers: [
+        ...common.blockers,
+        "Использование AI само по себе не доказывает регулярность, рост аудитории, обращения или продажи.",
+      ],
+    };
+  }
+  if (elementId === "team" && score === 1) {
+    return {
+      ...common,
+      mandatoryCore: [
+        "AI или автоматизация регулярно выполняют конкретную повторяющуюся операцию.",
+        "Есть наблюдаемое сокращение ручной работы или времени владельца.",
+      ],
+      blockers: [
+        ...common.blockers,
+        "Сам факт подписки на AI, эксперимента или подготовки черновика без снятия нагрузки не повышает уровень.",
+      ],
+    };
+  }
+  return common;
+}
 
 function criterionFor(elementId: SevenKElementId, score: number): string {
   return LEVEL_CRITERION_OVERRIDES[elementId]?.[score]
@@ -87,11 +180,11 @@ function criterionFor(elementId: SevenKElementId, score: number): string {
 
 export const SCORING_RULES = {
   version: SCORING_RULES_RESOURCE_VERSION,
-  methodologyVersion: "7K-2026-08-v5.2",
+  methodologyVersion: "7K-2026-08-v5.3",
   source: {
     document: "Справочник_7К_v5_2_ОБЪЕДИНЕННЫЙ_УСТОЙЧИВОСТЬ_DRAFT.xlsx",
     sha256: "2D421B60862F0FA4D89B4EACA39055B5F26AF1AF8ACE6A2A13BD281FDABD3DE4",
-    importPolicy: "Сохранена согласованная шкала v5; добавлены машинные поля ядра, альтернатив, supporting, blockers и устойчивости v5.2.",
+    importPolicy: "Сохранена согласованная шкала v5.2; в runtime v5.3 AI отделён от зрелости блога, добавлены альтернативные доказательные пути и межблочная маршрутизация фактов.",
   },
   algorithm: legacy.algorithm,
   evaluationPolicy: {
@@ -123,16 +216,16 @@ export const SCORING_RULES = {
     const element = legacy.elements[elementId];
     return [elementId, {
       ...element,
-      levels: element.levels.map((level) => ({
-        ...level,
-        criterion: criterionFor(elementId, level.score),
-        nextLevelGate: level.score < 10 ? criterionFor(elementId, level.score + 1) : null,
-        mandatoryCore: [criterionFor(elementId, level.score)],
-        alternativeEvidencePaths: [],
-        supportingSignals: element.evidenceDimensions,
-        blockers: element.falseFriends,
-        resilience: getResilienceFrame(elementId, level.score),
-      })),
+      levels: element.levels.map((level) => {
+        const criterion = criterionFor(elementId, level.score);
+        return {
+          ...level,
+          criterion,
+          nextLevelGate: level.score < 10 ? criterionFor(elementId, level.score + 1) : null,
+          ...machineFieldsFor(elementId, level.score, criterion),
+          resilience: getResilienceFrame(elementId, level.score),
+        };
+      }),
     }];
   })) as unknown as Record<SevenKElementId, ElementScoringRulesV3>,
 } as const;

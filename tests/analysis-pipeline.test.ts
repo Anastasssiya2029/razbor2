@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   AnalysisPipelineError,
   advanceAnalysisPipeline,
+  retryFailedAnalysisPipeline,
   retryFailedP02Pipeline,
   runAnalysisPipeline,
   type AnalysisPipelineDependencies,
@@ -13,7 +14,7 @@ import type { AnalysisResultV1 } from "../server/analysis-result/types";
 
 const fakeResult = { analysisRunId: "run-1" } as unknown as AnalysisResultV1;
 
-function pipelineHarness(initialStatus: AnalysisPipelineStatus, options: { lock?: string | null } = {}) {
+function pipelineHarness(initialStatus: AnalysisPipelineStatus, options: { lock?: string | null; errorCode?: string | null } = {}) {
   const calls: string[] = [];
   let status = initialStatus;
   const snapshot = (): PipelineRunSnapshot => ({
@@ -21,7 +22,7 @@ function pipelineHarness(initialStatus: AnalysisPipelineStatus, options: { lock?
     diagnosticId: "diagnostic-1",
     status,
     input: {} as PipelineRunSnapshot["input"],
-    errorCode: null,
+    errorCode: options.errorCode ?? null,
   });
   const advance = (name: string, next: AnalysisPipelineStatus) => async () => {
     calls.push(name);
@@ -52,6 +53,7 @@ function pipelineHarness(initialStatus: AnalysisPipelineStatus, options: { lock?
     runTarget: advance("target", "strategizing"),
     runP02: advance("p02", "resolving_tasks"),
     retryP02: advance("p02-retry", "resolving_tasks"),
+    retryP04: advance("p04-retry", "ready"),
     resolveTasks: advance("tasks", "money_now"),
     selectMoneyNow: async () => {
       calls.push("money-selector");
@@ -214,6 +216,16 @@ test("failed P-02 can retry only that stage under the pipeline lock", async () =
 
   assert.equal(result.status, "resolving_tasks");
   assert.deepEqual(harness.calls, ["lock", "p02-retry", "unlock:lock-token"]);
+});
+
+test("failed P-04 retries only the final writer and reuses every upstream calculation", async () => {
+  const harness = pipelineHarness("analysis_failed", { errorCode: "P04_SCHEMA_VALIDATION_FAILED" });
+
+  const result = await retryFailedAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.result, fakeResult);
+  assert.deepEqual(harness.calls, ["lock", "p04-retry", "assemble", "unlock:lock-token"]);
 });
 
 test("failed non-P02 stage cannot use plan-only retry", async () => {

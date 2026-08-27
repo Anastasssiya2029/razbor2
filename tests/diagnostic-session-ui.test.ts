@@ -53,6 +53,10 @@ test("starting or recalculating a diagnostic clears stale result state", () => {
   assert.match(page, /setAnalysisResult\(null\);\s*setRealAnalysisResult\(null\);/u);
   assert.match(page, /status\?\.status === "ready" && mode === "form_submit"/u);
   assert.match(page, /reusableDiagnostic = null/u);
+  assert.match(page, /A stored run ID is not a stored result/u);
+  assert.match(page, /setMaxUnlockedStage\(0\)/u);
+  assert.match(page, /currentStage === 1 && visibleAnalysis/u);
+  assert.doesNotMatch(page, /const visibleAnalysis: AnalysisOverview = analysisResult \?\?/u);
   assert.match(page, /Пересчитать разбор/u);
   assert.match(page, /Запустить новый платный расчёт по этим ответам/u);
   assert.match(page, /openAnalysis\("retry_plan"\)/u);
@@ -83,7 +87,7 @@ test("a recovered run is reused only for unchanged answers and P-02 gets a plan-
   assert.match(page, /function AnalysisSection\(\{[\s\S]*?onRetryPlan,[\s\S]*?onClick=\{backgroundError \? onRetryPlan : onOpenPlan\}/u);
   assert.match(page, /reusableDiagnostic = null/u);
   assert.match(retryRoute, /ownerOnly: true/u);
-  assert.match(retryRoute, /retryFailedP02Pipeline/u);
+  assert.match(retryRoute, /retryFailedAnalysisPipeline/u);
 });
 
 test("a stale strategy retry with no target gap starts a fresh calculation", () => {
@@ -91,6 +95,7 @@ test("a stale strategy retry with no target gap starts a fresh calculation", () 
   assert.equal(failedRunRecovery("P02_INVARIANT_FAILED"), "retry_strategy");
   assert.equal(failedRunRecovery("P02_NO_ACTIONABLE_TARGET_GAP"), "start_fresh");
   assert.equal(failedRunRecovery("P01_INVARIANT_FAILED"), "start_fresh");
+  assert.equal(failedRunRecovery("P04_SCHEMA_VALIDATION_FAILED"), "retry_strategy");
   assert.match(page, /const refreshedStatusResponse = await fetch/u);
   assert.match(page, /failedRunRecovery\(refreshedStatus\.errorCode\) === "start_fresh"/u);
 });

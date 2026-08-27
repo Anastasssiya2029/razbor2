@@ -59,6 +59,11 @@ class MemoryRepository implements P04Repository {
     this.stored = structuredClone(value);
     return true;
   }
+  async replaceFailedResult(value: StoredP04Result) {
+    if (!this.stored?.failureCode || this.stored.deterministicInputHash !== value.deterministicInputHash) return false;
+    this.stored = structuredClone(value);
+    return true;
+  }
   async updateRun(
     _analysisRunId: string,
     update: {
@@ -453,6 +458,33 @@ test("35. stage storage is immutable and repeated execution is idempotent", asyn
   assert.equal(second.idempotentReplay, true);
   assert.equal(provider.requests.length, 1);
   assert.equal(repository.stored?.id, "p04-1");
+});
+
+test("35a. retryFailed replaces only a failed P-04 attempt and keeps upstream hashes", async () => {
+  const source = await makeP04Source();
+  const input = await prepareP04Input(source);
+  const repository = new MemoryRepository(source);
+  const failed = await runP04Stage("run-1", {
+    repository,
+    provider: new QueueProvider([{}, {}]),
+    createId: () => "p04-failed",
+  });
+  assert.equal(failed.status, "analysis_failed");
+  assert.equal(repository.stored?.failureCode, "P04_SCHEMA_VALIDATION_FAILED");
+  const upstreamHashes = structuredClone(repository.stored!.upstreamHashes);
+
+  const retried = await runP04Stage("run-1", {
+    repository,
+    provider: new QueueProvider([makeValidP04Output(input)]),
+    createId: () => "p04-retried",
+    retryFailed: true,
+  });
+
+  assert.equal(retried.status, "ready");
+  assert.equal(retried.idempotentReplay, false);
+  assert.equal(repository.stored?.failureCode, null);
+  assert.equal(repository.stored?.id, "p04-retried");
+  assert.deepEqual(repository.stored?.upstreamHashes, upstreamHashes);
 });
 
 test("36. an existing report with another deterministic hash is a version conflict", async () => {

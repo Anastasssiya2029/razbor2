@@ -1120,31 +1120,6 @@ function AnalysisSection({
                     <p>{currentModelGroups.hard}</p>
                   </article>
                 </div>
-                <details className="current-score-details">
-                  <summary>Почему выставлены такие баллы</summary>
-                  <div className="current-score-argument-grid">
-                    {analysis.currentScoreArguments.map((argument) => (
-                      <article className={argument.kind} key={argument.id}>
-                        <header>
-                          <strong>{systemElementDefinitions[argument.id].name}</strong>
-                          <span>{argument.score} из 10</span>
-                        </header>
-                        {argument.matchedCriterion && (
-                          <p><b>Что означает этот уровень:</b> {argument.matchedCriterion}</p>
-                        )}
-                        {argument.evidence.length > 0 && (
-                          <div>
-                            <b>Что учтено из ответов:</b>
-                            <ul>{argument.evidence.map((fact) => <li key={fact}>{fact}</li>)}</ul>
-                          </div>
-                        )}
-                        {argument.whyNotHigher && (
-                          <p><b>Почему не выше:</b> {argument.whyNotHigher}</p>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                </details>
               </aside>
             </article>
 
@@ -1467,6 +1442,7 @@ export default function Home() {
   const [analysisBackgroundError, setAnalysisBackgroundError] = useState<string | null>(null);
   const [recalculationDraft, setRecalculationDraft] = useState(false);
   const [recoveryReady, setRecoveryReady] = useState(false);
+  const activeAnalysisRunId = useRef<string | null>(null);
 
   const situationParagraphs = useMemo(() => {
     const goal = formatRubles(values.goalIncome);
@@ -1508,7 +1484,10 @@ export default function Home() {
         }
         if (recovered.submittedDiagnostic?.diagnosticId && recovered.submittedDiagnostic.analysisRunId) {
           setSubmittedDiagnostic(recovered.submittedDiagnostic);
-          setMaxUnlockedStage(3);
+          activeAnalysisRunId.current = recovered.submittedDiagnostic.analysisRunId;
+          // A stored run ID is not a stored result. Keep result steps locked
+          // until this exact run is confirmed by the server in openAnalysis.
+          setMaxUnlockedStage(0);
         }
       }
       setRecoveryReady(true);
@@ -1536,6 +1515,7 @@ export default function Home() {
       setIsSubmittingDiagnostic(false);
       setIsSavingStart(false);
       setSubmittedDiagnostic(null);
+      activeAnalysisRunId.current = null;
       setAnalysisResult(null);
       setRealAnalysisResult(null);
       setAnalysisBackgroundError(null);
@@ -1580,6 +1560,7 @@ export default function Home() {
     setMaxUnlockedStage(0);
     setAnalysisSlide(0);
     setSubmittedDiagnostic(null);
+    activeAnalysisRunId.current = null;
     setAnalysisResult(null);
     setRealAnalysisResult(null);
     setAnalysisBackgroundError(null);
@@ -1652,6 +1633,7 @@ export default function Home() {
         analysisRunId: result.analysisRunId,
         status: result.status,
       });
+      activeAnalysisRunId.current = result.analysisRunId;
       setRecalculationDraft((current) => current || replacesExistingResult);
       setAnalysisResult(null);
       setRealAnalysisResult(null);
@@ -1786,6 +1768,7 @@ export default function Home() {
           status: result.status,
         };
         setSubmittedDiagnostic(diagnostic);
+        activeAnalysisRunId.current = diagnostic.analysisRunId;
       } else if (reusableDiagnostic) {
         diagnostic = reusableDiagnostic;
       } else {
@@ -1814,7 +1797,9 @@ export default function Home() {
           status: result.status,
         };
         setSubmittedDiagnostic(diagnostic);
+        activeAnalysisRunId.current = diagnostic.analysisRunId;
       }
+      activeAnalysisRunId.current = diagnostic.analysisRunId;
       setLoadingTarget(overviewAvailable ? null : "analysis");
       setAnalysisProgressStatus("queued");
       setAnalysisStartedAt(Date.now());
@@ -1835,6 +1820,7 @@ export default function Home() {
               throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
             }
             analysis = await readJsonObject<RunAnalysisResponse>(analysisResponse);
+            if (activeAnalysisRunId.current !== diagnostic.analysisRunId) return;
             if (analysisResponse.ok && analysis?.status) {
               setAnalysisProgressStatus(analysis.status);
             }
@@ -1875,6 +1861,7 @@ export default function Home() {
           throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
         }
         const status = await readJsonObject<AnalysisRunStatusResponse>(statusResponse);
+        if (activeAnalysisRunId.current !== diagnostic.analysisRunId) return;
         if (!statusResponse.ok || !status) {
           pipelineBusy = true;
           await wait(3000);
@@ -1895,6 +1882,7 @@ export default function Home() {
             throw new Error("Сессия входа завершилась. После входа заполненная форма восстановится автоматически.");
           }
           const ready = await readJsonObject<RunAnalysisResponse>(resultResponse);
+          if (activeAnalysisRunId.current !== diagnostic.analysisRunId) return;
           if (resultResponse.ok && ready?.result) {
             analysis = ready;
             break;
@@ -1945,18 +1933,7 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const visibleAnalysis: AnalysisOverview = analysisResult ?? {
-    archetype: demoBusinessAnalysis.archetype,
-    systemScores: demoBusinessAnalysis.systemScores,
-    currentScoreArguments: demoBusinessAnalysis.systemScores.map((score) => ({
-      id: score.id,
-      score: score.currentScore,
-      evidence: [],
-      matchedCriterion: null,
-      whyNotHigher: null,
-      kind: score.id === "authenticity" || score.id === "audience" ? "soft" : "hard",
-    })),
-  };
+  const visibleAnalysis = analysisResult;
 
   if (sessionLoading || !user) {
     return <main className="admin-loading">Проверяю доступ…</main>;
@@ -2189,7 +2166,7 @@ export default function Home() {
         <section className="embedded-result wheel-stage">
           <GiftWheel analysisRunId={submittedDiagnostic.analysisRunId} />
         </section>
-      ) : currentStage === 1 ? (
+      ) : currentStage === 1 && visibleAnalysis ? (
         <AnalysisSection
           analysis={visibleAnalysis}
           activeSlide={analysisSlide}

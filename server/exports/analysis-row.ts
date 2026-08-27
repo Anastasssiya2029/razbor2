@@ -58,15 +58,6 @@ function sumScores(scores: Record<string, number>): number {
   return Object.values(scores).reduce((total, score) => total + score, 0);
 }
 
-function aiComment(source: AnalysisExportSource, elementId: keyof AnalysisResultV1["current"]["current7k"]): string {
-  const element = source.result.current.current7k[elementId];
-  return [
-    element.why_not_higher,
-    element.historical_asset ? `Исторический актив: ${element.historical_asset}` : null,
-    element.missing_evidence.length ? `Не хватает доказательств: ${element.missing_evidence.join("; ")}` : null,
-  ].filter(Boolean).join(" | ");
-}
-
 function recommendations(source: AnalysisExportSource, elementId: keyof AnalysisResultV1["current"]["scores"]): string {
   const cards = source.result.route.cards.filter((card) => card.elementId === elementId);
   return cards.flatMap((card) => card.tasks.map((task, index) => `${index + 1}. ${task.task} — готово, когда: ${task.doneWhen}`)).join(" | ");
@@ -84,7 +75,7 @@ export function buildAnalysisExportRow(source: AnalysisExportSource): Array<stri
     sumScores(source.result.target.targetScores),
     archetype,
     ...SEVEN_K_ELEMENTS.flatMap((element) => [source.result.current.scores[element.id], source.result.target.targetScores[element.id]]),
-    ...SEVEN_K_ELEMENTS.map((element) => aiComment(source, element.id)),
+    ...SEVEN_K_ELEMENTS.map(() => ""),
     ...SEVEN_K_ELEMENTS.map((element) => recommendations(source, element.id)),
     source.result.report.opening.summary,
     source.result.report.targetConfiguration.summary,

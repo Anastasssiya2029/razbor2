@@ -3,7 +3,7 @@ import {
   analysisRunAccessErrorResponse,
   getAnalysisOverview,
   requireAnalysisRunAccess,
-  retryFailedP02Pipeline,
+  retryFailedAnalysisPipeline,
 } from "@/server/analysis-runs";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
@@ -12,7 +12,7 @@ export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
   try {
     await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
-    const execution = await retryFailedP02Pipeline(analysisRunId);
+    const execution = await retryFailedAnalysisPipeline(analysisRunId);
     return Response.json({
       analysisRunId,
       status: execution.status,

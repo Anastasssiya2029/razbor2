@@ -18,7 +18,6 @@ import {
   type ManagerPlanVersion,
 } from "@/lib/analysis-checklist";
 import type { AnalysisScoreArgument } from "@/lib/analysis-overview";
-import type { SystemElementId } from "@/lib/business-analysis";
 
 type Props = {
   result: AnalysisResultV1;
@@ -29,16 +28,6 @@ type Props = {
   targetRevenueRub?: number | null;
   scoreArguments?: AnalysisScoreArgument[] | null;
   view?: "analysis" | "plan" | "full";
-};
-
-const argumentElementIds: Record<SystemElementId, SevenKElementId> = {
-  authenticity: "authenticity",
-  audience: "audience",
-  products: "product_method",
-  sales: "sales_technology",
-  funnel: "funnel",
-  blog: "blog",
-  team: "team",
 };
 
 function money(value: number): string {
@@ -70,17 +59,13 @@ function ResultSystemModel({ result }: { result: AnalysisResultV1 }) {
   </div>;
 }
 
-export function AnalysisResultView({ result, analysisRunId, initialManagerPlan, deadlineLabel, currentRevenueRub, targetRevenueRub, scoreArguments, view = "full" }: Props) {
+export function AnalysisResultView({ result, analysisRunId, initialManagerPlan, deadlineLabel, currentRevenueRub, targetRevenueRub, view = "full" }: Props) {
   const clientName = result.clientContext.expertName;
   const clientNameGenitive = clientName ? declineRussianNameGenitive(clientName) : "клиента";
   const targetScores = result.target.targetScores;
   const archetype = BUSINESS_ARCHETYPE_BY_ID[result.archetype.finalArchetype];
   const currentTotal = Object.values(result.current.scores).reduce((sum, score) => sum + score, 0);
   const targetTotal = Object.values(targetScores).reduce((sum, score) => sum + score, 0);
-  const scoreArgumentsByElement = useMemo(
-    () => new Map((scoreArguments ?? []).map((argument) => [argumentElementIds[argument.id], argument])),
-    [scoreArguments],
-  );
   const showAnalysis = view !== "plan";
   const showPlan = view !== "analysis";
   const showPlanCover = view === "plan";
@@ -131,24 +116,12 @@ export function AnalysisResultView({ result, analysisRunId, initialManagerPlan, 
           {SEVEN_K_ELEMENTS.map((element) => {
             const current = result.current.scores[element.id];
             const target = targetScores[element.id];
-            const argument = scoreArgumentsByElement.get(element.id);
-            const comment = result.current.current7k[element.id].why_not_higher;
             return <article key={element.id} className="score-card">
               <div><span>{element.displayOrder}</span><strong>{element.name}</strong></div>
               <div className="score-bars" aria-label={`${element.name}: сейчас ${current}, цель ${target}`}>
                 <i style={{ width: `${current * 10}%` }} /><b style={{ width: `${target * 10}%` }} />
               </div>
               <p><span>Сейчас <b>{current}</b></span><span>Цель <b>{target}</b></span></p>
-              {(argument || comment || result.current.current7k[element.id].cap_reason) && <details className="score-explanation">
-                <summary>Почему выставлен этот балл</summary>
-                {argument?.matchedCriterion && <p><b>Критерий уровня:</b> {argument.matchedCriterion}</p>}
-                {argument && argument.evidence.length > 0 && <div>
-                  <b>Что учтено из ответов:</b>
-                  <ul>{argument.evidence.map((fact) => <li key={fact}>{fact}</li>)}</ul>
-                </div>}
-                {result.current.current7k[element.id].cap_reason && <p>{result.current.current7k[element.id].cap_reason}</p>}
-                {(argument?.whyNotHigher || comment) && <p><b>Почему не выше:</b> {argument?.whyNotHigher ?? comment}</p>}
-              </details>}
             </article>;
           })}
         </div>

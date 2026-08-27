@@ -54,7 +54,7 @@ test("interactive Step 2 opens from the persisted overview before the full repor
   assert.match(page, /analysisResponse\.ok && analysis\?\.overview/u);
   assert.match(page, /setCurrentStage\(1\);[\s\S]*setMaxUnlockedStage\(\(current\) => Math\.max\(current, 1\)\);[\s\S]*setLoadingTarget\(null\)/u);
 
-  const interactiveBranch = page.indexOf(") : currentStage === 1 ? (");
+  const interactiveBranch = page.indexOf(") : currentStage === 1 && visibleAnalysis ? (");
   const fullResultBranch = page.indexOf(") : realAnalysisResult ? (", interactiveBranch);
   assert.ok(interactiveBranch >= 0 && fullResultBranch > interactiveBranch);
 });
@@ -69,15 +69,14 @@ test("restored result keeps the agreed carousel, archetype card, and evolution m
   assert.match(page, /Мягкие элементы системы/u);
   assert.match(page, /Твёрдые элементы системы/u);
   assert.match(page, /buildCurrentSystemSummary/u);
-  assert.match(page, /systemElementDefinitions\[argument\.id\]\.name/u);
   assert.match(page, /currentModelGroups\.soft/u);
   assert.match(page, /currentModelGroups\.hard/u);
   assert.match(page, /<p>\{currentModelGroups\.soft\}<\/p>/u);
   assert.match(page, /<p>\{currentModelGroups\.hard\}<\/p>/u);
   assert.doesNotMatch(page, /<strong>\{currentModelGroups\.(?:soft|hard)\}<\/strong>/u);
-  assert.match(page, /current-score-argument-grid/u);
-  assert.match(page, /Почему выставлены такие баллы/u);
-  assert.match(page, /Почему не выше:/u);
+  assert.doesNotMatch(page, /current-score-argument-grid/u);
+  assert.doesNotMatch(page, /Почему выставлены такие баллы/u);
+  assert.doesNotMatch(page, /Почему не выше:/u);
   assert.match(page, /Итоговый балл:/u);
   assert.match(page, /currentTotal/u);
   assert.doesNotMatch(page, /Проанализировано ответов:/u);
@@ -129,8 +128,8 @@ test("saved result restores the step navigation and separates review from plan",
   assert.doesNotMatch(savedResultPage, /<Link className="journey-stage" href="\/">/u);
   assert.match(resultRoute, /overview:\s*await getAnalysisOverview\(analysisRunId\)/u);
   assert.match(savedResultPage, /scoreArguments=\{overview\?\.currentScoreArguments\}/u);
-  assert.match(resultView, /Почему выставлен этот балл/u);
-  assert.match(resultView, /Что учтено из ответов:/u);
+  assert.doesNotMatch(resultView, /Почему выставлен этот балл/u);
+  assert.doesNotMatch(resultView, /Что учтено из ответов:/u);
   assert.match(resultView, /\(showPlanCover \|\| view === "full"\)/u);
   assert.doesNotMatch(resultView, /\(showAnalysis \|\| showPlanCover\)/u);
 });

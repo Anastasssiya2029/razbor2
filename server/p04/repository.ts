@@ -19,7 +19,7 @@ import { storedP02ResultFromRow } from "@/server/p02/repository";
 import { storedP03ResultFromRow } from "@/server/p03/repository";
 import type { TargetArchetypeResourceVersions } from "@/server/stage4/types";
 import type { ResolvedTransitionPlan, StoredResolvedTransitionPlan } from "@/server/task-resolver/types";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import type { P04Repository, P04Source, StoredP04Result } from "./stage-types";
 import type {
   P04Context,
@@ -237,6 +237,34 @@ export function createD1P04Repository(): P04Repository {
       }).onConflictDoNothing({ target: p04ReportResults.analysisRunId })
         .returning({ id: p04ReportResults.id });
       return inserted.length === 1;
+    },
+
+    async replaceFailedResult(result) {
+      const db = await getDb();
+      const updated = await db.update(p04ReportResults).set({
+        id: result.id,
+        resultJson: safeJson(result.result),
+        providerRawResponseJson: safeJson(result.providerRawResponse),
+        provider: result.provider,
+        model: result.model,
+        startedAt: result.startedAt,
+        finishedAt: result.finishedAt,
+        latencyMs: result.latencyMs,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        totalTokens: result.totalTokens,
+        costUsd: result.costUsd,
+        retryCount: result.retryCount,
+        technicalRetryCount: result.technicalRetryCount,
+        reevaluationRetryCount: result.reevaluationRetryCount,
+        failureCode: result.failureCode,
+        failureMessage: result.failureMessage,
+      }).where(and(
+        eq(p04ReportResults.analysisRunId, result.analysisRunId),
+        eq(p04ReportResults.deterministicInputHash, result.deterministicInputHash),
+        isNotNull(p04ReportResults.failureCode),
+      )).returning({ id: p04ReportResults.id });
+      return updated.length === 1;
     },
 
     async updateRun(analysisRunId, update) {

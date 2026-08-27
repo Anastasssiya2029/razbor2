@@ -58,11 +58,83 @@ function canonicalSourceRefs(
   return normalizedRefs;
 }
 
+function hydrateP04ImmutableSkeleton(value: unknown, input: P04PreparedInput): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const result = structuredClone(value) as Record<string, unknown>;
+  const policy = input.reportPolicy;
+  const context = input.context;
+  result.promptVersion = "P-04.v1.2";
+  result.schemaVersion = "1.2";
+  result.analysisStatus = policy.analysisStatus;
+
+  const object = (key: string) => {
+    const current = result[key];
+    return current && typeof current === "object" && !Array.isArray(current)
+      ? current as Record<string, unknown>
+      : null;
+  };
+  const archetype = object("archetype");
+  if (archetype) archetype.archetype_name = getExpectedArchetypeName(context);
+  const growthPoint = object("growthPoint");
+  if (growthPoint) {
+    growthPoint.priority_element = context.strategy.bundle.priority_element;
+    growthPoint.build_elements = structuredClone(context.strategy.bundle.build_elements);
+  }
+  const target = object("targetConfiguration");
+  if (target && Array.isArray(target.key_shifts) && target.key_shifts.length === policy.targetShiftElements.length) {
+    target.key_shifts = policy.targetShiftElements.map((expected, index) => ({
+      ...((target.key_shifts as Array<Record<string, unknown>>)[index] ?? {}),
+      ...expected,
+    }));
+  }
+  if (Array.isArray(result.whyNotNow) && result.whyNotNow.length === policy.whyNotNowExpected.length) {
+    result.whyNotNow = policy.whyNotNowExpected.map((expected, index) => ({
+      ...((result.whyNotNow as Array<Record<string, unknown>>)[index] ?? {}),
+      ...expected,
+    }));
+  }
+  if (Array.isArray(result.routeCards) && result.routeCards.length === policy.routeCardIdentities.length) {
+    result.routeCards = policy.routeCardIdentities.map((expected, index) => ({
+      ...((result.routeCards as Array<Record<string, unknown>>)[index] ?? {}),
+      ...expected,
+      task_ids: [...expected.task_ids],
+    }));
+  }
+  const validation = object("businessValidation");
+  if (validation) {
+    const expected = context.strategy.businessValidation;
+    Object.assign(validation, {
+      checkpoint_after_order: expected.checkpoint_after_order,
+      metric_name: expected.metric_name,
+      baseline_value: expected.baseline_value,
+      target_value: expected.target_value,
+      unit: expected.unit,
+      target_rule: expected.target_rule,
+      formula: expected.formula,
+      timeframe_days: expected.timeframe_days,
+      if_signal_absent: expected.if_signal_absent,
+    });
+  }
+  const moneyNow = object("moneyNow");
+  if (moneyNow) {
+    moneyNow.status = policy.moneyNowStatus;
+    moneyNow.scenario_id = context.moneyNow.selectedScenario?.scenario_id ?? null;
+    moneyNow.locked_teaser = context.moneyNow.lockedTeaser;
+  }
+  const finalFocus = object("finalFocus");
+  if (finalFocus) {
+    finalFocus.first_task_id = policy.firstTask.taskId;
+    finalFocus.first_action = policy.firstTask.task;
+    finalFocus.wait_for_signal = policy.validationSignal;
+  }
+  return result;
+}
+
 export function canonicalizeP04ImmutableEchoes(
   value: unknown,
   input: P04PreparedInput,
 ): P04ResultV1_2 {
-  const result = structuredClone(validateP04Schema(value));
+  const result = structuredClone(validateP04Schema(hydrateP04ImmutableSkeleton(value, input)));
   const policy = input.reportPolicy;
   const context = input.context;
 

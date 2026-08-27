@@ -7,9 +7,9 @@ import { buildP01SystemPrompt } from "../server/p01/request";
 import { buildP01ElementScorePrompt, type P01CoreContext } from "../server/p01/split-request";
 import { ALINA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 
-test("v5.2 scoring uses explicit cumulative core and resilience without a percentage gate", () => {
+test("v5.3 scoring uses explicit cumulative core and resilience without a percentage gate", () => {
   assert.equal(METHODOLOGY_VERSION, "7k.v1.4");
-  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.2");
+  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.3");
   assert.equal(SCORING_RULES.algorithm, "highest_fully_supported_cumulative");
   assert.equal(SCORING_RULES.evaluationPolicy.criterionRole, "mandatory_core");
   assert.equal(SCORING_RULES.evaluationPolicy.supportingCoveragePolicy, "confidence_only_not_a_score_gate");
@@ -84,7 +84,7 @@ test("Alina sales prompt receives delegated sales facts and cumulative scoring i
   assert.match(prompt, /уровень 9 требует действующей системы повторных продаж/u);
 });
 
-test("legacy single-call prompt is normalized to the v5.2 machine policy", () => {
+test("legacy single-call prompt is normalized to the v5.3 machine policy", () => {
   const prompt = buildP01SystemPrompt(ALINA_GOLDEN_CASE.input, null, { moneyNowEnabled: false });
   assert.doesNotMatch(prompt, /примерно на 80%/u);
   assert.match(prompt, /alternativeEvidencePaths/u);

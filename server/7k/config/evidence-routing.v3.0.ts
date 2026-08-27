@@ -43,6 +43,7 @@ export const EVIDENCE_ROUTING = {
   },
   product_method: {
     currentSources: [
+      "project.uniqueness",
       "current.products",
       "current.bestSeller",
       "current.freeProducts",
@@ -88,6 +89,7 @@ export const EVIDENCE_ROUTING = {
       "project.socialAssets",
       "project.sources",
       "project.clientPath",
+      "project.sales",
       "current.products",
       "project.team",
       "experience.bestPeriod",
@@ -97,11 +99,19 @@ export const EVIDENCE_ROUTING = {
     restrictions: ["Поля target не повышают current score."],
   },
   team: {
-    currentSources: ["project.team", "current.weeklyHours"],
+    currentSources: [
+      "project.team",
+      "project.sales",
+      "project.clientPath",
+      "project.socialAssets",
+      "current.products",
+      "current.weeklyHours",
+    ],
     crossCheckSources: [],
     restrictions: [
       "Желаемое делегирование и будущая нагрузка относятся только к target.",
       "Текущая команда включает людей и фактическое использование AI.",
+      "AI учитывается только как поддерживающий факт, если он регулярно выполняет функцию и заметно снимает нагрузку; само наличие AI не повышает уровень команды.",
     ],
   },
 } as const satisfies Record<SevenKElementId, EvidenceRoutingRule>;

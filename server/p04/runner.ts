@@ -172,7 +172,15 @@ export async function runP04ReportWriter(
           correction = correctionFor("Нарушена JSON Schema 1.2", error.issues);
           continue;
         }
-        throw executionError("P04_SCHEMA_VALIDATION_FAILED", "P-04 output schema validation failed", error);
+        const safeIssues = error.issues
+          .slice(0, 20)
+          .map((issue) => `${issue.code}@${issue.path}`)
+          .join(", ");
+        throw executionError(
+          "P04_SCHEMA_VALIDATION_FAILED",
+          `P-04 output schema validation failed${safeIssues ? `: ${safeIssues}` : ""}`,
+          error,
+        );
       }
       if (error instanceof P04InvariantError) {
         if (reevaluationRetryCount === 0) {

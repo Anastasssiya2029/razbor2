@@ -74,6 +74,7 @@ export type AnalysisPipelineDependencies = {
   runTarget(analysisRunId: string): Promise<StageStatusResult>;
   runP02(analysisRunId: string): Promise<StageStatusResult>;
   retryP02(analysisRunId: string): Promise<StageStatusResult>;
+  retryP04(analysisRunId: string): Promise<StageStatusResult>;
   resolveTasks(analysisRunId: string): Promise<StageStatusResult>;
   selectMoneyNow(analysisRunId: string): Promise<StageStatusResult>;
   runP03(analysisRunId: string): Promise<StageStatusResult>;
@@ -227,6 +228,10 @@ export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies =
   runTarget: runTargetAndArchetypeStage,
   runP02: runP02Stage,
   retryP02: (analysisRunId) => runP02Stage(analysisRunId, { retryFailed: true }),
+  retryP04: (analysisRunId) => runP04Stage(analysisRunId, {
+    moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
+    retryFailed: true,
+  }),
   resolveTasks: runTaskResolverStage,
   selectMoneyNow: runMoneyNowSelectorStage,
   runP03: runP03Stage,
@@ -457,5 +462,49 @@ export async function retryFailedP02Pipeline(
     const executed = await dependencies.retryP02(analysisRunId);
     assertStage(executed.status, "resolving_tasks", "повторной стратегии P‑02");
     return { status: "resolving_tasks", result: null, idempotentReplay: false };
+  });
+}
+
+export async function retryFailedAnalysisPipeline(
+  analysisRunId: string,
+  dependencies: AnalysisPipelineDependencies = defaultAnalysisPipelineDependencies,
+): Promise<{
+  status: "resolving_tasks" | "ready";
+  result: AnalysisResultV1 | null;
+  idempotentReplay: false;
+}> {
+  let snapshot = await dependencies.loadRun(analysisRunId);
+  if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
+  const retryP02 = snapshot.status === "analysis_failed"
+    && Boolean(snapshot.errorCode?.startsWith("P02_"))
+    && snapshot.errorCode !== "P02_NO_ACTIONABLE_TARGET_GAP";
+  const retryP04 = snapshot.status === "analysis_failed"
+    && Boolean(snapshot.errorCode?.startsWith("P04_"));
+  if (!retryP02 && !retryP04) {
+    throw new AnalysisPipelineError(
+      "ANALYSIS_PIPELINE_STATE_INVALID",
+      409,
+      "Повтор без нового расчёта доступен только для исправимой ошибки стратегии или финального отчёта.",
+    );
+  }
+
+  return withPipelineLock(analysisRunId, dependencies, async () => {
+    snapshot = await dependencies.loadRun(analysisRunId);
+    if (!snapshot) throw new AnalysisPipelineError("ANALYSIS_RUN_NOT_FOUND", 404, "Разбор не найден.");
+    if (snapshot.status !== "analysis_failed") {
+      throw new AnalysisPipelineError("ANALYSIS_PIPELINE_STATE_INVALID", 409, "Состояние разбора изменилось; обновите страницу.");
+    }
+    if (snapshot.errorCode?.startsWith("P04_")) {
+      const executed = await dependencies.retryP04(analysisRunId);
+      assertStage(executed.status, "ready", "повторного финального отчёта P‑04");
+      const assembled = await dependencies.assemble(analysisRunId);
+      return { status: "ready", result: assembled.result, idempotentReplay: false };
+    }
+    if (snapshot.errorCode?.startsWith("P02_") && snapshot.errorCode !== "P02_NO_ACTIONABLE_TARGET_GAP") {
+      const executed = await dependencies.retryP02(analysisRunId);
+      assertStage(executed.status, "resolving_tasks", "повторной стратегии P‑02");
+      return { status: "resolving_tasks", result: null, idempotentReplay: false };
+    }
+    throw new AnalysisPipelineError("ANALYSIS_PIPELINE_STATE_INVALID", 409, "Состояние разбора изменилось; обновите страницу.");
   });
 }
