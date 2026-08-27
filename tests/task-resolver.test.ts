@@ -215,7 +215,7 @@ async function sourceWith(sequence = [milestone(1, "product_method", 3, 5)]): Pr
     targetResultHash: targetHash,
     promptVersion: "P-02.v1.3",
     outputSchemaVersion: "1.3",
-    ruleVersions: { requestBuilder: "p02-request-builder.v2.1", elements: "elements.v1", levelCapabilities: "scoring-rules.v3.0", constraintRules: "constraint-rules.v2.1", dependencyRules: "dependency-rules.v2.1", targetRules: "target-rules.v2.2", transitionLevers: "transition-levers.v2" },
+    ruleVersions: { requestBuilder: "p02-request-builder.v2.1", elements: "elements.v1", levelCapabilities: "scoring-rules.v3.1", constraintRules: "constraint-rules.v2.1", dependencyRules: "dependency-rules.v2.1", targetRules: "target-rules.v2.2", transitionLevers: "transition-levers.v2" },
     inputHash: "p02-input",
     strategyContext,
     targetConfig,

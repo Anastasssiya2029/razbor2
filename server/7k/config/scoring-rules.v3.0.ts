@@ -2,7 +2,7 @@ import baseScoringRules from "./scoring-rules.v2.0.json";
 import { RESILIENCE_RULES_RESOURCE_VERSION, getResilienceFrame, type ResilienceFrame } from "./resilience-rules.v1";
 import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "../types";
 
-export const SCORING_RULES_RESOURCE_VERSION = "scoring-rules.v3.0" as const;
+export const SCORING_RULES_RESOURCE_VERSION = "scoring-rules.v3.1" as const;
 
 export type ScoringLevelRuleV3 = {
   score: number;
@@ -10,11 +10,130 @@ export type ScoringLevelRuleV3 = {
   criterion: string;
   mandatoryCore: readonly string[];
   alternativeEvidencePaths: readonly string[];
+  boundarySignals: readonly string[];
   supportingSignals: readonly string[];
   blockers: readonly string[];
   resilience: ResilienceFrame | null;
   nextLevelGate: string | null;
   nextLevelRuleId: string | null;
+};
+
+type MachineLevelOverride = {
+  mandatoryCore: readonly string[];
+  boundarySignals: readonly string[];
+};
+
+// Human-facing descriptions explain both the acquired capability and the
+// limitation that separates a level from the next one. The limitation must not
+// become a cumulative prerequisite: a mature business cannot simultaneously
+// publish regularly and satisfy an old requirement to "publish rarely".
+const MACHINE_LEVEL_OVERRIDES: Partial<
+  Record<SevenKElementId, Record<number, MachineLevelOverride>>
+> = {
+  authenticity: {
+    1: {
+      mandatoryCore: ["Эксперт называет профессию или роль."],
+      boundarySignals: ["Сильные стороны и особенности ещё не описаны."],
+    },
+    2: {
+      mandatoryCore: ["Эксперт описывает профессию и отдельные общие характеристики."],
+      boundarySignals: ["Конкретные ценности и сильные стороны не названы, признаки не связаны между собой."],
+    },
+    3: {
+      mandatoryCore: ["Эксперт называет ценности, сильные стороны, особенности опыта и мышления."],
+      boundarySignals: ["Признаки пока перечислены отдельными фрагментами."],
+    },
+  },
+  audience: {
+    2: {
+      mandatoryCore: ["Названа широкая аудитория, например эксперты, женщины или предприниматели."],
+      boundarySignals: ["Конкретный запрос и ситуация клиента ещё не определены."],
+    },
+    4: {
+      mandatoryCore: ["Подробно описаны боли, желания, страхи, переживания, прошлые попытки и препятствия аудитории."],
+      boundarySignals: ["Понимание может опираться преимущественно на взгляд эксперта, а не на подтверждённую работу с клиентами."],
+    },
+  },
+  product_method: {
+    2: {
+      mandatoryCore: ["Есть несколько связанных услуг или продукт из нескольких встреч, например пакет или ежемесячное ведение."],
+      boundarySignals: ["Комплексный формат продаётся слабо; чаще выбирают разовую услугу, ценность и результат трудно объяснить."],
+    },
+    3: {
+      mandatoryCore: ["Есть чётко оформленный и продающийся пакет, абонемент, тариф или несколько предложений."],
+      boundarySignals: ["Главного системного продукта и продуманной продуктовой линейки ещё нет."],
+    },
+    4: {
+      mandatoryCore: ["Есть флагманское более дорогое предложение."],
+      boundarySignals: ["Остальные продукты существуют отдельно, связной линейки и авторского метода ещё нет."],
+    },
+    5: {
+      mandatoryCore: ["Флагман собран и упакован: понятны путь А→Б, этапы, формат и результат."],
+      boundarySignals: ["Продукты вокруг флагмана ещё не связаны в последовательную систему."],
+    },
+  },
+  sales_technology: {
+    2: {
+      mandatoryCore: ["Эксперт называет конкретную цену и получает отдельные оплаты."],
+      boundarySignals: ["Продажа остаётся интуитивной и удачный разговор нельзя повторить как систему."],
+    },
+    3: {
+      mandatoryCore: ["Клиенты покупают; эксперт выясняет запрос и предлагает поработать."],
+      boundarySignals: ["Конкретное решение задачи клиента ещё не показывается и не обосновывается."],
+    },
+    4: {
+      mandatoryCore: ["Продажа строится по логике «запрос → решение → почему подходит → предложение»."],
+      boundarySignals: ["Работа с сомнениями и повторными контактами нестабильна."],
+    },
+    5: {
+      mandatoryCore: ["Есть базовая технология встречи или переписки: этапы, вопросы, диагностика, презентация решения, цена, работа с основными сомнениями и следующий контакт."],
+      boundarySignals: ["Технология применяется непоследовательно."],
+    },
+  },
+  blog: {
+    1: {
+      mandatoryCore: ["Есть рабочая площадка, первые публикации и подписчики."],
+      boundarySignals: ["Контент выходит редко и пока не создаёт устойчивого присутствия."],
+    },
+    2: {
+      mandatoryCore: ["Есть повторяемый способ готовить контент: понятны базовые темы или форматы."],
+      boundarySignals: ["Публикации остаются нерегулярными и зависят от ручного усилия владельца."],
+    },
+    3: {
+      mandatoryCore: ["Контент выходит большую часть недель в устойчивом ритме."],
+      boundarySignals: ["Темы и форматы ещё не собраны в единую систему и слабо связаны с продажами."],
+    },
+  },
+  team: {
+    1: {
+      mandatoryCore: ["AI или автоматизация регулярно выполняют отдельные повторяющиеся операции и реально сокращают ручную работу."],
+      boundarySignals: ["Владелец по-прежнему организует и контролирует весь результат."],
+    },
+    2: {
+      mandatoryCore: ["Для отдельных специализированных задач подключаются разные разовые подрядчики."],
+      boundarySignals: ["Постоянного состава и устойчивого распределения работы нет."],
+    },
+    3: {
+      mandatoryCore: ["Постоянные исполнители регулярно выполняют повторяющиеся задачи."],
+      boundarySignals: ["Владелец сам ставит задачи, координирует людей и собирает результат."],
+    },
+    4: {
+      mandatoryCore: ["Есть постоянный ассистент или первый сотрудник, снимающий часть операционной нагрузки."],
+      boundarySignals: ["Владелец остаётся главным диспетчером и контролирует почти каждую задачу."],
+    },
+    5: {
+      mandatoryCore: ["Есть несколько постоянных участников с понятными ролями; им переданы задачи и части процессов."],
+      boundarySignals: ["Целые процессы и итоговый результат всё ещё держит владелец."],
+    },
+    6: {
+      mandatoryCore: ["Целые процессы переданы сотрудникам вместе с ответственностью за измеримый результат."],
+      boundarySignals: ["Владелец ещё управляет людьми напрямую и остаётся операционным руководителем."],
+    },
+    7: {
+      mandatoryCore: ["Команда работает по правилам и показателям; сотрудники самостоятельно решают стандартные вопросы и взаимодействуют без согласования каждой задачи."],
+      boundarySignals: ["Владелец управляет системой ежедневно, хотя уже не каждой операцией."],
+    },
+  },
 };
 
 export type ElementScoringRulesV3 = {
@@ -87,13 +206,23 @@ const LEVEL_CRITERION_OVERRIDES: Partial<Record<SevenKElementId, Record<number, 
 };
 
 function machineFieldsFor(elementId: SevenKElementId, score: number, criterion: string) {
+  const levelOverride = MACHINE_LEVEL_OVERRIDES[elementId]?.[score];
+  const blockers = elementId === "sales_technology"
+    ? [
+        "CRM без аналитики и управленческих решений не доказывает уровень 7.",
+        "Само наличие помощника, менеджера или отдела без фактически переданной продажи до оплаты не доказывает уровень 8.",
+        "Переданная первая продажа без работающих продлений, допродаж, реактивации и измерения повторной выручки и LTV не доказывает уровень 9.",
+        "Руководитель без ответственности за план и развитие функции не доказывает уровень 10.",
+      ]
+    : legacy.elements[elementId].falseFriends;
   const common = {
-    mandatoryCore: [criterion] as string[],
+    mandatoryCore: [...(levelOverride?.mandatoryCore ?? [criterion])],
     alternativeEvidencePaths: [] as string[],
+    boundarySignals: [...(levelOverride?.boundarySignals ?? [])],
     supportingSignals: legacy.elements[elementId].evidenceDimensions.filter(
       (signal) => elementId !== "blog" || !/\bAI\b|нейросет/iu.test(signal),
     ),
-    blockers: legacy.elements[elementId].falseFriends,
+    blockers,
   };
 
   if (elementId === "product_method" && score === 7) {
@@ -122,7 +251,21 @@ function machineFieldsFor(elementId: SevenKElementId, score: number, criterion: 
       ],
     };
   }
-  if (elementId === "sales_technology" && score >= 8) {
+  if (elementId === "sales_technology" && score === 8) {
+    return {
+      ...common,
+      alternativeEvidencePaths: [
+        "Прямо сказано, что стандартная первая продажа полностью передана менеджеру до оплаты, есть контроль качества и рабочая замена или резерв.",
+        "В ответах о продажах, пути клиента, команде и фактических результатах вместе подтверждены формализованная технология, текущая передача первой продажи менеджеру или команде до оплаты, контроль результата и рабочая замена или несколько способных продавцов.",
+      ],
+      supportingSignals: [
+        ...common.supportingSignals,
+        "делегированный полный цикл до оплаты",
+        "контроль качества и замена продавца",
+      ],
+    };
+  }
+  if (elementId === "sales_technology" && score >= 9) {
     return {
       ...common,
       supportingSignals: [
@@ -180,31 +323,31 @@ function criterionFor(elementId: SevenKElementId, score: number): string {
 
 export const SCORING_RULES = {
   version: SCORING_RULES_RESOURCE_VERSION,
-  methodologyVersion: "7K-2026-08-v5.3",
+  methodologyVersion: "7K-2026-08-v5.4",
   source: {
     document: "Справочник_7К_v5_2_ОБЪЕДИНЕННЫЙ_УСТОЙЧИВОСТЬ_DRAFT.xlsx",
     sha256: "2D421B60862F0FA4D89B4EACA39055B5F26AF1AF8ACE6A2A13BD281FDABD3DE4",
-    importPolicy: "Сохранена согласованная шкала v5.2; в runtime v5.3 AI отделён от зрелости блога, добавлены альтернативные доказательные пути и межблочная маршрутизация фактов.",
+    importPolicy: "Сохранена согласованная человеческая шкала v5.2; runtime v5.4 отделяет приобретённую способность от ограничения ступени, поддерживает прямые доказательства зрелой способности и не связывает зрелость блога с использованием AI.",
   },
-  algorithm: legacy.algorithm,
+  algorithm: "highest_supported_capability_with_resilience" as const,
   evaluationPolicy: {
-    mode: "cumulative_capability" as const,
+    mode: "capability_anchor_with_cumulative_context" as const,
     criterionRole: "mandatory_core" as const,
     alternativePathPolicy: "one_confirmed_path_is_sufficient" as const,
     supportingCoveragePolicy: "confidence_only_not_a_score_gate" as const,
-    directHigherEvidence: "Прямой факт высокого уровня подтверждает нижние способности только когда они логически из него следуют.",
-    blockerPolicy: "Прямое противоречие обязательному ядру или resilience-gate блокирует уровень; отсутствие упоминания является missing_evidence.",
+    directHigherEvidence: "Прямое доказательство способности уровня позволяет выбрать этот уровень без буквального подтверждения всех промежуточных состояний. Логически необходимые нижние способности считаются подразумеваемыми; остальные пробелы влияют на confidence и задачи, но не отменяют доказанную способность.",
+    blockerPolicy: "Уровень блокирует только прямое противоречие его приобретённой способности или обязательному resilience-gate. boundarySignals описывают потолок этой ступени и никогда не являются требованиями более высоких уровней; отсутствие упоминания является missing_evidence.",
     artifactPolicy: "Артефакт оценивается только по выполняемой бизнес-функции и наблюдаемому результату.",
     resiliencePolicy: RESILIENCE_RULES_RESOURCE_VERSION,
   },
   globalRules: [
     { ruleId: "SR3-GLOBAL-CURRENT-ONLY", rule: "Оценивай текущий бизнес по всем ответам клиента; target, планы и идеи не повышают current score." },
     { ruleId: "SR3-GLOBAL-ZERO", rule: "0 ставится только при подтверждённом отсутствии способности; недостаток данных не равен 0." },
-    { ruleId: "SR3-GLOBAL-CUMULATIVE", rule: "Уровень накопительный: обязательно ядро выбранной ступени и существенные способности нижних ступеней." },
-    { ruleId: "SR3-GLOBAL-MANDATORY-CORE", rule: "Обязательное ядро подтверждается полностью. Если перечислены alternativeEvidencePaths, достаточно одного подтверждённого пути. Supporting signals повышают confidence, но не заменяют ядро и не образуют процентный порог." },
+    { ruleId: "SR3-GLOBAL-CUMULATIVE", rule: "Шкала описывает рост зрелости, но score выбирается по самой высокой прямо доказанной способности. Не требуй, чтобы зрелый бизнес одновременно соответствовал ограничениям прошлых ступеней." },
+    { ruleId: "SR3-GLOBAL-MANDATORY-CORE", rule: "Для выбранной ступени полностью подтверди mandatoryCore либо один alternativeEvidencePath. boundarySignals объясняют, почему бизнес может остановиться на этой ступени, но не входят в обязательное ядро и не блокируют более высокий уровень. Supporting signals повышают confidence и помогают проверить связность." },
     { ruleId: "SR3-GLOBAL-RESILIENCE", rule: "На уровнях с resilience-полем отдельно проверь единственные точки отказа. Работающая способность и её устойчивость — разные измерения; обязательный resilience requirement является частью верхнего уровня." },
-    { ruleId: "SR3-GLOBAL-DIRECT-HIGHER-EVIDENCE", rule: "Не требуй буквального упоминания промежуточного инструмента, если более сильный current-факт логически подтверждает способность." },
-    { ruleId: "SR3-GLOBAL-BLOCKER", rule: "Прямой blocker запрещает уровень. Отсутствие упоминания записывается в missing_evidence, а не в counterevidence." },
+    { ruleId: "SR3-GLOBAL-DIRECT-HIGHER-EVIDENCE", rule: "Прямой current-факт, удовлетворяющий mandatoryCore или alternativeEvidencePath более высокой ступени, имеет приоритет над missing_evidence промежуточных состояний. Не занижай доказанную способность из-за отсутствия буквального описания прошлых шагов." },
+    { ruleId: "SR3-GLOBAL-BLOCKER", rule: "Прямой blocker запрещает только тот уровень, способности которого он непосредственно противоречит. Ограничение или недостающая способность одной ступени не отменяют отдельно доказанную способность другой; отсутствие упоминания записывается в missing_evidence, а не в counterevidence." },
     { ruleId: "SR3-GLOBAL-ARTIFACTS-NOT-SCORES", rule: "CRM, бот, AI, сотрудники, реклама и должности без работающей функции и результата не повышают score." },
     { ruleId: "SR3-GLOBAL-CAP-2", rule: "Без конкретного current-примера evidence_cap не выше 2." },
     { ruleId: "SR3-GLOBAL-CAP-3", rule: "Только один случай или только исторический опыт: evidence_cap не выше 3." },
@@ -238,7 +381,12 @@ function validateScoringRules(): void {
       throw new Error(`Invalid scoring rule set for ${elementId}`);
     }
     element.levels.forEach((level, score) => {
-      if (level.score !== score || level.mandatoryCore.length === 0 || ruleIds.has(level.ruleId)) {
+      if (
+        level.score !== score
+        || level.mandatoryCore.length === 0
+        || !Array.isArray(level.boundarySignals)
+        || ruleIds.has(level.ruleId)
+      ) {
         throw new Error(`Invalid scoring level ${elementId}:${score}`);
       }
       ruleIds.add(level.ruleId);
