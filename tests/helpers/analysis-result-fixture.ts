@@ -69,6 +69,7 @@ function storedP04(
     retryCount: 0,
     technicalRetryCount: 0,
     reevaluationRetryCount: 0,
+    attemptDiagnostics: [],
     failureCode: null,
     failureMessage: null,
   };

@@ -8,7 +8,12 @@ import {
   P04_WITHOUT_MONEY_NOW_OUTPUT_SCHEMA,
 } from "./money-now-disabled";
 import type { P04PreparedInput } from "./stage-types";
-import type { P04Provider, P04RunMetadata, P04RunOutcome } from "./types";
+import type {
+  P04AttemptDiagnostic,
+  P04Provider,
+  P04RunMetadata,
+  P04RunOutcome,
+} from "./types";
 import { P04_OUTPUT_SCHEMA_VERSION } from "./types";
 import {
   canonicalizeP04ImmutableEchoes,
@@ -67,6 +72,18 @@ function correctionFor(title: string, issues: readonly P04ValidationIssue[]): st
   ].join("\n");
 }
 
+function attemptDiagnostic(
+  attempt: number,
+  kind: P04AttemptDiagnostic["kind"],
+  issues: readonly Pick<P04ValidationIssue, "path" | "code">[],
+): P04AttemptDiagnostic {
+  return {
+    attempt,
+    kind,
+    issues: issues.slice(0, 32).map(({ path, code }) => ({ path, code })),
+  };
+}
+
 async function defaultProvider(): Promise<P04Provider> {
   const { env } = await import("cloudflare:workers");
   return createConfiguredP04Provider(env as unknown as Record<string, string | undefined>);
@@ -91,6 +108,7 @@ export async function runP04ReportWriter(
       now(),
       0,
       0,
+      [],
       { inputTokens: null, outputTokens: null, totalTokens: null, costUsd: null },
     );
     throw new P04RunExecutionError(
@@ -106,11 +124,14 @@ export async function runP04ReportWriter(
   let reevaluationRetryCount = 0;
   let correction: string | null = null;
   let latestRaw: unknown = null;
+  let providerAttempt = 0;
+  const attemptDiagnostics: P04AttemptDiagnostic[] = [];
   const usage = emptyUsage();
 
   while (true) {
     let response;
     try {
+      providerAttempt += 1;
       response = await provider.complete({
         systemPrompt: buildP04SystemPrompt(input, correction, { moneyNowEnabled }),
         outputSchema: moneyNowEnabled
@@ -121,6 +142,9 @@ export async function runP04ReportWriter(
       latestRaw = response.rawResponse;
       addUsage(usage, response.usage);
     } catch (error) {
+      attemptDiagnostics.push(attemptDiagnostic(providerAttempt, "transport", [
+        { path: "/provider", code: "transport_error" },
+      ]));
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;
         correction = null;
@@ -133,6 +157,9 @@ export async function runP04ReportWriter(
     try {
       parsed = parseProviderJson(response.text);
     } catch (error) {
+      attemptDiagnostics.push(attemptDiagnostic(providerAttempt, "malformed_json", [
+        { path: "/", code: "malformed_json" },
+      ]));
       if (technicalRetryCount === 0) {
         technicalRetryCount += 1;
         correction = "Предыдущий ответ не был JSON. Верни только JSON по schema 1.2.";
@@ -161,12 +188,14 @@ export async function runP04ReportWriter(
           now(),
           technicalRetryCount,
           reevaluationRetryCount,
+          attemptDiagnostics,
           usage,
         ),
         providerRawResponse: latestRaw,
       };
     } catch (error) {
       if (error instanceof P04SchemaValidationError) {
+        attemptDiagnostics.push(attemptDiagnostic(providerAttempt, "schema", error.issues));
         if (technicalRetryCount === 0) {
           technicalRetryCount += 1;
           correction = correctionFor("Нарушена JSON Schema 1.2", error.issues);
@@ -183,6 +212,7 @@ export async function runP04ReportWriter(
         );
       }
       if (error instanceof P04InvariantError) {
+        attemptDiagnostics.push(attemptDiagnostic(providerAttempt, "semantic", error.issues));
         if (reevaluationRetryCount === 0) {
           reevaluationRetryCount += 1;
           correction = correctionFor("Нарушены backend semantic invariants", error.issues);
@@ -218,6 +248,7 @@ export async function runP04ReportWriter(
         now(),
         technicalRetryCount,
         reevaluationRetryCount,
+        attemptDiagnostics,
         usage,
       ),
       latestRaw,
@@ -234,6 +265,7 @@ function metadataFor(
   finished: Date,
   technicalRetryCount: number,
   reevaluationRetryCount: number,
+  attemptDiagnostics: P04AttemptDiagnostic[],
   usage: AiProviderUsage,
 ): P04RunMetadata {
   return {
@@ -249,6 +281,7 @@ function metadataFor(
     retryCount: technicalRetryCount + reevaluationRetryCount,
     technicalRetryCount,
     reevaluationRetryCount,
+    attemptDiagnostics: structuredClone(attemptDiagnostics),
     usage,
   };
 }

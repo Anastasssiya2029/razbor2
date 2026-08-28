@@ -226,6 +226,15 @@ export interface P04Provider {
   complete(request: P04ProviderRequest): Promise<P04ProviderResponse>;
 }
 
+export type P04AttemptDiagnostic = {
+  attempt: number;
+  kind: "transport" | "malformed_json" | "schema" | "semantic";
+  issues: Array<{
+    path: string;
+    code: string;
+  }>;
+};
+
 export type P04RunMetadata = {
   provider: string;
   model: string;
@@ -239,6 +248,7 @@ export type P04RunMetadata = {
   retryCount: number;
   technicalRetryCount: number;
   reevaluationRetryCount: number;
+  attemptDiagnostics: P04AttemptDiagnostic[];
   usage: AiProviderUsage;
 };
 

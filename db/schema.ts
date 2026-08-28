@@ -537,6 +537,7 @@ export const p04ReportResults = sqliteTable(
     retryCount: integer("retry_count").notNull(),
     technicalRetryCount: integer("technical_retry_count").notNull(),
     reevaluationRetryCount: integer("reevaluation_retry_count").notNull(),
+    attemptDiagnosticsJson: text("attempt_diagnostics_json").notNull().default("[]"),
     failureCode: text("failure_code"),
     failureMessage: text("failure_message"),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),

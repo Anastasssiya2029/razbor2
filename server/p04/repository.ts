@@ -130,6 +130,7 @@ export function storedP04ResultFromRow(
     retryCount: row.retryCount,
     technicalRetryCount: row.technicalRetryCount,
     reevaluationRetryCount: row.reevaluationRetryCount,
+    attemptDiagnostics: JSON.parse(row.attemptDiagnosticsJson) as StoredP04Result["attemptDiagnostics"],
     failureCode: row.failureCode,
     failureMessage: row.failureMessage,
   };
@@ -232,6 +233,7 @@ export function createD1P04Repository(): P04Repository {
         retryCount: result.retryCount,
         technicalRetryCount: result.technicalRetryCount,
         reevaluationRetryCount: result.reevaluationRetryCount,
+        attemptDiagnosticsJson: JSON.stringify(result.attemptDiagnostics),
         failureCode: result.failureCode,
         failureMessage: result.failureMessage,
       }).onConflictDoNothing({ target: p04ReportResults.analysisRunId })
@@ -257,6 +259,7 @@ export function createD1P04Repository(): P04Repository {
         retryCount: result.retryCount,
         technicalRetryCount: result.technicalRetryCount,
         reevaluationRetryCount: result.reevaluationRetryCount,
+        attemptDiagnosticsJson: JSON.stringify(result.attemptDiagnostics),
         failureCode: result.failureCode,
         failureMessage: result.failureMessage,
       }).where(and(

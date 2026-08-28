@@ -323,6 +323,11 @@ test("32. runner performs no more than one technical retry", async () => {
   const provider = new QueueProvider([new Error("transport"), makeValidP04Output(input)]);
   const result = await runP04ReportWriter(input, { provider });
   assert.equal(result.metadata.technicalRetryCount, 1);
+  assert.deepEqual(result.metadata.attemptDiagnostics, [{
+    attempt: 1,
+    kind: "transport",
+    issues: [{ path: "/provider", code: "transport_error" }],
+  }]);
   assert.equal(provider.requests.length, 2);
 });
 
@@ -352,6 +357,12 @@ test("33. runner performs one semantic retry with invariant feedback", async () 
   const provider = new QueueProvider([invalid, makeValidP04Output(input)]);
   const result = await runP04ReportWriter(input, { provider });
   assert.equal(result.metadata.reevaluationRetryCount, 1);
+  assert.deepEqual(result.metadata.attemptDiagnostics, [{
+    attempt: 1,
+    kind: "semantic",
+    issues: [{ path: "/opening/summary", code: "long_dash_forbidden" }],
+  }]);
+  assert.doesNotMatch(JSON.stringify(result.metadata.attemptDiagnostics), /Новый тезис|message|client/u);
   assert.match(provider.requests[1].correction ?? "", /long_dash_forbidden/u);
 });
 
@@ -621,4 +632,35 @@ test("42. P-04 imports deterministic upstream snapshots but no scoring or select
   const projection = readFileSync("server/p04/projections.ts", "utf8");
   assert.doesNotMatch(projection, /calculateTargetConfiguration|calculateBusinessArchetype|selectMoneyNowCandidate|resolveTransitionSequence/u);
   assert.doesNotMatch(projection, /products_method/u);
+});
+
+test("43. stage persists retry codes and paths without client or model text", async () => {
+  const source = await makeP04Source();
+  const input = await prepareP04Input(source);
+  const invalid = makeValidP04Output(input);
+  invalid.opening.summary += " Новый тезис — без основания.";
+  const repository = new MemoryRepository(source);
+
+  await runP04Stage("run-1", {
+    repository,
+    provider: new QueueProvider([invalid, makeValidP04Output(input)]),
+    createId: () => "p04-diagnostics",
+  });
+
+  assert.deepEqual(repository.stored?.attemptDiagnostics, [{
+    attempt: 1,
+    kind: "semantic",
+    issues: [{ path: "/opening/summary", code: "long_dash_forbidden" }],
+  }]);
+  assert.doesNotMatch(JSON.stringify(repository.stored?.attemptDiagnostics), /Новый тезис|message|client/u);
+});
+
+test("44. retry diagnostics storage is an additive migration with a safe empty default", () => {
+  const schema = readFileSync("db/schema.ts", "utf8");
+  const migration = readFileSync("drizzle/0015_daffy_ezekiel.sql", "utf8");
+  assert.match(schema, /attemptDiagnosticsJson: text\("attempt_diagnostics_json"\)\.notNull\(\)\.default\("\[\]"\)/u);
+  assert.match(
+    migration,
+    /ALTER TABLE `p04_report_results` ADD `attempt_diagnostics_json` text DEFAULT '\[\]' NOT NULL/u,
+  );
 });

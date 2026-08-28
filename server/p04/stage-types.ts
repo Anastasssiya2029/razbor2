@@ -5,6 +5,7 @@ import type { StoredTargetArchetypeResult } from "@/server/stage4/types";
 import type { StoredResolvedTransitionPlan } from "@/server/task-resolver/types";
 import type { StoredMoneyNowSelection } from "@/server/money-now-selector/types";
 import type {
+  P04AttemptDiagnostic,
   P04Context,
   P04Provider,
   P04ReportPolicy,
@@ -93,6 +94,7 @@ export type StoredP04Result = {
   retryCount: number;
   technicalRetryCount: number;
   reevaluationRetryCount: number;
+  attemptDiagnostics: P04AttemptDiagnostic[];
   failureCode: string | null;
   failureMessage: string | null;
 };

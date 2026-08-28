@@ -10,7 +10,24 @@ import type {
   StoredP04Result,
   P04PreparedInput,
 } from "./stage-types";
-import { P04_OUTPUT_SCHEMA_VERSION, P04_STAGE_VERSION, type P04Provider } from "./types";
+import {
+  P04_OUTPUT_SCHEMA_VERSION,
+  P04_STAGE_VERSION,
+  type P04AttemptDiagnostic,
+  type P04Provider,
+} from "./types";
+
+function mergeAttemptDiagnostics(
+  previous: readonly P04AttemptDiagnostic[] | undefined,
+  current: readonly P04AttemptDiagnostic[],
+): P04AttemptDiagnostic[] {
+  if (!previous?.length) return structuredClone(current);
+  const attemptOffset = Math.max(...previous.map((item) => item.attempt));
+  return [
+    ...structuredClone(previous),
+    ...current.map((item) => ({ ...structuredClone(item), attempt: item.attempt + attemptOffset })),
+  ];
+}
 
 function providerTextFromRawResponse(raw: unknown): string | null {
   if (typeof raw === "string") return raw;
@@ -87,6 +104,7 @@ function baseStored(
   | "retryCount"
   | "technicalRetryCount"
   | "reevaluationRetryCount"
+  | "attemptDiagnostics"
   | "failureCode"
   | "failureMessage"
 > {
@@ -185,6 +203,7 @@ export async function runP04Stage(
         contextHash: existing.contextHash,
         sourceRegistryHash: existing.sourceRegistryHash,
         ruleVersions: existing.ruleVersions,
+        attemptDiagnostics: existing.attemptDiagnostics,
         reportStoredServerSide: existing.result !== null,
         idempotentReplay: true,
       },
@@ -237,6 +256,12 @@ export async function runP04Stage(
       retryCount: recoveredWithoutProviderCall ? existing!.retryCount : outcome.metadata.retryCount,
       technicalRetryCount: recoveredWithoutProviderCall ? existing!.technicalRetryCount : outcome.metadata.technicalRetryCount,
       reevaluationRetryCount: recoveredWithoutProviderCall ? existing!.reevaluationRetryCount : outcome.metadata.reevaluationRetryCount,
+      attemptDiagnostics: recoveredWithoutProviderCall
+        ? existing!.attemptDiagnostics
+        : mergeAttemptDiagnostics(
+            options.retryFailed ? existing?.attemptDiagnostics : undefined,
+            outcome.metadata.attemptDiagnostics,
+          ),
       failureCode: null,
       failureMessage: null,
     };
@@ -260,6 +285,7 @@ export async function runP04Stage(
         model: persisted.result.model,
         latencyMs: persisted.result.latencyMs,
         retryCount: persisted.result.retryCount,
+        attemptDiagnostics: persisted.result.attemptDiagnostics,
         usage: {
           inputTokens: persisted.result.inputTokens,
           outputTokens: persisted.result.outputTokens,
@@ -302,6 +328,10 @@ export async function runP04Stage(
       retryCount: unknownError.metadata.retryCount,
       technicalRetryCount: unknownError.metadata.technicalRetryCount,
       reevaluationRetryCount: unknownError.metadata.reevaluationRetryCount,
+      attemptDiagnostics: mergeAttemptDiagnostics(
+        options.retryFailed ? existing?.attemptDiagnostics : undefined,
+        unknownError.metadata.attemptDiagnostics,
+      ),
       failureCode: unknownError.failureCode,
       failureMessage: unknownError.message,
     };
@@ -322,6 +352,7 @@ export async function runP04Stage(
         sourceRegistryHash: prepared.sourceRegistryHash,
         ruleVersions: prepared.ruleVersions,
         retryCount: persisted.result.retryCount,
+        attemptDiagnostics: persisted.result.attemptDiagnostics,
         reportStoredServerSide: false,
         idempotentReplay: persisted.replay,
       },
