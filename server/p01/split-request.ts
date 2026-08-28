@@ -177,6 +177,22 @@ export function reconcileP01CoreEvidenceReferences(
   return result;
 }
 
+/**
+ * Revenue cannot be reconstructed by multiplying the client count by one
+ * listed price: a business may have packages, repeat payments and several
+ * products. Keep that signal for review, but never fail the whole analysis on
+ * this model-authored arithmetic shortcut.
+ */
+export function normalizeP01CoreSanityChecks(value: P01CoreContext): P01CoreContext {
+  const result = structuredClone(value);
+  result.sanityChecks = result.sanityChecks.map((check) =>
+    check.code.trim().toUpperCase() === "REVENUE_CLIENT_PRICE_MISMATCH"
+      ? { ...check, severity: "warning" as const }
+      : check
+  );
+  return result;
+}
+
 function promptJson(value: unknown): string {
   return JSON.stringify(value)
     .replaceAll("<", "\\u003c")

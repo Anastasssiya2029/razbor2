@@ -16,6 +16,7 @@ import {
 import { buildP01SystemPrompt } from "../server/p01/request";
 import {
   buildP01CoreContextPrompt,
+  normalizeP01CoreSanityChecks,
   reconcileP01CoreEvidenceReferences,
   type P01CoreContext,
 } from "../server/p01/split-request";
@@ -1139,6 +1140,29 @@ test("split core prompt does not invent score sanity checks before scores exist"
   assert.match(prompt, /Баллов current7k в этом запросе ещё нет/u);
   assert.match(prompt, /не создавай проверки о несоответствии выбранному score/u);
   assert.match(prompt, /Severity=error допустим только для прямого неразрешимого конфликта фактов/u);
+});
+
+test("revenue versus one listed price remains a warning, not a fatal contradiction", async () => {
+  const value = splitP01Responses(validP01Fixture())[0];
+  value.sanityChecks = [{
+    code: "revenue_client_price_mismatch",
+    severity: "error",
+    message: "70 000 ₽ не равны 10 × 3 500 ₽.",
+    evidence_ids: ["E01"],
+  }];
+  const normalized = normalizeP01CoreSanityChecks(value);
+  assert.equal(normalized.sanityChecks[0].severity, "warning");
+  assert.equal(value.sanityChecks[0].severity, "error");
+
+  const provider = new QueueProvider(value, ...splitP01Responses(validP01Fixture()).slice(1));
+  const outcome = await runP01EvidenceScorer(diagnosticInput(), {
+    provider,
+    moneyNowEnabled: false,
+    hashInput: async () => "hash",
+  });
+  assert.equal(outcome.kind, "success");
+  assert.equal(provider.requests.length, 8);
+  assert.equal(outcome.result.sanityChecks[0].severity, "warning");
 });
 
 test("runner retries technical/schema failures once and invariant failures once", async () => {

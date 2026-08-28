@@ -18,6 +18,7 @@ import {
   validateP01CoreContext,
   validateP01ElementScoreEnvelope,
   reconcileP01CoreEvidenceReferences,
+  normalizeP01CoreSanityChecks,
   type P01CoreContext,
   type P01ElementScoreEnvelope,
 } from "./split-request";
@@ -522,7 +523,9 @@ export async function runP01EvidenceScorer(
       validateP01Invariants(probe);
     };
 
-    let context = reconcileP01CoreEvidenceReferences(await loadContext());
+    let context = normalizeP01CoreSanityChecks(
+      reconcileP01CoreEvidenceReferences(await loadContext()),
+    );
     try {
       validateCoreSemantics(context);
     } catch (error) {
@@ -536,11 +539,14 @@ export async function runP01EvidenceScorer(
       }
       reevaluationRetryCount += 1;
       const previousContext = context;
-      context = reconcileP01CoreEvidenceReferences(await loadContext(issuesCorrection(
-        "Нарушены backend invariants блока общего контекста",
-        error.issues,
-        context.evidenceLedger.map((evidence) => evidence.id),
-      )), previousContext);
+      context = normalizeP01CoreSanityChecks(reconcileP01CoreEvidenceReferences(
+        await loadContext(issuesCorrection(
+          "Нарушены backend invariants блока общего контекста",
+          error.issues,
+          context.evidenceLedger.map((evidence) => evidence.id),
+        )),
+        previousContext,
+      ));
       try {
         validateCoreSemantics(context);
       } catch (retryError) {
@@ -559,11 +565,14 @@ export async function runP01EvidenceScorer(
     if (coreSanityErrors.length > 0) {
       reevaluationRetryCount += 1;
       const previousContext = context;
-      context = reconcileP01CoreEvidenceReferences(await loadContext(issuesCorrection(
-        "Общий контекст содержит sanity severity=error",
-        coreSanityErrors,
-        context.evidenceLedger.map((evidence) => evidence.id),
-      )), previousContext);
+      context = normalizeP01CoreSanityChecks(reconcileP01CoreEvidenceReferences(
+        await loadContext(issuesCorrection(
+          "Общий контекст содержит sanity severity=error",
+          coreSanityErrors,
+          context.evidenceLedger.map((evidence) => evidence.id),
+        )),
+        previousContext,
+      ));
       try {
         validateCoreSemantics(context);
       } catch (error) {
