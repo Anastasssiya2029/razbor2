@@ -150,3 +150,13 @@ test("long analysis shows real pipeline progress and immediately advances comple
   assert.match(runRoute, /"retry-after"/u);
   assert.match(styles, /\.neuro-progress-meter/u);
 });
+
+test("saved failed analysis exposes persisted P-01 diagnostics to its owner", () => {
+  const page = readFileSync("app/analysis/[analysisRunId]/page.tsx", "utf8");
+  const runRoute = readFileSync("app/api/analysis-runs/[analysisRunId]/run/route.ts", "utf8");
+  assert.match(page, /failureDetails/u);
+  assert.match(page, /Техническая причина/u);
+  assert.match(page, /\/api\/analysis-runs\/\$\{analysisRunId\}\/run/u);
+  assert.match(runRoute, /failureDetailsJson: JSON\.stringify\(failureDetails\)/u);
+  assert.match(runRoute, /ownerOnly: true/u);
+});

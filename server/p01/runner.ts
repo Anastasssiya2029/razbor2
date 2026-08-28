@@ -494,7 +494,7 @@ export async function runP01EvidenceScorer(
       validate: validateP01CoreContext,
       initialCorrection: contextCorrection,
     });
-    const validateCoreSemantics = (value: P01CoreContext): void => {
+    const hydrateCoreForValidation = (value: P01CoreContext): P01ResultV1_4_2 => {
       const emptyScorecard = {
         score: null,
         confidence: "low" as const,
@@ -509,13 +509,16 @@ export async function runP01EvidenceScorer(
         historical_asset: null,
         missing_evidence: [],
       };
-      const probe = validateP01Schema(hydrateDisabledMoneyNow({
+      return hydrateDisabledMoneyNow({
         ...structuredClone(value),
         analysisStatus: "blocked_by_insufficient_data",
         current7k: Object.fromEntries(
           SEVEN_K_ELEMENT_IDS.map((elementId) => [elementId, structuredClone(emptyScorecard)]),
         ),
-      }));
+      });
+    };
+    const validateCoreSemantics = (value: P01CoreContext): void => {
+      const probe = validateP01Schema(hydrateCoreForValidation(value));
       validateP01Invariants(probe);
     };
 
@@ -548,6 +551,39 @@ export async function runP01EvidenceScorer(
             ? safeValidationSummary("P-01 core context invariants failed after retry", retryError)
             : "P-01 core context invariants failed after retry",
           rawParts,
+        );
+      }
+    }
+
+    let coreSanityErrors = p01SanityErrors(hydrateCoreForValidation(context));
+    if (coreSanityErrors.length > 0) {
+      reevaluationRetryCount += 1;
+      const previousContext = context;
+      context = reconcileP01CoreEvidenceReferences(await loadContext(issuesCorrection(
+        "Общий контекст содержит sanity severity=error",
+        coreSanityErrors,
+        context.evidenceLedger.map((evidence) => evidence.id),
+      )), previousContext);
+      try {
+        validateCoreSemantics(context);
+      } catch (error) {
+        throw executionError(
+          "P01_INVARIANT_FAILED",
+          error,
+          error instanceof P01InvariantError
+            ? safeValidationSummary("P-01 corrected core invariants failed", error)
+            : "P-01 corrected core invariant validation failed",
+          rawParts,
+        );
+      }
+      coreSanityErrors = p01SanityErrors(hydrateCoreForValidation(context));
+      if (coreSanityErrors.length > 0) {
+        throw executionError(
+          "P01_SANITY_ERROR",
+          new Error(coreSanityErrors.map((issue) => issue.message).join("; ")),
+          "P-01 core sanity checks failed after targeted retry",
+          rawParts,
+          coreSanityErrors,
         );
       }
     }

@@ -15,6 +15,7 @@ import {
 } from "../server/p01/failure-diagnostics";
 import { buildP01SystemPrompt } from "../server/p01/request";
 import {
+  buildP01CoreContextPrompt,
   reconcileP01CoreEvidenceReferences,
   type P01CoreContext,
 } from "../server/p01/split-request";
@@ -1133,6 +1134,13 @@ test("production P-01 prompt distinguishes a one-off case from a described opera
   assert.ok(prompt.indexOf("<CURRENT_SCORE_CALIBRATION_CONTROL>") < prompt.indexOf("<CLIENT_DATA"));
 });
 
+test("split core prompt does not invent score sanity checks before scores exist", () => {
+  const prompt = buildP01CoreContextPrompt(diagnosticInput());
+  assert.match(prompt, /Баллов current7k в этом запросе ещё нет/u);
+  assert.match(prompt, /не создавай проверки о несоответствии выбранному score/u);
+  assert.match(prompt, /Severity=error допустим только для прямого неразрешимого конфликта фактов/u);
+});
+
 test("runner retries technical/schema failures once and invariant failures once", async () => {
   const valid = validP01Fixture();
   const technical = new QueueProvider(new Error("temporary network"), valid);
@@ -1232,7 +1240,7 @@ test("sanity severity=error gets one specific re-evaluation", async () => {
   assert.match(provider.requests[1].correction ?? "", /CONTRADICTORY_REVENUE/u);
 });
 
-test("split P-01 persists exact sanity failure details without regenerating the full context", async () => {
+test("split P-01 repairs core sanity before launching element scoring", async () => {
   const invalid = validP01Fixture();
   invalid.sanityChecks = [{
     code: "CONTRADICTORY_REVENUE",
@@ -1240,7 +1248,35 @@ test("split P-01 persists exact sanity failure details without regenerating the 
     message: "Выручка противоречит указанному периоду.",
     evidence_ids: ["E01"],
   }];
-  const provider = new QueueProvider(...splitP01Responses(invalid));
+  const corrected = validP01Fixture();
+  const provider = new QueueProvider(
+    splitP01Responses(invalid)[0],
+    ...splitP01Responses(corrected),
+  );
+
+  const outcome = await runP01EvidenceScorer(diagnosticInput(), {
+    provider,
+    moneyNowEnabled: false,
+    hashInput: async () => "hash",
+  });
+  assert.equal(outcome.kind, "success");
+  assert.equal(provider.requests.length, 9);
+  assert.equal(provider.requests[1].schemaName, "p01_core_context_v1_4");
+  assert.match(provider.requests[1].correction ?? "", /CONTRADICTORY_REVENUE/u);
+});
+
+test("split P-01 fails with exact details after one targeted core sanity retry", async () => {
+  const invalid = validP01Fixture();
+  invalid.sanityChecks = [{
+    code: "CONTRADICTORY_REVENUE",
+    severity: "error",
+    message: "Выручка противоречит указанному периоду.",
+    evidence_ids: ["E01"],
+  }];
+  const provider = new QueueProvider(
+    splitP01Responses(invalid)[0],
+    splitP01Responses(invalid)[0],
+  );
 
   await assert.rejects(
     runP01EvidenceScorer(diagnosticInput(), {
@@ -1259,7 +1295,7 @@ test("split P-01 persists exact sanity failure details without regenerating the 
       return true;
     },
   );
-  assert.equal(provider.requests.length, 8);
+  assert.equal(provider.requests.length, 2);
 });
 
 test("failure diagnostics recover sanity details from an older split provider response", () => {

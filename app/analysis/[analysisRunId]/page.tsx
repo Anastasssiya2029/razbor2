@@ -10,6 +10,8 @@ import type { AnalysisCoverContext } from "@/server/analyses";
 import type { ManagerPlanVersion } from "@/lib/analysis-checklist";
 import type { AnalysisOverview } from "@/lib/analysis-overview";
 
+type FailureDetail = { path: string; code: string; message: string };
+
 function deadlineLabel(months: number | null): string | null {
   if (months == null) return null;
   if (months % 12 !== 0) return `${months} месяцев`;
@@ -26,6 +28,8 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
   const [cover, setCover] = useState<AnalysisCoverContext | null>(null);
   const [managerPlan, setManagerPlan] = useState<ManagerPlanVersion | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [failureCode, setFailureCode] = useState<string | null>(null);
+  const [failureDetails, setFailureDetails] = useState<FailureDetail[]>([]);
   const [activeStage, setActiveStage] = useState<1 | 2 | 3>(2);
   useEffect(() => {
     if (!user) return;
@@ -55,13 +59,37 @@ export default function AnalysisPage({ params }: { params: Promise<{ analysisRun
         setResult(payload.result);
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "Результат ещё не готов.");
+        try {
+          const statusResponse = await fetch(`/api/analysis-runs/${analysisRunId}/run`, {
+            cache: "no-store",
+            credentials: "include",
+          });
+          if (statusResponse.ok) {
+            const statusPayload = await statusResponse.json() as {
+              errorCode?: string | null;
+              failureDetails?: FailureDetail[];
+            };
+            setFailureCode(statusPayload.errorCode ?? null);
+            setFailureDetails(statusPayload.failureDetails ?? []);
+          }
+        } catch {
+          // The original user-facing error remains useful if diagnostics are unavailable.
+        }
       }
     })();
   }, [analysisRunId, user]);
   if (sessionLoading || !user) return <main className="admin-loading">Проверяю доступ…</main>;
   return <main className="result-shell">
     {activeStage === 1 && <header className="admin-header no-print"><nav className="admin-actions"><Link className="admin-button" href="/cabinet">К разборам</Link></nav></header>}
-    {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p><Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <>
+    {message ? <section className="result-state"><h1>Разбор пока не готов</h1><p>{message}</p>
+      {(failureCode || failureDetails.length > 0) && <details className="failure-diagnostics">
+        <summary>Техническая причина</summary>
+        {failureCode && <p><strong>Код:</strong> {failureCode}</p>}
+        {failureDetails.map((detail, index) => <p key={`${detail.path}-${detail.code}-${index}`}>
+          <strong>{detail.code}</strong>: {detail.message}<br /><small>{detail.path}</small>
+        </p>)}
+      </details>}
+      <Link className="admin-button primary" href="/cabinet">Вернуться в кабинет</Link></section> : result ? <>
       {activeStage === 3 ? <GiftWheel analysisRunId={analysisRunId} /> : <AnalysisResultView
         result={result}
         analysisRunId={analysisRunId}

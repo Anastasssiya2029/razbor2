@@ -45,6 +45,12 @@ export async function GET(request: Request, context: RouteContext) {
             rows[0].errorCode,
             JSON.parse(stored[0].raw) as unknown,
           );
+          if (failureDetails.length > 0) {
+            await db
+              .update(p01AnalysisResults)
+              .set({ failureDetailsJson: JSON.stringify(failureDetails) })
+              .where(eq(p01AnalysisResults.analysisRunId, analysisRunId));
+          }
         } catch {
           failureDetails = [];
         }
