@@ -194,8 +194,8 @@ export type P01ResultV1_3 = Omit<
 };
 
 export type P01RuleVersions = {
-  requestBuilder: "p01-request-builder.v2.3";
-  scoringRules: "scoring-rules.v3.3";
+  requestBuilder: "p01-request-builder.v2.4";
+  scoringRules: "scoring-rules.v3.4";
   evidenceRouting: "evidence-routing.v3.0";
   targetModelDictionary: "target-model-dictionary.v2.2";
   moneyNowHistoryMap: "money-now-history-map.v2.2";

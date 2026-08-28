@@ -10,7 +10,7 @@ The diagnostic core uses three boundaries:
 
 No later stage repairs or silently guesses a missing upstream decision.
 
-New release-candidate runs currently disable the Money Now generation branch through `server/analysis-features.ts`. P-01 extracts one shared evidence/business context and then evaluates the seven 7K elements independently in parallel; P-01/P-04 provider schemas omit Money Now. Compatibility adapters hydrate fail-closed persisted values. The deterministic selector returns no eligible scenario and P-03 uses its existing zero-provider-call skip path. Historical completed runs remain readable.
+New release-candidate runs currently disable the Money Now generation branch through `server/analysis-features.ts`. P-01 extracts one shared evidence/business context and then evaluates the seven 7K elements independently in parallel; P-01/P-04 provider schemas omit Money Now. Compatibility adapters hydrate fail-closed persisted values. The deterministic selector returns no eligible scenario and P-03 uses its existing zero-provider-call skip path. Historical completed runs remain readable. The resumable orchestrator groups a paid provider stage with the deterministic stages immediately following it, but never groups two enabled paid stages into one request.
 
 ## Module map
 
@@ -27,9 +27,9 @@ New release-candidate runs currently disable the Money Now generation branch thr
 | `server/ai/block-repair.ts` | Hash-bound, allow-listed atomic block replacement primitive; not enabled in the paid retry path | No |
 | `server/analysis-result` | Validate and join final `analysis-result.v1` | No |
 | `server/auth` | Invitation registry, identity binding, sessions and role policy | No |
-| `server/analysis-runs` | Owner-authorized orchestration, overview and access checks | No |
+| `server/analysis-runs` | Owner-authorized orchestration, overview, access checks and bounded PII-free request telemetry | No |
 | `server/manager-plan` | Versioned manager checklist copy without canonical mutation | No |
-| `server/exports`, `server/google-sheets` | Authorized register export and synchronization | No |
+| `server/exports`, `server/google-sheets` | Authorized register export, per-client questionnaire Excel and synchronization | No |
 | `app` | Manager meeting form, cabinet, team administration and result/PDF surfaces | No |
 
 ## Final AnalysisResult
@@ -56,7 +56,7 @@ No time-dependent field is included in the JSON. `provenance.assemblyInputHash` 
 
 The prompt text, request assembly and output schema are separate contracts. Request builders v2 put stable methodology first and place escaped client/report payloads in an explicit untrusted data block at the end. P-02 does not embed a second JSON Schema copy in prompt text; the provider receives the canonical schema through structured output.
 
-P-01 retries transport/schema failures only for the failed subrequest. A semantic score failure triggers at most one re-evaluation of that element and then complete merged schema/invariant validation; the shared evidence context and the other six scores are preserved. P-02 still permits one bounded full strategy re-evaluation, but an empty deterministic target gap is rejected before provider configuration or a paid call. The inactive general block-repair primitive deliberately avoids arbitrary JSON Patch paths: it checks the exact base hash, replaces only allow-listed top-level blocks on a clone, and accepts the result only after full schema and cross-module invariant validation.
+P-01 retries transport/schema failures only for the failed subrequest. A semantic score failure triggers at most one re-evaluation of that element and then complete merged schema/invariant validation; the shared evidence context and the other six scores are preserved. Scoring v3.4 applies element-specific evidence requirements: it does not use one global “no example means max 2” cap across unrelated business capabilities. P-02 still permits one bounded full strategy re-evaluation, but an empty deterministic target gap is rejected before provider configuration or a paid call. The inactive general block-repair primitive deliberately avoids arbitrary JSON Patch paths: it checks the exact base hash, replaces only allow-listed top-level blocks on a clone, and accepts the result only after full schema and cross-module invariant validation.
 
 ## Persistence boundary
 
@@ -72,6 +72,8 @@ The domain service depends on repository interfaces:
 - `P04Repository`
 
 The current implementations use Drizzle/D1. Future Replit/Supabase work should implement the same interfaces and preserve immutable IDs, snapshots, uniqueness by analysis run and exact hashes. It must not modify the pure calculators, schemas or versioned registries.
+
+Raw questionnaire answers remain attached to `diagnostics`, not the public final result. `GET /api/analysis-runs/:analysisRunId/answers.xls` joins the permitted analysis to its diagnostic and optional client record, then renders all 24 manager-facing fields as literal SpreadsheetML strings. This prevents spreadsheet formula execution and keeps the download available independently of report completion.
 
 ## Security boundary
 

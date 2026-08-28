@@ -83,8 +83,8 @@ export async function prepareTaskResolverInput(source: TaskResolverSource): Prom
   if (p01.promptVersion !== "P-01.v1.4.2" || p01.outputSchemaVersion !== "1.4") {
     throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_P01_VERSION", "Task Resolver requires P-01.v1.4.2/schema 1.4.", "upstream_blocked");
   }
-  if (stage4.resourceVersions.targetRules !== "target-rules.v2.2" || stage4.target.resourceVersion !== "target-rules.v2.2") {
-    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_TARGET_VERSION", "Task Resolver requires target-rules.v2.2.", "upstream_blocked");
+  if (stage4.resourceVersions.targetRules !== "target-rules.v2.3" || stage4.target.resourceVersion !== "target-rules.v2.3") {
+    throw new TaskResolverError("TASK_RESOLVER_UNSUPPORTED_TARGET_VERSION", "Task Resolver requires target-rules.v2.3.", "upstream_blocked");
   }
   if (TRANSITIONS_RESOURCE_VERSION !== "transitions-70.v2") {
     throw new TaskResolverError("TASK_RESOLVER_REGISTRY_VERSION_MISMATCH", "Task Resolver requires transitions-70.v2.", "integrity");

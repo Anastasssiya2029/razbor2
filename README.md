@@ -1,6 +1,6 @@
 # 7K Business Diagnostic Service
 
-Internal manager-facing service for conducting a 7K business diagnostic during a client meeting. The manager signs in, records the client's answers, runs the staged analysis, reviews the result, adjusts a manager-owned checklist copy when needed, and exports the individual plan to PDF or the analysis register to Excel.
+Internal manager-facing service for conducting a 7K business diagnostic during a client meeting. The manager signs in, records the client's answers, runs the staged analysis, reviews the result, adjusts a manager-owned checklist copy when needed, and exports the individual plan to PDF, the client's own answers to Excel, or the permitted analysis register to Excel.
 
 The current release candidate combines the frozen diagnostic core, D1 persistence, application authentication and roles, manager/admin interfaces, saved analyses, Google Sheets synchronization, gifts, Excel export, and the approved multi-page PDF template.
 
@@ -29,7 +29,7 @@ DiagnosticInput v1.2
 
 AI is limited to P-01, P-02, P-03 and P-04. Target scores, archetype, fixed tasks, Money Now scenario selection and final assembly are deterministic. The final assembler never calls a model and never recalculates a business decision.
 
-For the current release candidate, `ANALYSIS_FEATURES.moneyNowGeneration` is `false`. P-01 first extracts the shared evidence/business context once, then scores the seven elements in independent parallel structured-output calls. A failed score block is retried alone; the full evidence pass is not replayed. P-04 also uses a reduced provider schema. The backend hydrates the legacy persisted Money Now contract with neutral `unknown` / `not_reported` values, keeping historical snapshots readable without charging for unused generation.
+For the current release candidate, `ANALYSIS_FEATURES.moneyNowGeneration` is `false`. P-01 first extracts the shared evidence/business context once, then scores the seven elements in independent parallel structured-output calls. A failed score block is retried alone; the full evidence pass is not replayed. P-04 also uses a reduced provider schema. The backend hydrates the legacy persisted Money Now contract with neutral `unknown` / `not_reported` values, keeping historical snapshots readable without charging for unused generation. The resumable HTTP orchestrator now bundles each paid stage with its following deterministic work, reducing browser round trips without allowing two paid provider stages in the same request.
 
 ## Application flow
 
@@ -42,6 +42,7 @@ Invited employee signs in
   -> manager may save a separate editable checklist revision
   -> result is reopened from the cabinet
   -> individual plan is downloaded as PDF
+  -> this client's original questionnaire answers are downloaded as Excel
   -> analysis register is exported to Excel / synchronized to Google Sheets
 ```
 
@@ -51,7 +52,8 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 
 - Diagnostic input: `1.2`
 - P-01: `P-01.v1.4.2`, schema `1.4`
-- Target/Archetype: `target-archetype-stage.v1`, `target-rules.v2.2`, `archetypes.v2`
+- P-01 scoring methodology: `7K-2026-08-v5.7`, `scoring-rules.v3.4`
+- Target/Archetype: `target-archetype-stage.v1`, `target-rules.v2.3`, `archetypes.v2`
 - P-02: `P-02.v1.3`, schema `1.3`
 - Task Resolver: `task-resolver-stage.v1`, `transitions-70.v2`
 - Money Now selector: `money-now-selector-stage.v1`, contract `money-now-selector-contract.v1.2`, methodology `money-now.v2.2`
@@ -62,7 +64,7 @@ The persisted canonical checklist is never overwritten by manager edits. Replayi
 
 The machine-readable manifest is [VERSION_MANIFEST.json](./VERSION_MANIFEST.json).
 
-The request assembly contracts are separately versioned as `p01-request-builder.v2.3`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.3 separates shared evidence extraction from independent per-element scoring, keeps exact evidence references, applies explicit mandatory/alternative/supporting/blocker rules, and evaluates resilience without a synthetic percentage threshold. P-02 v2.1 treats persisted current/target values as backend-owned, rejects an empty target gap before a provider call, and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
+The request assembly contracts are separately versioned as `p01-request-builder.v2.4`, `p02-request-builder.v2.1` and `p04-request-builder.v2`. They place stable methodology before explicitly marked untrusted client/report data. P-01 v2.4 separates shared evidence extraction from independent per-element scoring, keeps exact evidence references, applies explicit mandatory/alternative/supporting/blocker rules, evaluates resilience, and uses an element-specific evidence cap instead of the former universal numeric cap. P-02 v2.1 treats persisted current/target values as backend-owned, rejects an empty target gap before a provider call, and canonicalizes its duplicate candidate audit before validation. P-02 sends its JSON Schema only through the provider structured-output channel instead of duplicating the schema in the prompt.
 
 ## Install, run and test
 
@@ -146,6 +148,11 @@ Pipeline endpoints:
 - `POST /api/analysis-runs/:analysisRunId/p03` (disabled unless its feature flag and token are configured)
 - `POST /api/analysis-runs/:analysisRunId/p04` (disabled unless its feature flag and token are configured)
 
+Authorized exports:
+
+- `GET /api/analysis-runs/:analysisRunId/answers.xls`: the 24 original questionnaire answers for one permitted client, available even before the report is ready;
+- `GET /api/exports/analyses.xls`: the permitted analysis register for the current role.
+
 Internal/debug final result:
 
 ```text
@@ -165,6 +172,9 @@ The endpoint is disabled unless `ANALYSIS_DEBUG_ENABLED=true` and a non-empty to
 - Final assembly has no timestamp, model call or random business field, so equal snapshots produce equal JSON.
 - Existing `analysis_results` storage is append-only per analysis run. A different snapshot/version produces a conflict instead of overwriting history.
 - P-01 does not silently cap an AI-supported Audience score based on a narrow subset of form fields. When deep client knowledge is not visible in those fields, it records a review warning and preserves the scored evidence.
+- P-01 uses an evidence policy per element. For example, a linked authenticity formula can support level 4 without a separate case, while level 5 requires a current observed client effect. A product package is not promoted to level 5 without an explicit A→B path, stages, format and result.
+- Target capabilities that imply delegation also apply deterministic team prerequisites; plain target wording such as “делегировать продажи” restores the corresponding owner role even when the AI omitted a modifier code.
+- Each orchestrator request stores bounded PII-free timing/status telemetry in `analysisRuns.modelMetadataJson` for diagnosis of long or failed attempts.
 - A block-repair primitive exists for future bounded retries: it accepts only allow-listed top-level replacements, verifies the base hash, and runs the complete stage validation before accepting a candidate. It is not connected to paid production retries until a separately approved model comparison proves it reliable.
 
 ## Release readiness

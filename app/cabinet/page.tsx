@@ -84,11 +84,12 @@ export default function CabinetPage() {
       <section className="admin-table-card" aria-label="Сохранённые разборы">
         {loading ? <p className="admin-empty">Загружаю разборы…</p> : error ? <p className="admin-empty error">{error}</p> : visible.length === 0 ? <p className="admin-empty">Разборов пока нет. Начните первый разбор.</p> : (
           <div className="admin-table-scroll"><table className="admin-table">
-            <thead><tr><th>Дата</th><th>Клиент</th><th>Просмотр</th><th>Факт, ₽</th><th>Факт, баллы</th><th>Цель, ₽</th><th>Цель, баллы</th><th>Архетип</th><th>Подарок</th><th>Менеджер</th></tr></thead>
+            <thead><tr><th>Дата</th><th>Клиент</th><th>Просмотр</th><th>Ответы</th><th>Факт, ₽</th><th>Факт, баллы</th><th>Цель, ₽</th><th>Цель, баллы</th><th>Архетип</th><th>Подарок</th><th>Менеджер</th></tr></thead>
             <tbody>{visible.map((item) => <tr key={item.analysisRunId}>
               <td>{date(item.createdAt)}</td>
               <td><strong>{item.client.name}</strong>{item.client.niche && <small>{item.client.niche}</small>}</td>
               <td><Link className={`view-result ${item.resultReady ? "" : "pending"}`} href={`/analysis/${item.analysisRunId}`} aria-label={`Открыть разбор ${item.client.name}`}>◎</Link></td>
+              <td><a className="download-answers" href={`/api/analysis-runs/${item.analysisRunId}/answers.xls`} aria-label={`Скачать ответы клиента ${item.client.name} в Excel`}>Excel</a></td>
               <td>{money(item.currentRevenueRub)}</td><td>{item.currentTotalScore ?? "—"}</td>
               <td>{money(item.targetRevenueRub)}</td><td>{item.targetTotalScore ?? "—"}</td>
               <td>{item.archetype?.name ?? <span className="status-pill">{STATUS_LABELS[item.status] ?? item.status}</span>}</td>

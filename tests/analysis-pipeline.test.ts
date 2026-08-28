@@ -93,18 +93,41 @@ test("resumable advance executes at most one provider stage per request", async 
 
   const first = await advanceAnalysisPipeline("run-1", harness.dependencies);
 
-  assert.equal(first.status, "targeting");
+  assert.equal(first.status, "strategizing");
   assert.equal(first.result, null);
-  assert.deepEqual(harness.calls, ["lock", "p01", "unlock:lock-token"]);
+  assert.deepEqual(harness.calls, ["lock", "p01", "target", "unlock:lock-token"]);
 });
 
-test("resumable advance continues from persisted state without replaying prior stages", async () => {
+test("resumable advance groups P-02 with deterministic task stages when Money Now is disabled", async () => {
   const harness = pipelineHarness("strategizing");
 
   const advanced = await advanceAnalysisPipeline("run-1", harness.dependencies);
 
-  assert.equal(advanced.status, "resolving_tasks");
-  assert.deepEqual(harness.calls, ["lock", "p02", "unlock:lock-token"]);
+  assert.equal(advanced.status, "writing_report");
+  assert.deepEqual(harness.calls, [
+    "lock",
+    "p02",
+    "tasks",
+    "money-selector",
+    "p03",
+    "unlock:lock-token",
+  ]);
+});
+
+test("resumable advance stops at Money Now when its paid provider stage is enabled", async () => {
+  const harness = pipelineHarness("strategizing");
+  harness.dependencies.moneyNowEnabled = true;
+
+  const advanced = await advanceAnalysisPipeline("run-1", harness.dependencies);
+
+  assert.equal(advanced.status, "money_now");
+  assert.deepEqual(harness.calls, [
+    "lock",
+    "p02",
+    "tasks",
+    "money-selector",
+    "unlock:lock-token",
+  ]);
 });
 
 test("resumable advance assembles immediately after the final report stage", async () => {
@@ -163,8 +186,10 @@ test("a long provider stage renews its short lease until the stage finishes", as
 
   const result = await advanceAnalysisPipeline("run-1", harness.dependencies);
 
-  assert.equal(result.status, "resolving_tasks");
+  assert.equal(result.status, "writing_report");
   assert.ok(harness.calls.filter((call) => call === "renew:lock-token").length >= 2);
+  assert.ok(harness.calls.includes("tasks"));
+  assert.ok(harness.calls.includes("p03"));
   assert.equal(harness.calls.at(-1), "unlock:lock-token");
 });
 
@@ -173,11 +198,12 @@ test("an orphaned scoring state is recovered after its lease expires", async () 
 
   const result = await advanceAnalysisPipeline("run-1", harness.dependencies);
 
-  assert.equal(result.status, "targeting");
+  assert.equal(result.status, "strategizing");
   assert.deepEqual(harness.calls, [
     "lock",
     "recover-scoring",
     "p01",
+    "target",
     "unlock:lock-token",
   ]);
 });

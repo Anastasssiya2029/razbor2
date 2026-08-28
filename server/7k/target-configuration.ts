@@ -1,6 +1,7 @@
 import {
   BASE_MODEL_FAMILIES,
   BASE_MODEL_PROFILES,
+  CAPABILITY_DEPENDENCY_FLOORS,
   CAPABILITY_FLOORS,
   DESIRED_OWNER_ROLES,
   MODEL_FAMILIES,
@@ -221,6 +222,21 @@ export function calculateTargetConfiguration(
       definition.floor,
       `capability:${capability}`,
     );
+    const dependencyFloors = CAPABILITY_DEPENDENCY_FLOORS[capability];
+    if (dependencyFloors) {
+      for (const elementId of SEVEN_K_ELEMENT_IDS) {
+        const dependencyFloor = dependencyFloors[elementId];
+        if (dependencyFloor !== undefined) {
+          applyFloor(
+            requiredMinimum,
+            requirementReasons,
+            elementId,
+            dependencyFloor,
+            `capability_dependency:${capability}`,
+          );
+        }
+      }
+    }
   }
 
   for (const modifier of modifiers) {

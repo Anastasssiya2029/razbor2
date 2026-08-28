@@ -520,7 +520,7 @@ test("P-01 resources and JSON use canonical product_method; legacy read adapter 
 
 test("P-01 methodology registry pins the v1.4.2 extraction resources and 77 scoring levels", () => {
   assert.deepEqual(getP01ResourceVersions(), {
-    scoringRules: "scoring-rules.v3.3",
+    scoringRules: "scoring-rules.v3.4",
     evidenceRouting: "evidence-routing.v3.0",
     targetModelDictionary: "target-model-dictionary.v2.2",
     moneyNowHistoryMap: "money-now-history-map.v2.2",
@@ -1125,11 +1125,12 @@ test("production P-01 prompt requires closed evidence references", () => {
   assert.match(prompt, /не выдумывай ID/u);
 });
 
-test("production P-01 prompt distinguishes a one-off case from a described operating system", () => {
+test("production P-01 prompt applies element-specific evidence caps to a described operating system", () => {
   const prompt = buildP01SystemPrompt(ALINA_GOLDEN_CASE.input, null, { moneyNowEnabled: false });
   assert.match(prompt, /<CURRENT_SCORE_CALIBRATION_CONTROL>/u);
-  assert.match(prompt, /единичному клиентскому кейсу/u);
-  assert.match(prompt, /НЕ относится к подробно описанному действующему процессу/u);
+  assert.match(prompt, /Не применяй правило «один случай — cap <= 3» глобально/u);
+  assert.match(prompt, /подробно описанный действующий процесс/u);
+  assert.match(prompt, /evidenceCapPolicy выбранного элемента/u);
   assert.match(prompt, /upper-level challenge/u);
   assert.match(prompt, /authenticity=7/u);
   assert.ok(prompt.indexOf("<CURRENT_SCORE_CALIBRATION_CONTROL>") < prompt.indexOf("<CLIENT_DATA"));

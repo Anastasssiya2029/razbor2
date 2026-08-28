@@ -6,7 +6,9 @@ import {
   analysisRunAccessErrorResponse,
   getAnalysisPipelineLockStatus,
   getAnalysisOverview,
+  finishAnalysisPipelineRequest,
   requireAnalysisRunAccess,
+  startAnalysisPipelineRequest,
 } from "@/server/analysis-runs";
 import { syncAnalysisToGoogleSheet } from "@/server/google-sheets";
 import {
@@ -70,8 +72,10 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   const { analysisRunId } = await context.params;
+  let telemetry = null as Awaited<ReturnType<typeof startAnalysisPipelineRequest>>;
   try {
     await requireAnalysisRunAccess(request, analysisRunId, { ownerOnly: true });
+    telemetry = await startAnalysisPipelineRequest(analysisRunId).catch(() => null);
     const execution = await advanceAnalysisPipeline(analysisRunId);
     const overview = execution.status === "targeting"
       ? null
@@ -79,6 +83,12 @@ export async function POST(request: Request, context: RouteContext) {
     const sheetSync = execution.status === "ready"
       ? await syncAnalysisToGoogleSheet(analysisRunId)
       : null;
+    if (telemetry) {
+      await finishAnalysisPipelineRequest(analysisRunId, telemetry, {
+        outcome: "completed",
+        finalStatus: execution.status,
+      }).catch(() => undefined);
+    }
     return Response.json({
       analysisRunId,
       status: execution.status,
@@ -88,6 +98,15 @@ export async function POST(request: Request, context: RouteContext) {
       sheetSync: sheetSync?.status ?? "not_ready",
     }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
+    if (telemetry) {
+      await finishAnalysisPipelineRequest(analysisRunId, telemetry, {
+        outcome: "failed",
+        finalStatus: null,
+        errorCode: error instanceof AnalysisPipelineError
+          ? error.code
+          : "ANALYSIS_PIPELINE_TECHNICAL_ERROR",
+      }).catch(() => undefined);
+    }
     const accessResponse = analysisRunAccessErrorResponse(error);
     if (accessResponse) return accessResponse;
     if (error instanceof AnalysisPipelineError) {

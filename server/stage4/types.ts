@@ -15,7 +15,7 @@ export type TargetArchetypeResourceVersions = {
   p01PromptVersion: "P-01.v1.4.2";
   p01OutputSchemaVersion: "1.4";
   elements: "elements.v1";
-  targetRules: "target-rules.v2.2";
+  targetRules: "target-rules.v2.3";
   archetypes: "archetypes.v2";
 };
 

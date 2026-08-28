@@ -1,6 +1,6 @@
 import type { SevenKElementId, SevenKPartialScores, SevenKScores } from "../types";
 
-export const TARGET_RULES_RESOURCE_VERSION = "target-rules.v2.2" as const;
+export const TARGET_RULES_RESOURCE_VERSION = "target-rules.v2.3" as const;
 
 export const BASE_MODEL_FAMILIES = [
   "single_service",
@@ -185,6 +185,23 @@ export const CAPABILITY_FLOORS = {
 } as const satisfies Record<string, CapabilityFloorDefinition>;
 
 export type CapabilityCode = keyof typeof CAPABILITY_FLOORS;
+
+/**
+ * Cross-element prerequisites for capabilities whose name already implies that
+ * another part of the business system must exist. These floors are deterministic:
+ * a delegated sales capability cannot produce a target with no delivery team.
+ */
+export const CAPABILITY_DEPENDENCY_FLOORS: Partial<
+  Record<CapabilityCode, SevenKPartialScores>
+> = {
+  delegated_sales: { team: 5 },
+  managed_sales_department: { team: 8 },
+  team_managed_acquisition: { team: 8 },
+  delegated_multiplatform_content: { team: 5 },
+  media_system: { team: 8 },
+  team_reproducible_method: { team: 6 },
+  team_search_qualification: { team: 8 },
+};
 
 export const DELEGATION_MATURITY_LADDER = [
   { level: 1, code: "ai_for_owner", meaning: "AI помогает владельцу выполнять отдельные рабочие задачи." },

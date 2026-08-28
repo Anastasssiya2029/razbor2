@@ -120,10 +120,10 @@ export type P02ResultV1_3 = {
 export type P02RuleVersions = {
   requestBuilder: "p02-request-builder.v2.1";
   elements: "elements.v1";
-  levelCapabilities: "scoring-rules.v3.3";
+  levelCapabilities: "scoring-rules.v3.4";
   constraintRules: "constraint-rules.v2.1";
   dependencyRules: "dependency-rules.v2.1";
-  targetRules: "target-rules.v2.2";
+  targetRules: "target-rules.v2.3";
   transitionLevers: "transition-levers.v2";
 };
 

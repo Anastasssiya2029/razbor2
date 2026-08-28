@@ -7,9 +7,9 @@ import { buildP01SystemPrompt } from "../server/p01/request";
 import { buildP01ElementScorePrompt, type P01CoreContext } from "../server/p01/split-request";
 import { ALINA_GOLDEN_CASE, ANNA_GOLDEN_CASE } from "./fixtures/anna-alina-golden";
 
-test("v5.6 scoring separates capability anchors from level boundaries", () => {
+test("v5.7 scoring separates capability anchors and uses element-specific evidence caps", () => {
   assert.equal(METHODOLOGY_VERSION, "7k.v1.4");
-  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.6");
+  assert.equal(SCORING_RULES.methodologyVersion, "7K-2026-08-v5.7");
   assert.equal(SCORING_RULES.algorithm, "highest_supported_capability_with_resilience");
   assert.equal(SCORING_RULES.evaluationPolicy.criterionRole, "mandatory_core");
   assert.equal(SCORING_RULES.evaluationPolicy.supportingCoveragePolicy, "confidence_only_not_a_score_gate");
@@ -18,6 +18,9 @@ test("v5.6 scoring separates capability anchors from level boundaries", () => {
     SCORING_RULES.evaluationPolicy.blockerPolicy,
     /absence|missing_evidence|отсутствие/iu,
   );
+  assert.match(SCORING_RULES.elements.authenticity.evidenceCapPolicy.join(" "), /уровень 4 без отдельного кейса/u);
+  assert.match(SCORING_RULES.elements.product_method.evidenceCapPolicy.join(" "), /этапы, формат и результат/u);
+  assert.doesNotMatch(SCORING_RULES.globalRules.map((item) => item.rule).join(" "), /Без конкретного current-примера evidence_cap не выше 2/u);
 });
 
 test("audience levels reserve multiple segments for level 8 and above", () => {
@@ -134,16 +137,29 @@ test("Alina blog prompt receives paid growth, owned audience and selling evidenc
   assert.match(prompt, /Ограничение нижней ступени нельзя использовать против более высокого уровня/u);
 });
 
-test("legacy single-call prompt is normalized to the v5.6 machine policy", () => {
+test("legacy single-call prompt is normalized to the v5.7 machine policy", () => {
   const prompt = buildP01SystemPrompt(ALINA_GOLDEN_CASE.input, null, { moneyNowEnabled: false });
   assert.doesNotMatch(prompt, /примерно на 80%/u);
   assert.match(prompt, /alternativeEvidencePaths/u);
   assert.match(prompt, /boundarySignals/u);
   assert.match(prompt, /resilience requirement/u);
+  assert.doesNotMatch(prompt, /Нет конкретного current-примера: cap ≤ 2/u);
+  assert.doesNotMatch(prompt, /Правило «один случай — cap <= 3» относится/u);
+  assert.match(prompt, /Не применяй единый числовой cap/u);
   assert.match(prompt, /sales_technology=8/u);
   assert.match(prompt, /funnel=6.+уровень 7 требует второго независимого источника.+уровень 8 — второй отличающейся воронки/u);
   assert.match(prompt, /blog=6.+уровень 7 требует минимум двух самостоятельных медиаплощадок/u);
   assert.doesNotMatch(prompt, /Уровни 2–4 требуют фактического использования AI/u);
+});
+
+test("authenticity and product boundaries prevent the regressions found in the control run", () => {
+  const authenticity = SCORING_RULES.elements.authenticity.levels;
+  assert.match(authenticity[1].blockers.join(" "), /сильные стороны, особенности мышления или способ работы/u);
+  assert.match(authenticity[4].alternativeEvidencePaths.join(" "), /одну понятную формулу/u);
+  assert.match(authenticity[5].blockers.join(" "), /без наблюдаемого текущего примера/u);
+
+  const product = SCORING_RULES.elements.product_method.levels;
+  assert.match(product[5].blockers.join(" "), /без описанных этапов пути А→Б/u);
 });
 
 test("Anna audience prompt combines the concrete client situation with the result and forbids a level-2 downgrade", () => {

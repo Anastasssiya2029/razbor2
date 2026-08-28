@@ -115,6 +115,8 @@ body {
 .admin-table td small { margin-top: 3px; display: block; max-width: 180px; color: #77879c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .view-result { width: 44px; height: 40px; display: grid; place-items: center; color: #fff; background: #5d1975; border-radius: 11px; box-shadow: 0 5px 12px rgba(71,24,93,.22); font-size: 25px; line-height: 1; text-decoration: none; }
 .view-result.pending { color: #795b81; background: #f1eaf5; box-shadow: none; }
+.download-answers { min-width: 62px; min-height: 36px; padding: 7px 10px; display: inline-flex; align-items: center; justify-content: center; color: #6b1c68; background: #f7f0f8; border: 1px solid rgba(109,47,182,.25); border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; }
+.download-answers:hover { color: #fff; background: #7f218d; border-color: #7f218d; }
 .status-pill { padding: 5px 8px; color: #6e2b73; background: #f4e9f6; border-radius: 7px; font-size: 11px; font-weight: 800; white-space: nowrap; }
 .admin-empty { margin: 0; padding: 60px 30px; color: #6d6275; text-align: center; }
 .admin-empty.error { color: #a83245; }

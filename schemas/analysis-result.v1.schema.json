@@ -37,7 +37,7 @@
         "p01Prompt": { "const": "P-01.v1.4.2" },
         "p01Schema": { "const": "1.4" },
         "targetStage": { "const": "target-archetype-stage.v1" },
-        "targetRules": { "const": "target-rules.v2.2" },
+        "targetRules": { "const": "target-rules.v2.3" },
         "archetypes": { "const": "archetypes.v2" },
         "p02Prompt": { "const": "P-02.v1.3" },
         "p02Schema": { "const": "1.3" },

@@ -24,7 +24,7 @@ export const P04_RULE_VERSIONS: P04RuleVersions = {
   p01Prompt: "P-01.v1.4.2",
   p01Schema: "1.4",
   targetStage: "target-archetype-stage.v1",
-  targetRules: "target-rules.v2.2",
+  targetRules: "target-rules.v2.3",
   archetypes: "archetypes.v2",
   p02Prompt: "P-02.v1.3",
   p02Schema: "1.3",
@@ -241,7 +241,7 @@ export async function prepareP04Input(source: P04Source): Promise<P04PreparedInp
   if (p01.result.analysisStatus !== "ok" && p01.result.analysisStatus !== "low_confidence") fail("P04_P01_BLOCKED", `P-01 status ${p01.result.analysisStatus} is not reportable.`, "upstream_blocked");
 
   if (!target || target.failureCode || !target.target || !target.archetype || !target.currentScores) fail("P04_TARGET_MISSING", "Successful persisted Target + Archetype is required.", "upstream_blocked");
-  if (target.resourceVersions.stageVersion !== "target-archetype-stage.v1" || target.resourceVersions.targetRules !== "target-rules.v2.2" || target.resourceVersions.archetypes !== "archetypes.v2") fail("P04_TARGET_VERSION_UNSUPPORTED", "Target/Archetype versions are unsupported.", "upstream_blocked");
+  if (target.resourceVersions.stageVersion !== "target-archetype-stage.v1" || target.resourceVersions.targetRules !== "target-rules.v2.3" || target.resourceVersions.archetypes !== "archetypes.v2") fail("P04_TARGET_VERSION_UNSUPPORTED", "Target/Archetype versions are unsupported.", "upstream_blocked");
 
   if (!p02 || p02.failureCode || !p02.result) fail("P04_P02_MISSING", "Valid persisted P-02 is required.", "upstream_blocked");
   if (p02.promptVersion !== "P-02.v1.3" || p02.outputSchemaVersion !== "1.3") fail("P04_P02_VERSION_UNSUPPORTED", "P-04 requires P-02.v1.3/schema 1.3.", "upstream_blocked");

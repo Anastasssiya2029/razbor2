@@ -562,7 +562,7 @@ export function validateP01Invariants(result: P01ResultV1_4_2): P01ResultV1_4_2 
   });
   target.activatedCapabilities.forEach((capability, index) => {
     if (!TARGET_RULE_CODE_SET.has(capability.code)) {
-      issues.push({ path: `/targetIntent/activatedCapabilities/${index}/code`, code: "unknown_capability", message: `Capability ${capability.code} отсутствует в target-rules.v2.2.` });
+      issues.push({ path: `/targetIntent/activatedCapabilities/${index}/code`, code: "unknown_capability", message: `Capability ${capability.code} отсутствует в target-rules.v2.3.` });
     }
   });
 

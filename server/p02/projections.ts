@@ -131,8 +131,8 @@ export function prepareP02Input(source: P02UpstreamSource): P02PreparedInput {
   if (!stage4 || stage4.failureCode || !stage4.target || !stage4.currentScores) {
     throw new P02Error("P02_TARGET_RESULT_MISSING", stage4?.failureMessage ?? "Persisted deterministic Target Configuration is required.", "upstream_blocked");
   }
-  if (stage4.resourceVersions.targetRules !== "target-rules.v2.2" || stage4.target.resourceVersion !== "target-rules.v2.2") {
-    throw new P02Error("P02_UNSUPPORTED_TARGET_VERSION", "P-02 requires target-rules.v2.2.", "upstream_blocked");
+  if (stage4.resourceVersions.targetRules !== "target-rules.v2.3" || stage4.target.resourceVersion !== "target-rules.v2.3") {
+    throw new P02Error("P02_UNSUPPORTED_TARGET_VERSION", "P-02 requires target-rules.v2.3.", "upstream_blocked");
   }
   if (stage4.p01AnalysisResultId !== source.p01AnalysisResultId) {
     throw new P02Error("P02_UPSTREAM_VERSION_CONFLICT", "Stage 4 is linked to a different P-01 result.", "version_conflict");

@@ -276,6 +276,32 @@ test("target mapping uses only P-01 current7k and targetIntent plus current capa
   assert.equal(computed.target.desiredOwnerRole, "delegate_sales");
 });
 
+test("plain delegation wording restores the sales owner role without an AI modifier code", () => {
+  const p01 = p01Fixture({
+    authenticity: 4,
+    audience: 4,
+    product_method: 4,
+    sales_technology: 4,
+    funnel: 3,
+    blog: 3,
+    team: 2,
+  });
+  p01.targetIntent.activatedCapabilities = [
+    { code: "delegated_sales", reason: "Продажи должны работать без владельца.", source_fields: ["target.delegation"] },
+  ];
+  const runSource = source(p01);
+  runSource.normalizedInput.target.delegation = "Делегировать продажи, маркетинг и ведение блога";
+
+  const computed = computeTargetAndArchetype(runSource);
+
+  assert.equal(computed.target.desiredOwnerRole, "delegate_sales");
+  assert.ok(computed.target.appliedModifiers.includes("delegate_individual_sales"));
+  assert.equal(computed.target.requiredMinimum.sales_technology, 9);
+  assert.equal(computed.target.requiredMinimum.team, 5);
+  assert.ok(computed.target.requirementReasons.team.includes("capability_dependency:delegated_sales"));
+  assert.equal(computed.targetInputAudit.desiredOwnerRoleDerivedFrom, "diagnostic.target.delegation");
+});
+
 test("explicit owner-not-executor target restores Alina's near-term owner role and function heads", () => {
   const p01 = p01Fixture(ALINA_GOLDEN_CASE.currentScores);
   p01.targetIntent.rawBusinessModel = ALINA_GOLDEN_CASE.input.target.businessModel;
@@ -315,11 +341,15 @@ test("hybrid model combines primary and secondary models with multiple target co
 });
 
 test("desiredSystemWeeklyHours null is neutral; numeric goal triggers existing model-fit rule", () => {
-  const withoutGoal = computeTargetAndArchetype(source()).target;
+  const withoutGoalSource = source();
+  withoutGoalSource.normalizedInput.target.delegation = null;
+  const withoutGoal = computeTargetAndArchetype(withoutGoalSource).target;
   assert.equal(withoutGoal.modelFitWarnings.length, 0);
   const p01 = p01Fixture();
   p01.targetIntent.desiredSystemWeeklyHours = 10;
-  const withGoal = computeTargetAndArchetype(source(p01)).target;
+  const withGoalSource = source(p01);
+  withGoalSource.normalizedInput.target.delegation = null;
+  const withGoal = computeTargetAndArchetype(withGoalSource).target;
   assert.ok(withGoal.modelFitWarnings.some((warning) => warning.code === "PERSONAL_MODEL_TIME_FREEDOM_CONFLICT"));
 });
 
@@ -337,7 +367,9 @@ test("distant role wording alone does not activate autonomy or inflate the next-
     "В дальнем будущем владелец хочет полностью автономный бизнес.";
   p01.targetIntent.activatedCapabilities = [];
 
-  const target = computeTargetAndArchetype(source(p01)).target;
+  const runSource = source(p01);
+  runSource.normalizedInput.target.delegation = null;
+  const target = computeTargetAndArchetype(runSource).target;
   assert.equal(target.targetScores.team, 1);
   assert.equal(target.desiredOwnerRole, null);
   assert.deepEqual(target.appliedModifiers, []);

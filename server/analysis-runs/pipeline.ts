@@ -80,6 +80,7 @@ export type AnalysisPipelineDependencies = {
   runP03(analysisRunId: string): Promise<StageStatusResult>;
   runP04(analysisRunId: string): Promise<StageStatusResult>;
   assemble(analysisRunId: string): Promise<{ result: AnalysisResultV1; idempotentReplay: boolean }>;
+  moneyNowEnabled?: boolean;
 };
 
 async function loadRun(analysisRunId: string): Promise<PipelineRunSnapshot | null> {
@@ -239,6 +240,7 @@ export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies =
     moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
   }),
   assemble: getOrCreateAnalysisResult,
+  moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
 };
 
 async function withPipelineLock<T>(
@@ -389,7 +391,9 @@ export async function advanceAnalysisPipeline(
     if (snapshot.status === "queued") {
       const executed = await dependencies.runP01(snapshot);
       assertStage(executed.status, "targeting", "P‑01");
-      return { status: "targeting", result: null, idempotentReplay: false };
+      const targeted = await dependencies.runTarget(analysisRunId);
+      assertStage(targeted.status, "strategizing", "целевой конфигурации");
+      return { status: "strategizing", result: null, idempotentReplay: false };
     }
     if (snapshot.status === "targeting") {
       const executed = await dependencies.runTarget(analysisRunId);
@@ -399,12 +403,27 @@ export async function advanceAnalysisPipeline(
     if (snapshot.status === "strategizing") {
       const executed = await dependencies.runP02(analysisRunId);
       assertStage(executed.status, "resolving_tasks", "P‑02");
-      return { status: "resolving_tasks", result: null, idempotentReplay: false };
+      const resolved = await dependencies.resolveTasks(analysisRunId);
+      assertStage(resolved.status, "money_now", "подбора задач");
+      const selected = await dependencies.selectMoneyNow(analysisRunId);
+      assertStage(selected.status, "money_now", "денежного сценария");
+      if (dependencies.moneyNowEnabled ?? ANALYSIS_FEATURES.moneyNowGeneration) {
+        // P-03 may use a paid provider when Money Now is enabled. Keep the
+        // invariant of at most one provider stage per resumable request.
+        return { status: "money_now", result: null, idempotentReplay: false };
+      }
+      const prescribed = await dependencies.runP03(analysisRunId);
+      assertStage(prescribed.status, "writing_report", "P‑03");
+      return { status: "writing_report", result: null, idempotentReplay: false };
     }
     if (snapshot.status === "resolving_tasks") {
       const executed = await dependencies.resolveTasks(analysisRunId);
       assertStage(executed.status, "money_now", "подбора задач");
-      return { status: "money_now", result: null, idempotentReplay: false };
+      const selected = await dependencies.selectMoneyNow(analysisRunId);
+      assertStage(selected.status, "money_now", "денежного сценария");
+      const prescribed = await dependencies.runP03(analysisRunId);
+      assertStage(prescribed.status, "writing_report", "P‑03");
+      return { status: "writing_report", result: null, idempotentReplay: false };
     }
     if (snapshot.status === "money_now") {
       const selected = await dependencies.selectMoneyNow(analysisRunId);

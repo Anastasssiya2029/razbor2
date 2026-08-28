@@ -56,7 +56,7 @@ export const SEVEN_K_METHODOLOGY_REGISTRY = {
   aiModules: {
     p01: {
       promptVersion: P01_PROMPT_VERSION,
-      requestBuilder: "p01-request-builder.v2.3" as const,
+      requestBuilder: "p01-request-builder.v2.4" as const,
       outputSchemaVersion: "1.4",
       resources: {
         scoringRules: SCORING_RULES_RESOURCE_VERSION,

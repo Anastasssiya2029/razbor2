@@ -17,7 +17,7 @@ export const ANALYSIS_RESULT_VERSIONS = {
   p01Prompt: "P-01.v1.4.2",
   p01Schema: "1.4",
   targetStage: "target-archetype-stage.v1",
-  targetRules: "target-rules.v2.2",
+  targetRules: "target-rules.v2.3",
   archetypes: "archetypes.v2",
   p02Prompt: "P-02.v1.3",
   p02Schema: "1.3",

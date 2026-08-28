@@ -174,7 +174,6 @@ function inferOwnerRoleFromTargetText(text: string): {
   role: DesiredOwnerRole;
   modifier: TargetModifierCode | null;
 } | null {
-  if (!/(?:целев\w*\s+роль|роль\s*[-—:]|в\s+роли)/iu.test(text)) return null;
   const rules: Array<{
     role: DesiredOwnerRole;
     modifier: TargetModifierCode | null;

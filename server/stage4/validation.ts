@@ -55,7 +55,7 @@ export function validateTargetArchetypeComputation(
   if (stableJson(expectedTarget) !== stableJson(computation.target)) {
     issues.push({
       code: "TARGET_RESULT_NOT_REPRODUCIBLE",
-      message: "Target result does not match target-rules.v2.2 pure function output.",
+      message: "Target result does not match target-rules.v2.3 pure function output.",
     });
   }
 

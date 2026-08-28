@@ -63,7 +63,7 @@ function assertFrozenVersions(source: AnalysisResultSource): void {
     versions.p01Prompt !== "P-01.v1.4.2" ||
     versions.p01Schema !== "1.4" ||
     versions.targetStage !== "target-archetype-stage.v1" ||
-    versions.targetRules !== "target-rules.v2.2" ||
+    versions.targetRules !== "target-rules.v2.3" ||
     versions.archetypes !== "archetypes.v2" ||
     versions.p02Prompt !== "P-02.v1.3" ||
     versions.p02Schema !== "1.3" ||
