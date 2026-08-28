@@ -235,6 +235,7 @@ export const p01AnalysisResults = sqliteTable(
     reevaluationRetryCount: integer("reevaluation_retry_count").notNull(),
     failureCode: text("failure_code"),
     failureMessage: text("failure_message"),
+    failureDetailsJson: text("failure_details_json"),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },

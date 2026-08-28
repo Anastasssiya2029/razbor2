@@ -1,0 +1,1 @@
+ALTER TABLE `p01_analysis_results` ADD `failure_details_json` text;

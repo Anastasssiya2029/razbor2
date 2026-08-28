@@ -57,12 +57,14 @@ export class P01RunExecutionError extends Error {
   readonly failureCode: P01FailureCode;
   readonly metadata: P01RunMetadata;
   readonly providerRawResponse: unknown;
+  readonly failureDetails: P01ValidationIssue[];
 
   constructor(options: {
     failureCode: P01FailureCode;
     message: string;
     metadata: P01RunMetadata;
     providerRawResponse: unknown;
+    failureDetails?: readonly P01ValidationIssue[];
     cause?: unknown;
   }) {
     super(options.message, { cause: options.cause });
@@ -70,6 +72,7 @@ export class P01RunExecutionError extends Error {
     this.failureCode = options.failureCode;
     this.metadata = options.metadata;
     this.providerRawResponse = options.providerRawResponse;
+    this.failureDetails = structuredClone(options.failureDetails ?? []);
   }
 }
 
@@ -298,7 +301,13 @@ export async function runP01EvidenceScorer(
         correction = issuesCorrection("Sanity check severity=error", sanityErrors);
         continue;
       }
-      throw executionError("P01_SANITY_ERROR", new Error(sanityErrors.map((issue) => issue.message).join("; ")), "P-01 sanity checks failed", latestRaw);
+      throw executionError(
+        "P01_SANITY_ERROR",
+        new Error(sanityErrors.map((issue) => issue.message).join("; ")),
+        "P-01 sanity checks failed",
+        latestRaw,
+        sanityErrors,
+      );
     }
 
     const finishedAt = now();
@@ -340,6 +349,10 @@ export async function runP01EvidenceScorer(
     cause: unknown,
     message: string,
     providerRawResponse: unknown,
+    failureDetails: readonly P01ValidationIssue[] =
+      cause instanceof P01SchemaValidationError || cause instanceof P01InvariantError
+        ? cause.issues
+        : [],
   ): P01RunExecutionError {
     const finishedAt = now();
     return new P01RunExecutionError({
@@ -356,6 +369,7 @@ export async function runP01EvidenceScorer(
         usage,
       }),
       providerRawResponse,
+      failureDetails,
       cause,
     });
   }
@@ -617,6 +631,7 @@ export async function runP01EvidenceScorer(
         new Error(sanityErrors.map((issue) => issue.message).join("; ")),
         "P-01 sanity checks failed; the core context is not regenerated automatically",
         rawParts,
+        sanityErrors,
       );
     }
 

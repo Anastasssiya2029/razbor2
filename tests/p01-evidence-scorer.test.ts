@@ -9,6 +9,10 @@ import { SCORING_RULES } from "../server/7k/config/scoring-rules.v3.0";
 import { getP01ResourceVersions, SEVEN_K_METHODOLOGY_REGISTRY } from "../server/7k/methodology-registry";
 import { adaptLegacyMaterializedAnalysisResult } from "../server/7k/legacy-result-adapter";
 import { buildMoneyNowHistoryGuardInput } from "../server/p01/money-now-history-adapter";
+import {
+  parseStoredP01FailureDetails,
+  recoverP01FailureDetails,
+} from "../server/p01/failure-diagnostics";
 import { buildP01SystemPrompt } from "../server/p01/request";
 import {
   reconcileP01CoreEvidenceReferences,
@@ -1226,6 +1230,59 @@ test("sanity severity=error gets one specific re-evaluation", async () => {
   assert.equal(provider.requests.length, 2);
   assert.equal(outcome.metadata.reevaluationRetryCount, 1);
   assert.match(provider.requests[1].correction ?? "", /CONTRADICTORY_REVENUE/u);
+});
+
+test("split P-01 persists exact sanity failure details without regenerating the full context", async () => {
+  const invalid = validP01Fixture();
+  invalid.sanityChecks = [{
+    code: "CONTRADICTORY_REVENUE",
+    severity: "error",
+    message: "Выручка противоречит указанному периоду.",
+    evidence_ids: ["E01"],
+  }];
+  const provider = new QueueProvider(...splitP01Responses(invalid));
+
+  await assert.rejects(
+    runP01EvidenceScorer(diagnosticInput(), {
+      provider,
+      moneyNowEnabled: false,
+      hashInput: async () => "hash",
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof P01RunExecutionError);
+      assert.equal(error.failureCode, "P01_SANITY_ERROR");
+      assert.deepEqual(error.failureDetails, [{
+        path: "/sanityChecks/0",
+        code: "sanity.CONTRADICTORY_REVENUE",
+        message: "Выручка противоречит указанному периоду.",
+      }]);
+      return true;
+    },
+  );
+  assert.equal(provider.requests.length, 8);
+});
+
+test("failure diagnostics recover sanity details from an older split provider response", () => {
+  const invalid = validP01Fixture();
+  invalid.sanityChecks = [{
+    code: "CONTRADICTORY_REVENUE",
+    severity: "error",
+    message: "Выручка противоречит указанному периоду.",
+    evidence_ids: ["E01"],
+  }];
+  const context = splitP01Responses(invalid)[0];
+  const raw = {
+    "context.initial": {
+      choices: [{ message: { content: JSON.stringify(context) } }],
+    },
+  };
+
+  assert.deepEqual(recoverP01FailureDetails("P01_SANITY_ERROR", raw), [{
+    path: "/sanityChecks/0",
+    code: "sanity.CONTRADICTORY_REVENUE",
+    message: "Выручка противоречит указанному периоду.",
+  }]);
+  assert.deepEqual(parseStoredP01FailureDetails("not-json"), []);
 });
 
 test("blocked_by_insufficient_data is stored as a blocked outcome without retry", async () => {

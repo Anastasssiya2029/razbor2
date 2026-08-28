@@ -10,11 +10,9 @@ import {
 } from "@/server/analysis-runs";
 import { syncAnalysisToGoogleSheet } from "@/server/google-sheets";
 import {
-  P01InvariantError,
-  P01SchemaValidationError,
-  validateP01Invariants,
-  validateP01Schema,
-} from "@/server/p01/validation";
+  parseStoredP01FailureDetails,
+  recoverP01FailureDetails,
+} from "@/server/p01/failure-diagnostics";
 import { eq } from "drizzle-orm";
 
 type RouteContext = { params: Promise<{ analysisRunId: string }> };
@@ -30,30 +28,32 @@ export async function GET(request: Request, context: RouteContext) {
       .where(eq(analysisRuns.id, analysisRunId))
       .limit(1);
     if (!rows[0]) return Response.json({ error: "ANALYSIS_RUN_NOT_FOUND" }, { status: 404 });
-    let validationIssues: Array<{ path: string; code: string }> = [];
+    let failureDetails: Array<{ path: string; code: string; message: string }> = [];
     if (rows[0].status === "analysis_failed" && rows[0].errorCode?.startsWith("P01_")) {
       const stored = await db
-        .select({ raw: p01AnalysisResults.providerRawResponseJson })
+        .select({
+          raw: p01AnalysisResults.providerRawResponseJson,
+          failureDetailsJson: p01AnalysisResults.failureDetailsJson,
+        })
         .from(p01AnalysisResults)
         .where(eq(p01AnalysisResults.analysisRunId, analysisRunId))
         .limit(1);
-      try {
-        const provider = stored[0]?.raw ? JSON.parse(stored[0].raw) as Record<string, unknown> : null;
-        const choices = provider?.choices as Array<{ message?: { content?: unknown } }> | undefined;
-        const content = choices?.[0]?.message?.content;
-        if (typeof content === "string") {
-          const parsed = validateP01Schema(JSON.parse(content));
-          validateP01Invariants(parsed);
-        }
-      } catch (error) {
-        if (error instanceof P01SchemaValidationError || error instanceof P01InvariantError) {
-          validationIssues = error.issues.slice(0, 30).map(({ path, code }) => ({ path, code }));
+      failureDetails = parseStoredP01FailureDetails(stored[0]?.failureDetailsJson ?? null);
+      if (failureDetails.length === 0 && stored[0]?.raw) {
+        try {
+          failureDetails = recoverP01FailureDetails(
+            rows[0].errorCode,
+            JSON.parse(stored[0].raw) as unknown,
+          );
+        } catch {
+          failureDetails = [];
         }
       }
     }
+    const validationIssues = failureDetails.map(({ path, code }) => ({ path, code }));
     const lock = await getAnalysisPipelineLockStatus(analysisRunId);
     return Response.json(
-      { analysisRunId, ...rows[0], validationIssues, ...lock },
+      { analysisRunId, ...rows[0], validationIssues, failureDetails, ...lock },
       { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {

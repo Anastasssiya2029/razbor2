@@ -73,6 +73,7 @@ export async function POST(request: Request, context: RouteContext) {
         status: executed.status,
         failureCode: executed.failureCode,
         failureMessage: executed.failureMessage,
+        failureDetails: executed.failureDetails,
       },
       { status: 422 },
     );

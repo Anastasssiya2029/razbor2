@@ -18,6 +18,7 @@ export type ExecuteP01AnalysisRunResult = {
   outcome: P01RunOutcome | null;
   failureCode: string | null;
   failureMessage: string | null;
+  failureDetails: Array<{ path: string; code: string; message: string }>;
 };
 
 function safeJson(value: unknown): string | null {
@@ -37,6 +38,7 @@ async function persistP01Record(options: {
   providerRawResponse: unknown;
   failureCode: string | null;
   failureMessage: string | null;
+  failureDetails?: ReadonlyArray<{ path: string; code: string; message: string }>;
 }): Promise<void> {
   const db = await getDb();
   const values = {
@@ -63,6 +65,7 @@ async function persistP01Record(options: {
     reevaluationRetryCount: options.metadata.reevaluationRetryCount,
     failureCode: options.failureCode,
     failureMessage: options.failureMessage,
+    failureDetailsJson: safeJson(options.failureDetails ?? []),
     updatedAt: sql`CURRENT_TIMESTAMP`,
   };
   await db
@@ -91,6 +94,7 @@ async function persistP01Record(options: {
         reevaluationRetryCount: values.reevaluationRetryCount,
         failureCode: values.failureCode,
         failureMessage: values.failureMessage,
+        failureDetailsJson: values.failureDetailsJson,
         updatedAt: values.updatedAt,
       },
     });
@@ -126,6 +130,7 @@ export async function executeP01AnalysisRun(
       providerRawResponse: outcome.providerRawResponse,
       failureCode,
       failureMessage,
+      failureDetails: [],
     });
 
     const status = outcome.kind === "success" ? "targeting" : "analysis_failed";
@@ -154,7 +159,7 @@ export async function executeP01AnalysisRun(
           eq(analysisRuns.diagnosticId, run.diagnosticId),
         ),
       );
-    return { status, outcome, failureCode, failureMessage };
+    return { status, outcome, failureCode, failureMessage, failureDetails: [] };
   } catch (error) {
     const failureCode =
       error instanceof P01RunExecutionError ? error.failureCode : "P01_INTERNAL_ERROR";
@@ -168,6 +173,7 @@ export async function executeP01AnalysisRun(
         providerRawResponse: error.providerRawResponse,
         failureCode,
         failureMessage,
+        failureDetails: error.failureDetails,
       });
     }
     await db
@@ -204,6 +210,7 @@ export async function executeP01AnalysisRun(
       outcome: null,
       failureCode,
       failureMessage,
+      failureDetails: error instanceof P01RunExecutionError ? error.failureDetails : [],
     };
   }
 }
