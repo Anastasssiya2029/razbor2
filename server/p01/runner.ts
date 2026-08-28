@@ -9,7 +9,6 @@ import { SEVEN_K_ELEMENT_IDS, type SevenKElementId } from "@/server/7k/types";
 import { openRouterErrorArtifact } from "@/server/ai/openrouter-json";
 import { parseProviderJson } from "@/server/ai/provider-json";
 import { createConfiguredP01Provider } from "./provider";
-import { buildP01SystemPrompt } from "./request";
 import {
   buildP01CoreContextPrompt,
   buildP01ElementScorePrompt,
@@ -216,6 +215,11 @@ export async function runP01EvidenceScorer(
   const usage = emptyUsage();
 
   if (!moneyNowEnabled) return runSplitCore();
+
+  // The production release uses the split core scorer with Money Now disabled.
+  // Defer the legacy all-in-one prompt so its large template and Money Now
+  // dictionaries do not consume Cloudflare Worker startup CPU.
+  const { buildP01SystemPrompt } = await import("./request");
 
   while (true) {
     let response;

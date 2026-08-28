@@ -3,10 +3,8 @@ import { analysisRunLocks, analysisRuns, diagnostics, p01AnalysisResults } from 
 import { validateDiagnosticInput, type DiagnosticInputV1_2 } from "@/lib/diagnostic-input";
 import { ANALYSIS_FEATURES } from "@/server/analysis-features";
 import { getOrCreateAnalysisResult, type AnalysisResultV1 } from "@/server/analysis-result";
-import { runMoneyNowSelectorStage } from "@/server/money-now-selector";
 import { runP02Stage } from "@/server/p02";
 import { executeP01AnalysisRun } from "@/server/p01/analysis-run-service";
-import { runP03Stage } from "@/server/p03";
 import { runP04Stage } from "@/server/p04";
 import { runTargetAndArchetypeStage } from "@/server/stage4";
 import { runTaskResolverStage } from "@/server/task-resolver";
@@ -234,8 +232,17 @@ export const defaultAnalysisPipelineDependencies: AnalysisPipelineDependencies =
     retryFailed: true,
   }),
   resolveTasks: runTaskResolverStage,
-  selectMoneyNow: runMoneyNowSelectorStage,
-  runP03: runP03Stage,
+  // Money Now is disabled for the release. Keep its implementation out of the
+  // Worker startup graph; if the feature is deliberately restored later, load
+  // the legacy stages only when the enabled branch actually reaches them.
+  selectMoneyNow: async (analysisRunId) => {
+    const { runMoneyNowSelectorStage } = await import("@/server/money-now-selector");
+    return runMoneyNowSelectorStage(analysisRunId);
+  },
+  runP03: async (analysisRunId) => {
+    const { runP03Stage } = await import("@/server/p03");
+    return runP03Stage(analysisRunId);
+  },
   runP04: (analysisRunId) => runP04Stage(analysisRunId, {
     moneyNowEnabled: ANALYSIS_FEATURES.moneyNowGeneration,
   }),

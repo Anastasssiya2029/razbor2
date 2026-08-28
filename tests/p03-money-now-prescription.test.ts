@@ -909,12 +909,13 @@ test("repeated intervention guard requires matched attempt evidence and does not
   assert.throws(() => finalizeAndValidateP03Output(repeated, prepared), P03InvariantError);
 });
 
-test("public P-03 endpoint contains no full paid prescription payload", () => {
+test("public P-03 endpoint is disabled and contains no full paid prescription payload", () => {
   const route = readFileSync("app/api/analysis-runs/[analysisRunId]/p03/route.ts", "utf8");
   assert.doesNotMatch(route, /result:\s*executed\.result\.result|diagnosis\s*:|interventions\s*:|test30d\s*:|targetMetric\s*:|revenueScenario\s*:/u);
   assert.doesNotMatch(route, /failureMessage:\s*executed|error\.details|details:\s*error/u);
-  assert.match(route, /lockedTeaser/u);
-  assert.match(route, /p04Started:\s*false/u);
+  assert.doesNotMatch(route, /runP03Stage|lockedTeaser|p04Started/u);
+  assert.match(route, /MONEY_NOW_DISABLED/u);
+  assert.match(route, /status:\s*410/u);
 });
 
 test("public P-03 execution is fail-closed without feature flag and server token", () => {
