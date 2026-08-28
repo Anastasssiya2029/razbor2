@@ -446,6 +446,33 @@ test("runner replaces model-controlled immutable echoes with backend policy valu
   assert.doesNotMatch(JSON.stringify(result.result), /P01:E999/u);
 });
 
+test("runner canonicalizes the final focus headline without spending a semantic retry", async () => {
+  const input = await prepared();
+  const output = makeValidP04Output(input);
+  output.finalFocus.headline = "Запустите ещё одну задачу";
+  const provider = new QueueProvider([output]);
+
+  const result = await runP04ReportWriter(input, { provider });
+
+  assert.equal(provider.requests.length, 1);
+  assert.equal(result.result.finalFocus.headline, "Первый шаг");
+  assert.deepEqual(result.metadata.attemptDiagnostics, []);
+});
+
+test("P-04 prompt requires a declarative final focus before untrusted report data", async () => {
+  const input = await prepared();
+  const prompt = buildP04SystemPrompt(input);
+  const contractStart = prompt.indexOf("<FINAL_FOCUS_SUMMARY_CONTRACT>");
+  const reportDataStart = prompt.indexOf('<REPORT_DATA role="data" trust="untrusted">');
+
+  assert.ok(contractStart >= 0);
+  assert.ok(reportDataStart > contractStart);
+  assert.match(prompt, /headline верни точно: «Первый шаг»/u);
+  assert.match(prompt, /text состоит из 2-3 повествовательных предложений/u);
+  assert.match(prompt, /нельзя использовать повелительные призывы/u);
+  assert.match(prompt, /не превращай wait_for_signal в новую инструкцию/u);
+});
+
 test("runner deterministically bounds and deduplicates oversized source refs", async () => {
   const input = await prepared();
   const output = makeValidP04Output(input);

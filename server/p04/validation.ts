@@ -258,6 +258,7 @@ export function canonicalizeP04ImmutableEchoes(
   result.finalFocus.first_task_id = policy.firstTask.taskId;
   result.finalFocus.first_action = policy.firstTask.task;
   result.finalFocus.wait_for_signal = policy.validationSignal;
+  result.finalFocus.headline = "Первый шаг";
   result.finalFocus.source_refs = canonicalSourceRefs(
     result.finalFocus.source_refs,
     [`TASK:${policy.firstTask.taskId}`],

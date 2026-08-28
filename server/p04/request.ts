@@ -30,6 +30,17 @@ REPORT_GLOSSARY.businessLevers объясняет денежный смысл к
 - не добавляй новые элементы, действия, обещания или цифры.
 </GROWTH_BUNDLE_SYNTHESIS_CONTRACT>`;
 
+const FINAL_FOCUS_SUMMARY_CONTRACT = `
+<FINAL_FOCUS_SUMMARY_CONTRACT>
+finalFocus завершает уже собранный маршрут и не назначает клиенту ещё одну задачу.
+- headline верни точно: «Первый шаг».
+- text состоит из 2-3 повествовательных предложений: факт текущей ситуации, почему утверждённая first_action идёт первой, какой переход она открывает.
+- В text нельзя использовать повелительные призывы: «сделайте», «запустите», «наймите», «внедрите», «создайте», «настройте», «проведите», «соберите», «напишите», «предложите», «добавьте», «уберите», «начните», «делегируйте», «увеличьте», «сфокусируйтесь».
+- Не придумывай действие рядом с first_action и не превращай wait_for_signal в новую инструкцию.
+- first_action и wait_for_signal верни только в их отдельных exact-полях; в text объясни их смысл, а не переписывай как команду.
+Безопасная конструкция: «Сейчас [конкретный факт клиента]. Поэтому первой точкой маршрута становится утверждённая задача: [first_action]. Она создаёт основу для [следующий подтверждённый этап]».
+</FINAL_FOCUS_SUMMARY_CONTRACT>`;
+
 function removeTaggedBlock(prompt: string, tag: string): string {
   const start = `<${tag}>`;
   const end = `</${tag}>`;
@@ -113,7 +124,7 @@ export function buildP04SystemPrompt(
   if (!moneyNowEnabled) prompt = withoutMoneyNowInstructions(prompt);
   const rule = selectedBundleRule(input);
   const approvedRule = `<APPROVED_BUNDLE_RULE>\n${promptJson({ version: BUNDLE_RULES_VERSION, rule })}\n</APPROVED_BUNDLE_RULE>`;
-  prompt += `\n\n${PLAIN_LANGUAGE_CONTRACT}\n\n${GROWTH_BUNDLE_SYNTHESIS_CONTRACT}\n\n${approvedRule}`;
+  prompt += `\n\n${PLAIN_LANGUAGE_CONTRACT}\n\n${GROWTH_BUNDLE_SYNTHESIS_CONTRACT}\n\n${FINAL_FOCUS_SUMMARY_CONTRACT}\n\n${approvedRule}`;
   if (correction) {
     prompt += `\n\n<CORRECTION_REQUIRED>\n${correction}\n</CORRECTION_REQUIRED>`;
   }
