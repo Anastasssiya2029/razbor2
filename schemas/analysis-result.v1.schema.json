@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "analysis-result.v1",
+  "title": "Deterministic 7K AnalysisResult v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "methodologyVersion",
+    "analysisRunId",
+    "diagnosticId",
+    "analysisStatus",
+    "versions",
+    "clientContext",
+    "current",
+    "target",
+    "archetype",
+    "strategy",
+    "route",
+    "moneyNow",
+    "report",
+    "finalFocus",
+    "provenance"
+  ],
+  "properties": {
+    "version": { "const": "analysis-result.v1" },
+    "methodologyVersion": { "const": "7k.v1.2" },
+    "analysisRunId": { "type": "string", "minLength": 1 },
+    "diagnosticId": { "type": "string", "minLength": 1 },
+    "analysisStatus": { "enum": ["ok", "low_confidence"] },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnosticInput", "p01Prompt", "p01Schema", "targetStage", "targetRules", "archetypes", "p02Prompt", "p02Schema", "taskResolver", "transitions", "moneyNowSelector", "moneyNowSelectorContract", "moneyNowSelectorMethodology", "moneyNowPrescriptionMethodology", "p03Prompt", "p03Schema", "p04Prompt", "p04Schema", "analysisResult", "assembler"],
+      "properties": {
+        "diagnosticInput": { "const": "1.2" },
+        "p01Prompt": { "const": "P-01.v1.4.2" },
+        "p01Schema": { "const": "1.4" },
+        "targetStage": { "const": "target-archetype-stage.v1" },
+        "targetRules": { "const": "target-rules.v2.3" },
+        "archetypes": { "const": "archetypes.v2" },
+        "p02Prompt": { "const": "P-02.v1.3" },
+        "p02Schema": { "const": "1.3" },
+        "taskResolver": { "const": "task-resolver-stage.v1" },
+        "transitions": { "const": "transitions-70.v2" },
+        "moneyNowSelector": { "const": "money-now-selector-stage.v1" },
+        "moneyNowSelectorContract": { "const": "money-now-selector-contract.v1.2" },
+        "moneyNowSelectorMethodology": { "const": "money-now.v2.2" },
+        "moneyNowPrescriptionMethodology": { "const": "money-now.v2.3" },
+        "p03Prompt": { "const": "P-03.v1.5" },
+        "p03Schema": { "const": "1.5" },
+        "p04Prompt": { "const": "P-04.v1.2" },
+        "p04Schema": { "const": "1.2" },
+        "analysisResult": { "const": "analysis-result.v1" },
+        "assembler": { "const": "analysis-result-assembler.v1" }
+      }
+    },
+    "clientContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expertName", "niche"],
+      "properties": {
+        "expertName": { "type": ["string", "null"] },
+        "niche": { "type": ["string", "null"] }
+      }
+    },
+    "current": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scores", "current7k", "businessMap"],
+      "properties": {
+        "scores": { "$ref": "#/$defs/scores" },
+        "current7k": { "type": "object" },
+        "businessMap": { "type": "object" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["modelFamily", "modelComponents", "requiredMinimum", "targetScores", "gap", "capabilities", "appliedModifiers", "desiredOwnerRole"],
+      "properties": {
+        "requiredMinimum": { "$ref": "#/$defs/scores" },
+        "targetScores": { "$ref": "#/$defs/scores" },
+        "gap": { "$ref": "#/$defs/scores" }
+      }
+    },
+    "archetype": { "type": "object", "required": ["totalScore", "candidateArchetype", "finalArchetype", "gates", "downgradeReason"] },
+    "strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["constraint", "perceivedVsEvidenced", "previousAttemptsAnalysis", "bundle", "elementSequence", "businessValidation"],
+      "properties": {
+        "constraint": { "type": "object" },
+        "perceivedVsEvidenced": { "type": "object" },
+        "previousAttemptsAnalysis": { "type": ["object", "null"] },
+        "bundle": { "type": "object" },
+        "elementSequence": { "type": "array", "minItems": 1 },
+        "businessValidation": { "type": "object" }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stageVersion", "transitionRegistryVersion", "cards", "taskIds", "totalTasks", "businessValidation"],
+      "properties": {
+        "stageVersion": { "const": "task-resolver-stage.v1" },
+        "transitionRegistryVersion": { "const": "transitions-70.v2" },
+        "cards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["cardId", "order", "elementId", "role", "fromScore", "toScore", "tasks", "p02WhyNow", "p02Unlocks", "evidenceIds"],
+            "properties": {
+              "cardId": { "type": "string" },
+              "order": { "type": "integer", "minimum": 1 },
+              "elementId": { "$ref": "#/$defs/elementId" },
+              "role": { "enum": ["priority", "build"] },
+              "fromScore": { "type": "integer", "minimum": 0, "maximum": 10 },
+              "toScore": { "type": "integer", "minimum": 0, "maximum": 10 },
+              "tasks": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["taskId", "fromScore", "toScore", "task", "doneWhen", "transitionVersion"],
+                  "properties": {
+                    "taskId": { "type": "string", "minLength": 1 },
+                    "fromScore": { "type": "integer" },
+                    "toScore": { "type": "integer" },
+                    "task": { "type": "string", "minLength": 1 },
+                    "doneWhen": { "type": "string", "minLength": 1 },
+                    "transitionVersion": { "type": "string", "minLength": 1 }
+                  }
+                }
+              },
+              "p02WhyNow": { "type": "string" },
+              "p02Unlocks": { "type": "array", "items": { "type": "string" } },
+              "evidenceIds": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "taskIds": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "totalTasks": { "type": "integer", "minimum": 1 },
+        "businessValidation": { "type": "object" }
+      }
+    },
+    "moneyNow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "selectionStatus", "selectedScenario", "prescription", "skippedOutcome", "narrative"],
+      "properties": {
+        "status": { "enum": ["available", "no_eligible_scenario", "blocked_insufficient_evidence", "blocked_inconsistency"] },
+        "selectionStatus": { "enum": ["selected", "no_eligible_scenario"] },
+        "selectedScenario": { "type": ["object", "null"] },
+        "prescription": { "type": ["object", "null"] },
+        "skippedOutcome": { "type": ["object", "null"] },
+        "narrative": { "type": "object" }
+      }
+    },
+    "report": { "type": "object" },
+    "finalFocus": { "type": "object", "required": ["headline", "text", "first_task_id", "first_action", "wait_for_signal", "source_refs"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upstreamIds", "upstreamHashes", "p04DeterministicInputHash", "assemblyInputHash"],
+      "properties": {
+        "upstreamIds": { "type": "object" },
+        "upstreamHashes": { "type": "object" },
+        "p04DeterministicInputHash": { "$ref": "#/$defs/hash" },
+        "assemblyInputHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  },
+  "$defs": {
+    "elementId": { "enum": ["authenticity", "audience", "product_method", "sales_technology", "funnel", "blog", "team"] },
+    "score": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authenticity", "audience", "product_method", "sales_technology", "funnel", "blog", "team"],
+      "properties": {
+        "authenticity": { "$ref": "#/$defs/score" },
+        "audience": { "$ref": "#/$defs/score" },
+        "product_method": { "$ref": "#/$defs/score" },
+        "sales_technology": { "$ref": "#/$defs/score" },
+        "funnel": { "$ref": "#/$defs/score" },
+        "blog": { "$ref": "#/$defs/score" },
+        "team": { "$ref": "#/$defs/score" }
+      }
+    },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

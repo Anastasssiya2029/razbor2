@@ -1,0 +1,559 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "p03-money-now-prescription.output.v1.4.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "promptVersion",
+    "schemaVersion",
+    "analysisStatus",
+    "selectedScenario",
+    "diagnosis",
+    "businessPrescription",
+    "targetMetric",
+    "test30d",
+    "revenueScenario",
+    "supportingElements",
+    "lockedTeaser",
+    "sanityChecks"
+  ],
+  "properties": {
+    "promptVersion": {
+      "const": "P-03.v1.4"
+    },
+    "schemaVersion": {
+      "const": "1.4"
+    },
+    "analysisStatus": {
+      "enum": [
+        "ok",
+        "low_confidence",
+        "blocked_by_inconsistency",
+        "blocked_by_insufficient_evidence"
+      ]
+    },
+    "selectedScenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "scenario_title"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^MN(0[1-9]|1[0-6])$"
+        },
+        "scenario_title": {
+          "type": "string",
+          "maxLength": 300
+        }
+      }
+    },
+    "diagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observed_fact",
+        "money_leak",
+        "primary_cause_code",
+        "cause_statement",
+        "contributing_cause_codes",
+        "evidence_ids",
+        "counterevidence_ids",
+        "confidence",
+        "missing_evidence"
+      ],
+      "properties": {
+        "observed_fact": {
+          "type": "string",
+          "maxLength": 800
+        },
+        "money_leak": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "primary_cause_code": {
+          "enum": [
+            "NO_INBOUND_OPPORTUNITIES",
+            "UNQUALIFIED_MEETINGS",
+            "NO_SALES_STRUCTURE",
+            "OVERCONSULTING_FREE_VALUE",
+            "UNCLEAR_PRODUCT_OR_OFFER",
+            "VALUE_NOT_OWNED_PRICE_FEAR",
+            "LOW_AVERAGE_CHECK_MODEL",
+            "NO_REPEAT_SALES",
+            "UNUSED_SOCIAL_ASSET",
+            "NO_FOLLOW_UP",
+            "CLIENT_PATH_BREAK",
+            "CAPACITY_BOTTLENECK",
+            "PROVEN_MECHANISM_INACTIVE",
+            "WEAK_REFERRAL_ACTIVATION",
+            "UNDERUSED_PROVEN_MECHANISM",
+            null
+          ]
+        },
+        "cause_statement": {
+          "type": "string",
+          "maxLength": 900
+        },
+        "contributing_cause_codes": {
+          "type": "array",
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "NO_INBOUND_OPPORTUNITIES",
+              "UNQUALIFIED_MEETINGS",
+              "NO_SALES_STRUCTURE",
+              "OVERCONSULTING_FREE_VALUE",
+              "UNCLEAR_PRODUCT_OR_OFFER",
+              "VALUE_NOT_OWNED_PRICE_FEAR",
+              "LOW_AVERAGE_CHECK_MODEL",
+              "NO_REPEAT_SALES",
+              "UNUSED_SOCIAL_ASSET",
+              "NO_FOLLOW_UP",
+              "CLIENT_PATH_BREAK",
+              "CAPACITY_BOTTLENECK",
+              "PROVEN_MECHANISM_INACTIVE",
+              "WEAK_REFERRAL_ACTIVATION",
+              "UNDERUSED_PROVEN_MECHANISM"
+            ]
+          }
+        },
+        "evidence_ids": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "string"
+          }
+        },
+        "counterevidence_ids": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "missing_evidence": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "businessPrescription": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "client_task_title",
+            "coach_explanation",
+            "precondition",
+            "interventions",
+            "expected_change",
+            "do_not_scale_yet",
+            "zero_step"
+          ],
+          "properties": {
+            "client_task_title": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 140
+            },
+            "coach_explanation": {
+              "type": "string",
+              "minLength": 30,
+              "maxLength": 1800
+            },
+            "precondition": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 700
+            },
+            "interventions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "intervention_code",
+                  "personalized_action",
+                  "why_needed"
+                ],
+                "properties": {
+                  "intervention_code": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "personalized_action": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "why_needed": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            },
+            "expected_change": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "do_not_scale_yet": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "zero_step": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "duration_days",
+                    "task",
+                    "market_action",
+                    "evidence_ids"
+                  ],
+                  "properties": {
+                    "duration_days": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "task": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "market_action": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "evidence_ids": {
+                      "type": "array",
+                      "maxItems": 5,
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "targetMetric": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "metric_name",
+            "baseline_value",
+            "target_value",
+            "unit",
+            "target_rule",
+            "source",
+            "assumptions",
+            "evidence_ids"
+          ],
+          "properties": {
+            "metric_name": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "baseline_value": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "target_value": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "target_rule": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "source": {
+              "enum": [
+                "client_fact",
+                "derived_from_client_facts",
+                "backend_metric",
+                "qualitative_rule"
+              ]
+            },
+            "assumptions": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence_ids": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "test30d": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "audience",
+            "offer",
+            "asset",
+            "path",
+            "actions",
+            "repetitions",
+            "primary_metric",
+            "baseline",
+            "target_signal",
+            "review_day",
+            "decision_rule"
+          ],
+          "properties": {
+            "audience": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "offer": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "asset": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "path": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "actions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "intervention_code",
+                  "action"
+                ],
+                "properties": {
+                  "intervention_code": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "action": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            },
+            "repetitions": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "primary_metric": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "baseline": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "target_signal": {
+              "type": "string",
+              "maxLength": 800
+            },
+            "review_day": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 30
+            },
+            "decision_rule": {
+              "type": "string",
+              "maxLength": 900
+            }
+          }
+        }
+      ]
+    },
+    "revenueScenario": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "description",
+            "formula",
+            "result_rub",
+            "assumptions",
+            "is_forecast"
+          ],
+          "properties": {
+            "description": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "formula": {
+              "type": "string",
+              "maxLength": 700
+            },
+            "result_rub": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "assumptions": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "string"
+              }
+            },
+            "is_forecast": {
+              "const": false
+            }
+          }
+        }
+      ]
+    },
+    "supportingElements": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "element_id",
+          "minimal_change",
+          "why_needed"
+        ],
+        "properties": {
+          "element_id": {
+            "enum": [
+              "authenticity",
+              "audience",
+              "product_method",
+              "sales_technology",
+              "funnel",
+              "blog",
+              "team"
+            ]
+          },
+          "minimal_change": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "why_needed": {
+            "type": "string",
+            "maxLength": 700
+          }
+        }
+      }
+    },
+    "lockedTeaser": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 400
+    },
+    "sanityChecks": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "evidence_ids"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "warning",
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 800
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "title": "P03MoneyNowPrescriptionOutputV1_4"
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `p04_report_results` ADD `attempt_diagnostics_json` text DEFAULT '[]' NOT NULL;
