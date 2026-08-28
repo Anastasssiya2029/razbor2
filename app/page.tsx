@@ -31,6 +31,7 @@ import { buildCurrentSystemSummary } from "@/lib/current-system-summary";
 import type { AnalysisOverview } from "@/lib/analysis-overview";
 import { failedRunRecovery } from "@/lib/analysis-run-recovery";
 import { hasQaPrefillHash, readQaPrefillHash } from "@/lib/qa-prefill";
+import { validateFlatDiagnosticNumericFields } from "@/lib/diagnostic-numeric-fields";
 
 type FieldProps = {
   label: string;
@@ -1599,8 +1600,16 @@ export default function Home() {
 
   const saveStartAndOpenProject = async () => {
     setSubmissionError(null);
-    setIsSavingStart(true);
     const rawValues = { ...values };
+    const numericIssue = validateFlatDiagnosticNumericFields(rawValues, {
+      desiredSystemHoursApplicable,
+    })[0];
+    if (numericIssue) {
+      setActiveTab(0);
+      setSubmissionError(numericIssue.message);
+      return;
+    }
+    setIsSavingStart(true);
     const replacesExistingResult = analysisResult !== null || realAnalysisResult !== null;
     try {
       const response = submittedDiagnostic?.status === "draft"
@@ -1652,6 +1661,16 @@ export default function Home() {
 
   const openAnalysis = async (mode: "form_submit" | "retry_plan" = "form_submit") => {
     const preserveOverview = mode === "retry_plan";
+    const rawValues = { ...values };
+    const numericIssue = mode === "form_submit"
+      ? validateFlatDiagnosticNumericFields(rawValues, { desiredSystemHoursApplicable })[0]
+      : null;
+    if (numericIssue) {
+      setCurrentStage(0);
+      setActiveTab(0);
+      setSubmissionError(numericIssue.message);
+      return;
+    }
     const intentionalRecalculation = mode === "form_submit" && (recalculationDraft || realAnalysisResult !== null);
     const confirmPaidRecalculation = () => window.confirm(
       "Запустить новый платный расчёт по этим ответам? Предыдущий результат сохранится в кабинете, новый будет создан отдельно.",
@@ -1665,7 +1684,6 @@ export default function Home() {
     setSubmissionError(null);
     setAnalysisBackgroundError(null);
     setIsSubmittingDiagnostic(true);
-    const rawValues = { ...values };
     let overviewAvailable = preserveOverview && analysisResult !== null;
 
     if (!preserveOverview) {

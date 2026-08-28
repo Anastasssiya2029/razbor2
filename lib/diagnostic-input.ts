@@ -1,4 +1,5 @@
 import diagnosticInputSchema from "@/schemas/diagnostic-input.v1.2.schema.json";
+import { validateFlatDiagnosticNumericFields } from "@/lib/diagnostic-numeric-fields";
 
 export const DIAGNOSTIC_SCHEMA_VERSION = "1.2" as const;
 export const METHODOLOGY_VERSION = "7k.v1.4" as const;
@@ -192,6 +193,14 @@ function normalizeFlatSubmission(payload: Record<string, unknown>): DiagnosticIn
   const payingClientsCount = numberOrNull(values.clientsCount, "/current/payingClientsCount");
   const explicitTimeFreedom =
     meta.desiredSystemWeeklyHoursApplicable === true || hasExplicitTimeFreedomGoal({ ...values, ...meta });
+  const numericIssues = validateFlatDiagnosticNumericFields(values, {
+    desiredSystemHoursApplicable: explicitTimeFreedom,
+  });
+  if (numericIssues.length > 0) {
+    throw new DiagnosticContractError(
+      numericIssues.map(({ path, code, message }) => ({ path, code, message })),
+    );
+  }
 
   return {
     schemaVersion: DIAGNOSTIC_SCHEMA_VERSION,

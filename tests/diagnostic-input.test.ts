@@ -104,6 +104,47 @@ test("preserves explicit zero and converts empty values to null", () => {
   assert.equal(input.current.weeklyHours, 0);
 });
 
+test("rejects an income phrase whose first number is a period rather than money", () => {
+  assert.throws(
+    () => normalizeFlat({ currentIncome: "Средняя выручка за последние 6 месяцев, достаточно ровная." }),
+    (error: unknown) =>
+      error instanceof DiagnosticContractError
+      && error.issues.some((item) => item.path === "/current/monthlyRevenueRub" && item.code === "ambiguous_money"),
+  );
+  assert.equal(
+    normalizeFlat({ currentIncome: "70 000 ₽, средняя за последние 6 месяцев" }).input.current.monthlyRevenueRub,
+    70_000,
+  );
+});
+
+test("validates current and desired weekly hours before an AI-ready diagnostic is created", () => {
+  assert.throws(
+    () => normalizeFlat({ weeklyTime: "последние 6 месяцев" }),
+    (error: unknown) =>
+      error instanceof DiagnosticContractError
+      && error.issues.some((item) => item.path === "/current/weeklyHours" && item.code === "ambiguous_weekly_hours"),
+  );
+  assert.throws(
+    () => normalizeFlat({ weeklyTime: "169" }),
+    (error: unknown) =>
+      error instanceof DiagnosticContractError
+      && error.issues.some((item) => item.path === "/current/weeklyHours" && item.code === "invalid_weekly_hours"),
+  );
+  assert.throws(
+    () => normalizeDiagnosticSubmission({
+      rawAnswers: {
+        values: { ...flatAnswers, systemTime: "" },
+        deadline: "6 месяцев",
+        clientsCountPeriod: "month",
+        desiredSystemWeeklyHoursApplicable: true,
+      },
+    }),
+    (error: unknown) =>
+      error instanceof DiagnosticContractError
+      && error.issues.some((item) => item.path === "/target/desiredSystemWeeklyHours" && item.code === "required_weekly_hours"),
+  );
+});
+
 test("requires the clients period when a client count is present", () => {
   assert.throws(
     () =>

@@ -51,6 +51,7 @@
         "weeklyHours": {
           "type": ["number", "null"],
           "minimum": 0,
+          "maximum": 168,
           "description": "Current total weekly owner involvement across client work, content, sales, team and operations. Used for capacity/owner-dependency analysis; not an automatic score modifier."
         },
         "products": { "type": ["string", "null"] },
@@ -87,6 +88,7 @@
         "desiredSystemWeeklyHours": {
           "type": ["number", "null"],
           "minimum": 0,
+          "maximum": 168,
           "description": "Conditional. Desired weekly workload after the system is built, only when time freedom/reduced owner involvement is explicitly part of the goal. Otherwise null."
         }
       }

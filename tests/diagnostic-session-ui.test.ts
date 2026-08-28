@@ -116,6 +116,13 @@ test("money fields lift as one control without a second focused rectangle", () =
   assert.match(styles, /\.money-input-wrap:focus-within/u);
 });
 
+test("income and weekly-hour fields are validated before saving or starting a paid analysis", () => {
+  const page = readFileSync("app/page.tsx", "utf8");
+  assert.match(page, /validateFlatDiagnosticNumericFields/u);
+  assert.match(page, /const saveStartAndOpenProject[\s\S]*?if \(numericIssue\)[\s\S]*?setActiveTab\(0\)[\s\S]*?return;[\s\S]*?fetch/u);
+  assert.match(page, /const openAnalysis[\s\S]*?mode === "form_submit"[\s\S]*?if \(numericIssue\)[\s\S]*?return;[\s\S]*?confirmPaidRecalculation/u);
+});
+
 test("text answers match label size without inheriting label emphasis", () => {
   const styles = readFileSync("app/globals.css", "utf8");
   assert.match(
