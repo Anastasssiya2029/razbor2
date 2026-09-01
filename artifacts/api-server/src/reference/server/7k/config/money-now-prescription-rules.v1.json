@@ -1,0 +1,933 @@
+{
+  "version": "money-now-prescription-rules.v1",
+  "businessMethodologyVersion": "money-now.v2.3",
+  "changeFromV2_2": {
+    "selectorChanged": false,
+    "scenariosChanged": false,
+    "rankingChanged": false,
+    "newCauseCode": "UNDERUSED_PROVEN_MECHANISM",
+    "reason": "MN16 описывает уже работающую и повторяемую связку, которая используется недостаточно часто. Старый NO_INBOUND_OPPORTUNITIES не покрывает этот случай точно."
+  },
+  "causeCodes": {
+    "NO_INBOUND_OPPORTUNITIES": {
+      "title": "Нет активных возможностей для продажи",
+      "definition": "Нет или недостаточно активных клиентских возможностей: человек не инициирует доступный способ дотянуться до подходящих людей.",
+      "defaultElements": [
+        "funnel"
+      ]
+    },
+    "UNQUALIFIED_MEETINGS": {
+      "title": "Нецелевые или неквалифицированные встречи",
+      "definition": "На продажу попадают люди без подходящей задачи/готовности или приходящие преимущественно за бесплатной консультацией.",
+      "defaultElements": [
+        "audience",
+        "funnel",
+        "sales_technology"
+      ]
+    },
+    "NO_SALES_STRUCTURE": {
+      "title": "Нет структуры продаж",
+      "definition": "Встречи/переписки идут по ситуации, без повторяемой логики от запроса к предложению и решению.",
+      "defaultElements": [
+        "sales_technology"
+      ]
+    },
+    "OVERCONSULTING_FREE_VALUE": {
+      "title": "Консультирует вместо продажи",
+      "definition": "В бесплатном контакте клиент получает существенную часть законченного решения, поэтому необходимость покупать снижается.",
+      "defaultElements": [
+        "sales_technology"
+      ]
+    },
+    "UNCLEAR_PRODUCT_OR_OFFER": {
+      "title": "Непонятный продукт или оффер",
+      "definition": "Покупателю недостаточно ясно, что он покупает, для кого продукт, какой результат, границы и следующий шаг.",
+      "defaultElements": [
+        "product_method"
+      ]
+    },
+    "VALUE_NOT_OWNED_PRICE_FEAR": {
+      "title": "Не присвоена ценность / страх цены",
+      "definition": "Эксперт боится назвать цену, заранее снижает её или избегает предложения из-за сомнения в собственной ценности.",
+      "defaultElements": [
+        "authenticity",
+        "sales_technology"
+      ]
+    },
+    "LOW_AVERAGE_CHECK_MODEL": {
+      "title": "Низкомонетизируемая модель",
+      "definition": "Продажи есть, но формат/цена ограничивают выручку с одного клиента при доказанной ценности и спросе.",
+      "defaultElements": [
+        "product_method"
+      ]
+    },
+    "NO_REPEAT_SALES": {
+      "title": "Не встроены повторные продажи",
+      "definition": "Клиенты получают результат, но продолжение, следующий продукт или релевантная допродажа не встроены в коммерческий путь.",
+      "defaultElements": [
+        "product_method",
+        "sales_technology"
+      ]
+    },
+    "UNUSED_SOCIAL_ASSET": {
+      "title": "Не используется тёплый социальный актив",
+      "definition": "Есть клиенты, аудитория, партнёры или профессиональные контакты, но им не делают релевантного коммерческого действия.",
+      "defaultElements": [
+        "funnel"
+      ]
+    },
+    "NO_FOLLOW_UP": {
+      "title": "Нет follow-up",
+      "definition": "Есть интерес, «подумаю» или незакрытые предложения, но к решению системно не возвращаются.",
+      "defaultElements": [
+        "sales_technology"
+      ]
+    },
+    "CLIENT_PATH_BREAK": {
+      "title": "Разрыв пути клиента",
+      "definition": "Люди проявляют интерес, но теряются между касаниями и не доходят до следующего коммерческого шага.",
+      "defaultElements": [
+        "funnel"
+      ]
+    },
+    "CAPACITY_BOTTLENECK": {
+      "title": "Нет ёмкости принять больше",
+      "definition": "Спрос и продажи есть, но владелец/команда не способны принять дополнительный объём без перегруза.",
+      "defaultElements": [
+        "team",
+        "product_method"
+      ]
+    },
+    "PROVEN_MECHANISM_INACTIVE": {
+      "title": "Выключен доказанный механизм",
+      "definition": "Есть канал, мероприятие или связка, которые раньше давали оплаты, но сейчас не используются.",
+      "defaultElements": [
+        "funnel",
+        "sales_technology"
+      ]
+    },
+    "WEAK_REFERRAL_ACTIVATION": {
+      "title": "Рекомендации не активируются",
+      "definition": "Есть довольные клиенты и подтверждённый результат, но рекомендации не запрашиваются и не становятся регулярным входом.",
+      "defaultElements": [
+        "funnel",
+        "product_method"
+      ]
+    },
+    "UNDERUSED_PROVEN_MECHANISM": {
+      "title": "Рабочий механизм используется реже, чем позволяет ёмкость",
+      "definition": "Путь до оплаты уже доказан и повторяем, свободная ёмкость есть, но рабочая связка выполняется недостаточно часто.",
+      "defaultElements": [
+        "funnel"
+      ]
+    }
+  },
+  "interventions": {
+    "INT_QUALIFY_BEFORE_SALE": {
+      "title": "Ввести квалификацию до продажи",
+      "description": "Зафиксировать критерии целевого клиента и до продающей встречи/следующего шага отсекать людей, которым продукт сейчас не подходит.",
+      "supportingElements": [
+        "audience",
+        "funnel",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "qualification",
+        "lead_filtering",
+        "sales_meeting"
+      ]
+    },
+    "INT_BUILD_SALES_STRUCTURE": {
+      "title": "Собрать одну технологию продажи",
+      "description": "Внедрить повторяемую структуру встречи или переписки: диагностика задачи, ценность решения, предложение, решение клиента и следующий шаг.",
+      "supportingElements": [
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "sales_structure",
+        "sales_meeting",
+        "sales_script"
+      ]
+    },
+    "INT_LIMIT_FREE_CONSULTING": {
+      "title": "Убрать полноценную бесплатную консультацию из продажи",
+      "description": "Перестроить бесплатный контакт вокруг диагностики и выбора решения, не закрывая существенную часть клиентской задачи бесплатно.",
+      "supportingElements": [
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "free_consultation",
+        "diagnostic_call",
+        "sales_meeting"
+      ]
+    },
+    "INT_CLARIFY_PRODUCT_OFFER": {
+      "title": "Сделать оффер конкретным",
+      "description": "Зафиксировать для выбранного сегмента результат, формат, границы, путь, цену и однозначный следующий шаг.",
+      "supportingElements": [
+        "product_method"
+      ],
+      "historyMatchTags": [
+        "offer",
+        "product_packaging",
+        "positioning"
+      ]
+    },
+    "INT_TEST_EVIDENCED_PRICE": {
+      "title": "Проверить доказанную цену рыночным действием",
+      "description": "Назвать и использовать в реальном предложении цену, которая опирается на доказанный результат и экономику, не снижая её заранее из страха.",
+      "supportingElements": [
+        "authenticity",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "pricing",
+        "price_test",
+        "sales_offer"
+      ]
+    },
+    "INT_PACKAGE_ONE_OFF_WORK": {
+      "title": "Собрать разовую работу в пакет",
+      "description": "Объединить повторяемую работу в законченный пакет/этап, который ведёт клиента к более полному результату.",
+      "supportingElements": [
+        "product_method"
+      ],
+      "historyMatchTags": [
+        "package",
+        "subscription",
+        "product_model",
+        "pricing"
+      ]
+    },
+    "INT_SYSTEMATIZE_CONTINUATION": {
+      "title": "Встроить продажу следующего этапа",
+      "description": "Зафиксировать, кому, когда и какой следующий этап предлагать после текущего результата, и сделать это обязательной частью пути клиента.",
+      "supportingElements": [
+        "product_method",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "continuation",
+        "renewal",
+        "repeat_sales"
+      ]
+    },
+    "INT_SYSTEMATIZE_UPSELL": {
+      "title": "Встроить релевантную допродажу",
+      "description": "Зафиксировать, какому текущему клиенту и в какой момент предлагать следующий продукт или дополнительное решение.",
+      "supportingElements": [
+        "product_method",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "upsell",
+        "cross_sell",
+        "repeat_sales"
+      ]
+    },
+    "INT_REACTIVATE_FORMER_CLIENTS": {
+      "title": "Вернуться к бывшим клиентам",
+      "description": "Сделать релевантное предложение бывшим клиентам, для которых текущий следующий шаг снова актуален.",
+      "supportingElements": [
+        "funnel",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "reactivation",
+        "former_clients",
+        "crm_reactivation"
+      ]
+    },
+    "INT_RECONTACT_WARM_LEADS": {
+      "title": "Вернуть тёплые незакрытые диалоги",
+      "description": "Вернуться к тёплым лидам с совместимой причиной паузы и дать один ясный следующий шаг или уточнённое предложение.",
+      "supportingElements": [
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "warm_leads",
+        "follow_up",
+        "lead_reactivation"
+      ]
+    },
+    "INT_FOLLOW_UP_OPEN_DECISIONS": {
+      "title": "Ввести обязательный follow-up",
+      "description": "Зафиксировать повторный контакт по «подумаю» и незакрытым предложениям с однозначным следующим шагом.",
+      "supportingElements": [
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "follow_up",
+        "sales_follow_up",
+        "open_decisions"
+      ]
+    },
+    "INT_REQUEST_REFERRALS": {
+      "title": "Запустить запрос рекомендаций",
+      "description": "Просить клиентов, которые получили результат и довольны работой, знакомить с людьми с похожей задачей.",
+      "supportingElements": [
+        "funnel",
+        "product_method"
+      ],
+      "historyMatchTags": [
+        "referrals",
+        "recommendations",
+        "word_of_mouth"
+      ]
+    },
+    "INT_ACTIVATE_WARM_NETWORK": {
+      "title": "Активировать тёплую профессиональную сеть",
+      "description": "Сделать точечное релевантное обращение к контактам, у которых есть доступ к выбранному сегменту или возможность познакомить.",
+      "supportingElements": [
+        "funnel"
+      ],
+      "historyMatchTags": [
+        "warm_network",
+        "outreach",
+        "network_sales"
+      ]
+    },
+    "INT_DIRECT_OFFER_TO_AUDIENCE": {
+      "title": "Сделать прямое предложение текущей аудитории",
+      "description": "Выбрать один приоритетный сегмент текущей аудитории и сделать ему одно конкретное предложение с ясным следующим шагом.",
+      "supportingElements": [
+        "blog",
+        "funnel",
+        "product_method"
+      ],
+      "historyMatchTags": [
+        "audience_offer",
+        "content_sales",
+        "direct_offer"
+      ]
+    },
+    "INT_ACTIVATE_PARTNER_CHANNEL": {
+      "title": "Запустить один партнёрский сценарий",
+      "description": "Согласовать с одним подходящим партнёром конкретный способ доступа к ЦА и одно понятное предложение для неё.",
+      "supportingElements": [
+        "funnel"
+      ],
+      "historyMatchTags": [
+        "partnership",
+        "partner_channel",
+        "affiliate"
+      ]
+    },
+    "INT_REPEAT_BEST_PERIOD": {
+      "title": "Повторить ключевые действия лучшего периода",
+      "description": "Воспроизвести доказанные действия лучшего периода, сохранив ключевые условия, которые доступны сейчас.",
+      "supportingElements": [
+        "funnel",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "best_period",
+        "historical_mechanism",
+        "repeat_mechanism"
+      ]
+    },
+    "INT_REACTIVATE_PROVEN_CHANNEL": {
+      "title": "Вернуть доказанный канал",
+      "description": "Снова запустить канал, который уже приводил оплаты, только при подтверждённой воспроизводимости его ключевых условий.",
+      "supportingElements": [
+        "funnel"
+      ],
+      "historyMatchTags": [
+        "channel_reactivation",
+        "traffic_channel",
+        "historical_channel"
+      ]
+    },
+    "INT_REPEAT_PROVEN_EVENT": {
+      "title": "Повторить доказанное мероприятие",
+      "description": "Провести ещё один цикл мероприятия/эфира/разбора, который уже приводил оплаты, при воспроизводимых условиях.",
+      "supportingElements": [
+        "funnel",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "event",
+        "webinar",
+        "live_event",
+        "historical_event"
+      ]
+    },
+    "INT_FIX_NEXT_STEP": {
+      "title": "Закрыть один разрыв в пути клиента",
+      "description": "Сделать следующий шаг после текущего интереса однозначным, управляемым и наблюдаемым.",
+      "supportingElements": [
+        "funnel"
+      ],
+      "historyMatchTags": [
+        "client_path",
+        "next_step",
+        "conversion_step"
+      ]
+    },
+    "INT_RAISE_PRICE_NEW_SALES": {
+      "title": "Изменить цену для новых продаж",
+      "description": "Использовать новую цену в новых продажах, если внутренние данные подтверждают, что текущая цена ограничивает экономику, а ценность уже доказана.",
+      "supportingElements": [
+        "product_method",
+        "sales_technology"
+      ],
+      "historyMatchTags": [
+        "pricing",
+        "price_increase",
+        "offer"
+      ]
+    },
+    "INT_INCREASE_PROVEN_REPETITIONS": {
+      "title": "Увеличить число повторений рабочей связки",
+      "description": "Увеличить частоту уже доказанного клиентского действия/канала/продажи в пределах подтверждённой свободной ёмкости.",
+      "supportingElements": [
+        "funnel"
+      ],
+      "historyMatchTags": [
+        "volume",
+        "repetition",
+        "proven_mechanism"
+      ]
+    },
+    "INT_FREE_CAPACITY": {
+      "title": "Освободить ёмкость до роста потока",
+      "description": "Снять конкретную операционную нагрузку или изменить способ исполнения, чтобы дополнительные продажи можно было реально выполнить.",
+      "supportingElements": [
+        "team",
+        "product_method"
+      ],
+      "historyMatchTags": [
+        "capacity",
+        "delegation",
+        "delivery_model"
+      ]
+    }
+  },
+  "scenarioRules": {
+    "MN01": {
+      "causePrecedence": [
+        "NO_REPEAT_SALES",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "NO_REPEAT_SALES",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_SYSTEMATIZE_CONTINUATION"
+      ]
+    },
+    "MN02": {
+      "causePrecedence": [
+        "NO_REPEAT_SALES",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "NO_REPEAT_SALES",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_SYSTEMATIZE_UPSELL"
+      ]
+    },
+    "MN03": {
+      "causePrecedence": [
+        "LOW_AVERAGE_CHECK_MODEL",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "LOW_AVERAGE_CHECK_MODEL",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_PACKAGE_ONE_OFF_WORK"
+      ]
+    },
+    "MN04": {
+      "causePrecedence": [
+        "UNUSED_SOCIAL_ASSET",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "UNUSED_SOCIAL_ASSET",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_REACTIVATE_FORMER_CLIENTS"
+      ]
+    },
+    "MN05": {
+      "causePrecedence": [
+        "UNQUALIFIED_MEETINGS",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "OVERCONSULTING_FREE_VALUE",
+        "NO_SALES_STRUCTURE",
+        "NO_FOLLOW_UP",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "UNQUALIFIED_MEETINGS",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "OVERCONSULTING_FREE_VALUE",
+        "NO_SALES_STRUCTURE",
+        "NO_FOLLOW_UP",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "UNQUALIFIED_MEETINGS",
+        "UNCLEAR_PRODUCT_OR_OFFER",
+        "OVERCONSULTING_FREE_VALUE",
+        "NO_SALES_STRUCTURE",
+        "NO_FOLLOW_UP",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_RECONTACT_WARM_LEADS"
+      ]
+    },
+    "MN06": {
+      "causePrecedence": [
+        "WEAK_REFERRAL_ACTIVATION"
+      ],
+      "allowedPrimaryCauses": [
+        "WEAK_REFERRAL_ACTIVATION"
+      ],
+      "allowedContributingCauses": [
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_REQUEST_REFERRALS"
+      ]
+    },
+    "MN07": {
+      "causePrecedence": [
+        "UNUSED_SOCIAL_ASSET",
+        "NO_INBOUND_OPPORTUNITIES",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "UNUSED_SOCIAL_ASSET",
+        "NO_INBOUND_OPPORTUNITIES",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_ACTIVATE_WARM_NETWORK"
+      ]
+    },
+    "MN08": {
+      "causePrecedence": [
+        "UNUSED_SOCIAL_ASSET",
+        "CLIENT_PATH_BREAK",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "UNUSED_SOCIAL_ASSET",
+        "CLIENT_PATH_BREAK",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "CLIENT_PATH_BREAK",
+        "NO_SALES_STRUCTURE",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_DIRECT_OFFER_TO_AUDIENCE"
+      ]
+    },
+    "MN09": {
+      "causePrecedence": [
+        "UNUSED_SOCIAL_ASSET",
+        "NO_INBOUND_OPPORTUNITIES",
+        "NO_SALES_STRUCTURE"
+      ],
+      "allowedPrimaryCauses": [
+        "UNUSED_SOCIAL_ASSET",
+        "NO_INBOUND_OPPORTUNITIES",
+        "NO_SALES_STRUCTURE"
+      ],
+      "allowedContributingCauses": [
+        "NO_SALES_STRUCTURE"
+      ],
+      "anchorAnyOf": [
+        "INT_ACTIVATE_PARTNER_CHANNEL"
+      ]
+    },
+    "MN10": {
+      "causePrecedence": [
+        "PROVEN_MECHANISM_INACTIVE"
+      ],
+      "allowedPrimaryCauses": [
+        "PROVEN_MECHANISM_INACTIVE"
+      ],
+      "allowedContributingCauses": [],
+      "anchorAnyOf": [
+        "INT_REPEAT_BEST_PERIOD"
+      ]
+    },
+    "MN11": {
+      "causePrecedence": [
+        "PROVEN_MECHANISM_INACTIVE"
+      ],
+      "allowedPrimaryCauses": [
+        "PROVEN_MECHANISM_INACTIVE"
+      ],
+      "allowedContributingCauses": [],
+      "anchorAnyOf": [
+        "INT_REACTIVATE_PROVEN_CHANNEL"
+      ]
+    },
+    "MN12": {
+      "causePrecedence": [
+        "PROVEN_MECHANISM_INACTIVE"
+      ],
+      "allowedPrimaryCauses": [
+        "PROVEN_MECHANISM_INACTIVE"
+      ],
+      "allowedContributingCauses": [],
+      "anchorAnyOf": [
+        "INT_REPEAT_PROVEN_EVENT"
+      ]
+    },
+    "MN13": {
+      "causePrecedence": [
+        "CLIENT_PATH_BREAK",
+        "NO_FOLLOW_UP",
+        "NO_SALES_STRUCTURE"
+      ],
+      "allowedPrimaryCauses": [
+        "CLIENT_PATH_BREAK",
+        "NO_FOLLOW_UP",
+        "NO_SALES_STRUCTURE"
+      ],
+      "allowedContributingCauses": [
+        "NO_FOLLOW_UP",
+        "NO_SALES_STRUCTURE"
+      ],
+      "anchorAnyOf": [
+        "INT_FIX_NEXT_STEP"
+      ]
+    },
+    "MN14": {
+      "causePrecedence": [
+        "UNQUALIFIED_MEETINGS",
+        "OVERCONSULTING_FREE_VALUE",
+        "NO_SALES_STRUCTURE",
+        "NO_FOLLOW_UP",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "UNQUALIFIED_MEETINGS",
+        "OVERCONSULTING_FREE_VALUE",
+        "NO_SALES_STRUCTURE",
+        "NO_FOLLOW_UP",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "UNQUALIFIED_MEETINGS",
+        "OVERCONSULTING_FREE_VALUE",
+        "NO_SALES_STRUCTURE",
+        "NO_FOLLOW_UP",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_QUALIFY_BEFORE_SALE",
+        "INT_LIMIT_FREE_CONSULTING",
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_FOLLOW_UP_OPEN_DECISIONS",
+        "INT_TEST_EVIDENCED_PRICE"
+      ]
+    },
+    "MN15": {
+      "causePrecedence": [
+        "LOW_AVERAGE_CHECK_MODEL",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedPrimaryCauses": [
+        "LOW_AVERAGE_CHECK_MODEL",
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "allowedContributingCauses": [
+        "VALUE_NOT_OWNED_PRICE_FEAR"
+      ],
+      "anchorAnyOf": [
+        "INT_RAISE_PRICE_NEW_SALES",
+        "INT_PACKAGE_ONE_OFF_WORK"
+      ]
+    },
+    "MN16": {
+      "causePrecedence": [
+        "UNDERUSED_PROVEN_MECHANISM"
+      ],
+      "allowedPrimaryCauses": [
+        "UNDERUSED_PROVEN_MECHANISM"
+      ],
+      "allowedContributingCauses": [
+        "NO_INBOUND_OPPORTUNITIES"
+      ],
+      "anchorAnyOf": [
+        "INT_INCREASE_PROVEN_REPETITIONS"
+      ]
+    }
+  },
+  "scenarioCauseInterventions": {
+    "MN01": {
+      "NO_REPEAT_SALES": [
+        "INT_SYSTEMATIZE_CONTINUATION"
+      ],
+      "UNCLEAR_PRODUCT_OR_OFFER": [
+        "INT_CLARIFY_PRODUCT_OFFER",
+        "INT_SYSTEMATIZE_CONTINUATION"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_SYSTEMATIZE_CONTINUATION"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_SYSTEMATIZE_CONTINUATION"
+      ]
+    },
+    "MN02": {
+      "NO_REPEAT_SALES": [
+        "INT_SYSTEMATIZE_UPSELL"
+      ],
+      "UNCLEAR_PRODUCT_OR_OFFER": [
+        "INT_CLARIFY_PRODUCT_OFFER",
+        "INT_SYSTEMATIZE_UPSELL"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_SYSTEMATIZE_UPSELL"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_SYSTEMATIZE_UPSELL"
+      ]
+    },
+    "MN03": {
+      "LOW_AVERAGE_CHECK_MODEL": [
+        "INT_PACKAGE_ONE_OFF_WORK"
+      ],
+      "UNCLEAR_PRODUCT_OR_OFFER": [
+        "INT_CLARIFY_PRODUCT_OFFER",
+        "INT_PACKAGE_ONE_OFF_WORK"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_PACKAGE_ONE_OFF_WORK"
+      ]
+    },
+    "MN04": {
+      "UNUSED_SOCIAL_ASSET": [
+        "INT_REACTIVATE_FORMER_CLIENTS"
+      ],
+      "UNCLEAR_PRODUCT_OR_OFFER": [
+        "INT_CLARIFY_PRODUCT_OFFER",
+        "INT_REACTIVATE_FORMER_CLIENTS"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_REACTIVATE_FORMER_CLIENTS"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_REACTIVATE_FORMER_CLIENTS"
+      ]
+    },
+    "MN05": {
+      "UNQUALIFIED_MEETINGS": [
+        "INT_QUALIFY_BEFORE_SALE",
+        "INT_RECONTACT_WARM_LEADS"
+      ],
+      "UNCLEAR_PRODUCT_OR_OFFER": [
+        "INT_CLARIFY_PRODUCT_OFFER",
+        "INT_RECONTACT_WARM_LEADS"
+      ],
+      "OVERCONSULTING_FREE_VALUE": [
+        "INT_LIMIT_FREE_CONSULTING",
+        "INT_RECONTACT_WARM_LEADS"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_RECONTACT_WARM_LEADS"
+      ],
+      "NO_FOLLOW_UP": [
+        "INT_RECONTACT_WARM_LEADS"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_RECONTACT_WARM_LEADS"
+      ]
+    },
+    "MN06": {
+      "WEAK_REFERRAL_ACTIVATION": [
+        "INT_REQUEST_REFERRALS"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_REQUEST_REFERRALS"
+      ]
+    },
+    "MN07": {
+      "UNUSED_SOCIAL_ASSET": [
+        "INT_ACTIVATE_WARM_NETWORK"
+      ],
+      "NO_INBOUND_OPPORTUNITIES": [
+        "INT_ACTIVATE_WARM_NETWORK"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_ACTIVATE_WARM_NETWORK"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_ACTIVATE_WARM_NETWORK"
+      ]
+    },
+    "MN08": {
+      "UNUSED_SOCIAL_ASSET": [
+        "INT_DIRECT_OFFER_TO_AUDIENCE"
+      ],
+      "CLIENT_PATH_BREAK": [
+        "INT_FIX_NEXT_STEP",
+        "INT_DIRECT_OFFER_TO_AUDIENCE"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_DIRECT_OFFER_TO_AUDIENCE"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_DIRECT_OFFER_TO_AUDIENCE"
+      ]
+    },
+    "MN09": {
+      "UNUSED_SOCIAL_ASSET": [
+        "INT_ACTIVATE_PARTNER_CHANNEL"
+      ],
+      "NO_INBOUND_OPPORTUNITIES": [
+        "INT_ACTIVATE_PARTNER_CHANNEL"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE",
+        "INT_ACTIVATE_PARTNER_CHANNEL"
+      ]
+    },
+    "MN10": {
+      "PROVEN_MECHANISM_INACTIVE": [
+        "INT_REPEAT_BEST_PERIOD"
+      ]
+    },
+    "MN11": {
+      "PROVEN_MECHANISM_INACTIVE": [
+        "INT_REACTIVATE_PROVEN_CHANNEL"
+      ]
+    },
+    "MN12": {
+      "PROVEN_MECHANISM_INACTIVE": [
+        "INT_REPEAT_PROVEN_EVENT"
+      ]
+    },
+    "MN13": {
+      "CLIENT_PATH_BREAK": [
+        "INT_FIX_NEXT_STEP"
+      ],
+      "NO_FOLLOW_UP": [
+        "INT_FIX_NEXT_STEP",
+        "INT_FOLLOW_UP_OPEN_DECISIONS"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_FIX_NEXT_STEP",
+        "INT_BUILD_SALES_STRUCTURE"
+      ]
+    },
+    "MN14": {
+      "UNQUALIFIED_MEETINGS": [
+        "INT_QUALIFY_BEFORE_SALE"
+      ],
+      "OVERCONSULTING_FREE_VALUE": [
+        "INT_LIMIT_FREE_CONSULTING"
+      ],
+      "NO_SALES_STRUCTURE": [
+        "INT_BUILD_SALES_STRUCTURE"
+      ],
+      "NO_FOLLOW_UP": [
+        "INT_FOLLOW_UP_OPEN_DECISIONS"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE"
+      ]
+    },
+    "MN15": {
+      "LOW_AVERAGE_CHECK_MODEL": [
+        "INT_RAISE_PRICE_NEW_SALES",
+        "INT_PACKAGE_ONE_OFF_WORK"
+      ],
+      "VALUE_NOT_OWNED_PRICE_FEAR": [
+        "INT_TEST_EVIDENCED_PRICE",
+        "INT_RAISE_PRICE_NEW_SALES"
+      ]
+    },
+    "MN16": {
+      "UNDERUSED_PROVEN_MECHANISM": [
+        "INT_INCREASE_PROVEN_REPETITIONS"
+      ],
+      "NO_INBOUND_OPPORTUNITIES": [
+        "INT_INCREASE_PROVEN_REPETITIONS"
+      ]
+    }
+  },
+  "selectionRules": {
+    "primaryCause": "must be in scenario.allowedPrimaryCauses and have evidence",
+    "contributingCauses": "max 2, must be in scenario.allowedContributingCauses and have evidence",
+    "precedence": "when multiple causes are equally evidenced, apply scenario.causePrecedence in order",
+    "interventions": "selected codes must belong to union of matrix[scenario][primaryCause] and matrix[scenario][contributingCause]; at least one code must belong to matrix[scenario][primaryCause]",
+    "anchor": "selected interventions must satisfy scenario.anchorAnyOf",
+    "maxInterventions": 4
+  },
+  "historyGuard": {
+    "interventionMatch": "use intervention.historyMatchTags to compare against structured/free-text previous attempts; exact semantic match remains P-03 responsibility, evidence IDs required",
+    "repeatWithoutNewCondition": "block REPEATED_INTERVENTION_WITHOUT_NEW_CONDITION"
+  },
+  "supportingElementsRule": "backend derives supporting elements only from selected intervention.supportingElements; AI cannot invent elements"
+}

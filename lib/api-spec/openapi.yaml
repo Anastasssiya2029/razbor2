@@ -1,0 +1,1100 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication, invites and user management
+  - name: clients
+    description: Business owners being diagnosed
+  - name: diagnostics
+    description: Diagnostic questionnaires
+  - name: analysis
+    description: Analysis pipeline runs and results
+  - name: manager-plan
+    description: Manager-editable working copies of the canonical task plan
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/bootstrap:
+    post:
+      operationId: bootstrapFirstArchitect
+      tags: [auth]
+      summary: Create the first architect account (only works when no users exist yet)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthBootstrapInput"
+      responses:
+        "201":
+          description: First architect created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out the current session
+      responses:
+        "204":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+
+  /auth/users:
+    get:
+      operationId: listUsers
+      tags: [auth]
+      summary: List app users (admin/architect only)
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuthUser"
+
+  /auth/users/{userId}/role:
+    patch:
+      operationId: changeUserRole
+      tags: [auth]
+      summary: Change a user's role (architect only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRoleUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+
+  /auth/invites:
+    post:
+      operationId: createInvite
+      tags: [auth]
+      summary: Invite a new user (admin/architect only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthInviteInput"
+      responses:
+        "201":
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthInvite"
+
+  /auth/invites/{token}:
+    get:
+      operationId: getInvitePreview
+      tags: [auth]
+      summary: Preview an invite by its token (public, for the accept page)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invite preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthInvitePreview"
+
+  /auth/invites/{token}/accept:
+    post:
+      operationId: acceptInvite
+      tags: [auth]
+      summary: Accept an invite and set a password
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthAcceptInviteInput"
+      responses:
+        "200":
+          description: Account activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List clients owned by the current user (or all, for admin/architect)
+      responses:
+        "200":
+          description: Clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /diagnostics:
+    get:
+      operationId: listDiagnostics
+      tags: [diagnostics]
+      summary: List diagnostics owned by the current user (or all, for admin/architect)
+      responses:
+        "200":
+          description: Diagnostics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Diagnostic"
+    post:
+      operationId: createDiagnostic
+      tags: [diagnostics]
+      summary: Create a diagnostic as a draft or submit it for scoring (intent field selects which)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiagnosticInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiagnosticSubmissionResult"
+
+  /diagnostics/{diagnosticId}:
+    get:
+      operationId: getDiagnostic
+      tags: [diagnostics]
+      summary: Get a diagnostic by id
+      parameters:
+        - name: diagnosticId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Diagnostic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Diagnostic"
+
+  /diagnostics/{diagnosticId}/submit:
+    post:
+      operationId: submitDiagnosticDraft
+      tags: [diagnostics]
+      summary: Update a draft diagnostic's answers and submit it for scoring
+      parameters:
+        - name: diagnosticId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiagnosticInput"
+      responses:
+        "200":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiagnosticSubmissionResult"
+
+  /diagnostics/situation-summary:
+    post:
+      operationId: generateSituationSummary
+      tags: [diagnostics]
+      summary: >-
+        Build the "Ваша ситуация" pre-analysis confirmation text (point B,
+        point A, client-named obstacles only) from a whitelist-only subset
+        of the raw flat-form answers, for display before the diagnostic is
+        submitted. Never includes client results, case studies, best
+        period, past failures, scores, archetype, or route/recommendations.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SituationSummaryInput"
+      responses:
+        "200":
+          description: Situation summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SituationSummary"
+        "502":
+          description: The AI model failed to produce a usable summary
+        "503":
+          description: The situation-summary feature is not configured
+
+  /analysis-runs/{analysisRunId}/run:
+    post:
+      operationId: advanceAnalysisRun
+      tags: [analysis]
+      summary: Advance the analysis pipeline by one resumable step for this run
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pipeline step completed (may still be in progress; poll again to continue)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+
+  /analysis-runs/{analysisRunId}/retry:
+    post:
+      operationId: retryAnalysisRun
+      tags: [analysis]
+      summary: >-
+        Retry a recoverable failed analysis run (strategy or report-writing
+        stage) without recreating the diagnostic. Only valid when the run's
+        errorCode indicates a recoverable P-02/P-04 failure; other failures
+        (e.g. evidence-quality gates) require a new diagnostic submission.
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Retry accepted; pipeline resumed from the failed stage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+
+  /diagnostics/{diagnosticId}/analysis-runs/list:
+    get:
+      operationId: listAnalysisRuns
+      tags: [analysis]
+      summary: List analysis runs for a diagnostic (newest first), for resuming after a reload
+      parameters:
+        - name: diagnosticId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analysis runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnalysisRun"
+
+  /analysis-runs/average-duration:
+    get:
+      operationId: getAverageAnalysisRunDuration
+      tags: [analysis]
+      summary: Typical full-run duration estimated from recently completed runs
+      responses:
+        "200":
+          description: Average duration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AverageAnalysisRunDuration"
+
+  /analysis-runs/{analysisRunId}:
+    get:
+      operationId: getAnalysisRun
+      tags: [analysis]
+      summary: Get the status of an analysis run
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analysis run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+
+  /analysis-runs/{analysisRunId}/result:
+    get:
+      operationId: getAnalysisResult
+      tags: [analysis]
+      summary: Get the assembled analysis-result.v1 document once the run is ready
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+
+  /analysis-runs/{analysisRunId}/cost-detail:
+    get:
+      operationId: getAnalysisRunCostDetail
+      tags: [analysis]
+      summary: >-
+        Architect-only breakdown of real AI provider cost/time for an
+        analysis run: run-level totals plus one entry per module (P01-P04)
+        summarizing every recorded provider call attempt, including retries
+        and failures. 403s for non-architect roles, including direct API
+        calls.
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cost/time detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRunCostDetail"
+
+  /ai-usage/unlinked-cost:
+    get:
+      operationId: getUnlinkedSituationSummaryCost
+      tags: [analysis]
+      summary: >-
+        Architect-only total for real OpenRouter spend on situation-summary
+        calls that never got attached to a submitted diagnostic (the client
+        opened the form but never submitted it). This spend is real but
+        can't appear in any per-run cost total, so it's surfaced here
+        instead of being silently uncounted. 403s for non-architect roles.
+      responses:
+        "200":
+          description: Unlinked AI spend total
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlinkedAiCost"
+
+  /diagnostics/registry.xlsx:
+    get:
+      operationId: exportDiagnosticsRegistry
+      tags: [exports]
+      summary: Download the diagnostics registry as an Excel workbook (role-scoped -- manager sees own, architect/admin see all)
+      responses:
+        "200":
+          description: Excel workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /diagnostics/answers.xlsx:
+    get:
+      operationId: exportDiagnosticAnswers
+      tags: [exports]
+      summary: Download raw questionnaire answers for one or more diagnostics as a single Excel workbook (one column per client)
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Comma-separated diagnostic ids to include as columns.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Excel workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /analysis-runs/{analysisRunId}/gift:
+    get:
+      operationId: getAnalysisGift
+      tags: [gift]
+      summary: Get the gift draw for an analysis run, if one has already happened
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Gifts drawn so far for this analysis run (0-2 -- up to one per tariff)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisGiftStatus"
+    post:
+      operationId: drawAnalysisGift
+      tags: [gift]
+      summary: Draw the one-time gift for an analysis run (owner-only, cannot be redrawn)
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DrawGiftInput"
+      responses:
+        "200":
+          description: Gift drawn (or replayed if already drawn earlier)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisGiftDraw"
+
+  /analysis-runs/{analysisRunId}/manager-plan:
+    get:
+      operationId: getManagerPlan
+      tags: [manager-plan]
+      summary: Get the current manager plan working copy for an analysis run (or null if none saved yet)
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current manager plan working copy plus the canonical checklist baseline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagerPlanSnapshot"
+    put:
+      operationId: saveManagerPlan
+      tags: [manager-plan]
+      summary: Save a new manager plan version (the manager's edited working copy of the checklist)
+      parameters:
+        - name: analysisRunId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagerPlanVersionInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagerPlanVersion"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    AuthUser:
+      type: object
+      required: [id, email, displayName, role, status]
+      properties:
+        id: { type: string }
+        email: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [architect, admin, manager] }
+        status: { type: string, enum: [invited, active, disabled] }
+
+    AuthBootstrapInput:
+      type: object
+      required: [email, displayName, password]
+      properties:
+        email: { type: string }
+        displayName: { type: string, minLength: 1 }
+        password: { type: string, minLength: 6, maxLength: 128 }
+
+    AuthLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+
+    AuthRoleUpdate:
+      type: object
+      required: [role]
+      properties:
+        role: { type: string, enum: [architect, admin, manager] }
+
+    AuthInviteInput:
+      type: object
+      required: [email, displayName, role]
+      properties:
+        email: { type: string }
+        displayName: { type: string, minLength: 1 }
+        role: { type: string, enum: [architect, admin, manager] }
+
+    AuthInvite:
+      type: object
+      required: [token, expiresAt, userId]
+      properties:
+        token: { type: string }
+        expiresAt: { type: string, format: date-time }
+        userId: { type: string }
+
+    AuthInvitePreview:
+      type: object
+      required: [email, displayName, role]
+      properties:
+        email: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [architect, admin, manager] }
+
+    AuthAcceptInviteInput:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string, minLength: 6, maxLength: 128 }
+
+    Client:
+      type: object
+      required: [id, ownerUserId, displayName, contactInfo, createdAt]
+      properties:
+        id: { type: string }
+        ownerUserId: { type: string }
+        displayName: { type: string }
+        contactInfo: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    ClientInput:
+      type: object
+      required: [displayName]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 200 }
+        contactInfo: { type: string, maxLength: 500 }
+
+    DiagnosticInput:
+      type: object
+      description: >-
+        Raw questionnaire payload (flat-form, legacy-nested, or canonical
+        DiagnosticInputV1_2 shape); normalized and validated server-side
+        against schemas/diagnostic-input.v1.2.schema.json. No pre-existing
+        clientId is required -- the client is derived/auto-created from
+        identity.expertName/identity.niche.
+      additionalProperties: true
+
+    DiagnosticSubmissionResult:
+      type: object
+      required: [diagnosticId, analysisRunId, status, schemaVersion, methodologyVersion, input, idempotentReplay]
+      properties:
+        clientId: { type: ["string", "null"] }
+        diagnosticId: { type: string }
+        analysisRunId: { type: string }
+        status: { type: string, enum: [draft, queued] }
+        nextStep:
+          type: ["object", "null"]
+          properties:
+            method: { type: string }
+            href: { type: string }
+            module: { type: string }
+        schemaVersion: { type: string }
+        methodologyVersion: { type: string }
+        input:
+          type: object
+          additionalProperties: true
+        idempotentReplay: { type: boolean }
+
+    SituationSummaryInput:
+      type: object
+      required: [answers, sessionId]
+      properties:
+        answers:
+          type: object
+          description: >-
+            Flat map of raw diagnostic form field keys (e.g. goalIncome,
+            struggles, bestPeriod) to their current text values.
+          additionalProperties:
+            type: string
+        sessionId:
+          type: string
+          description: >-
+            Stable id the client generates once per diagnostic form
+            session (before any diagnostic exists), reused across repeated
+            situation-summary calls in that session and sent again as
+            `sessionId` when the diagnostic is submitted. Lets the AI spend
+            for this pre-submission call be attributed to the eventual
+            analysis run's cost total instead of being uncounted.
+
+    SituationSummary:
+      type: object
+      required: [text, source]
+      properties:
+        text:
+          type: string
+          description: >-
+            The full "Ваша ситуация" confirmation text, built only from
+            point A / point B / client-named obstacles — never from
+            client results, case studies, scoring evidence, or AI
+            root-cause conclusions.
+        source:
+          type: string
+          enum: [ai, fallback]
+          description: >-
+            Whether the text was produced by the AI shortening pass or by
+            the deterministic whitelist-only fallback (used when the AI
+            call fails, times out, or returns invalid JSON).
+
+    Diagnostic:
+      type: object
+      required: [diagnosticId, analysisRunId, status, input, createdAt, updatedAt]
+      properties:
+        client:
+          type: ["object", "null"]
+          properties:
+            id: { type: string }
+            displayName: { type: string }
+            niche: { type: ["string", "null"] }
+        manager:
+          type: ["object", "null"]
+          properties:
+            id: { type: string }
+            displayName: { type: string }
+        diagnosticId: { type: string }
+        analysisRunId: { type: string }
+        status: { type: string }
+        rawAnswers:
+          type: object
+          additionalProperties: true
+        input:
+          type: object
+          additionalProperties: true
+        currentRevenueRub: { type: ["number", "null"] }
+        targetRevenueRub: { type: ["number", "null"] }
+        currentTotalScore: { type: ["number", "null"] }
+        targetTotalScore: { type: ["number", "null"] }
+        archetype:
+          type: ["object", "null"]
+          properties:
+            id: { type: string }
+            name: { type: string }
+        gifts:
+          description: One entry per tariff already drawn for this diagnostic's latest analysis run
+          type: array
+          items:
+            type: object
+            required: [tariff, label]
+            properties:
+              tariff: { type: string, enum: [self, support] }
+              label: { type: string }
+        resultReady: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        durationMs:
+          description: >-
+            Wall-clock time from the first AI provider call to the last for
+            this diagnostic's latest analysis run, in milliseconds. Only
+            present for architects; null when no call-log data exists yet
+            (e.g. legacy runs predating cost tracking).
+          type: ["number", "null"]
+        costRub:
+          description: >-
+            Total real provider cost for this diagnostic's latest analysis
+            run, converted to rubles (USD x 95). Only present for architects;
+            null when no call-log data exists yet.
+          type: ["number", "null"]
+
+    AnalysisRun:
+      type: object
+      required: [id, diagnosticId, ownerUserId, status, createdAt]
+      properties:
+        id: { type: string }
+        diagnosticId: { type: string }
+        ownerUserId: { type: string }
+        status:
+          type: string
+          enum:
+            [
+              draft,
+              queued,
+              scoring,
+              targeting,
+              strategizing,
+              resolving_tasks,
+              money_now,
+              money_now_prescribing,
+              writing_report,
+              ready,
+              analysis_failed,
+            ]
+        errorCode: { type: ["string", "null"] }
+        errorMessage: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        overview:
+          description: >-
+            Early preview (archetype + current/target 7K scores) available as
+            soon as the targeting stage completes, well before the full
+            result and plan are ready. Null until then.
+          oneOf:
+            - $ref: "#/components/schemas/AnalysisOverview"
+            - type: "null"
+
+    AverageAnalysisRunDuration:
+      type: object
+      required: [averageDurationMs, sampleSize]
+      properties:
+        averageDurationMs:
+          description: >-
+            Average wall-clock duration (ms) of recently completed runs, or
+            null when there is no completed run with real call-log data yet.
+          type: ["number", "null"]
+        sampleSize:
+          description: How many completed runs the average was computed over.
+          type: number
+
+    AnalysisRunCostDetail:
+      type: object
+      required: [analysisRunId, status, createdAt, totalCostUsd, totalCostRub, durationMs, totalTokens, hasData, modules]
+      properties:
+        analysisRunId: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        startedAt:
+          description: Timestamp of the first recorded provider call, null when hasData is false.
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          description: Timestamp of the last recorded provider call, null when hasData is false.
+          type: ["string", "null"]
+          format: date-time
+        durationMs: { type: ["number", "null"] }
+        totalCostUsd: { type: ["number", "null"] }
+        totalCostRub: { type: ["number", "null"] }
+        totalTokens: { type: ["number", "null"] }
+        hasData:
+          description: False when this run has no ai_call_log rows (e.g. a legacy run predating cost tracking) -- distinguishes "no data" from a genuine zero.
+          type: boolean
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisRunCostModule"
+
+    AnalysisRunCostModule:
+      type: object
+      required: [module, attempts, totalCostUsd, totalCostRub, totalTokens, totalDurationMs, retryCount, finalStatus]
+      properties:
+        module:
+          type: string
+          enum: [p01, p02, p03, p04, situation_summary]
+        finalStatus:
+          description: Status of the last recorded attempt for this module (success or error); null when no attempts were recorded.
+          type: ["string", "null"]
+        retryCount:
+          description: Number of attempts beyond the first for this module.
+          type: number
+        totalCostUsd: { type: ["number", "null"] }
+        totalCostRub: { type: ["number", "null"] }
+        totalTokens: { type: ["number", "null"] }
+        totalDurationMs: { type: ["number", "null"] }
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisRunCostAttempt"
+
+    UnlinkedAiCost:
+      type: object
+      required: [callCount, hasData, totalCostUsd, totalCostRub]
+      properties:
+        callCount:
+          description: Number of ai_call_log rows with no analysisRunId.
+          type: number
+        hasData:
+          type: boolean
+          description: False when callCount is 0 -- distinguishes "no data" from a genuine zero.
+        totalCostUsd: { type: ["number", "null"] }
+        totalCostRub: { type: ["number", "null"] }
+
+    AnalysisRunCostAttempt:
+      type: object
+      required: [attemptIndex, provider, model, status, startedAt, completedAt, latencyMs]
+      properties:
+        attemptIndex: { type: number }
+        provider: { type: string }
+        model: { type: string }
+        status:
+          type: string
+          enum: [success, error]
+        httpStatus: { type: ["number", "null"] }
+        errorCode: { type: ["string", "null"] }
+        errorMessage:
+          description: Sanitized error message (redacted of secrets/tokens); safe to display.
+          type: ["string", "null"]
+        inputTokens: { type: ["number", "null"] }
+        outputTokens: { type: ["number", "null"] }
+        totalTokens: { type: ["number", "null"] }
+        costUsd: { type: ["number", "null"] }
+        latencyMs: { type: number }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    AnalysisOverview:
+      type: object
+      required: [archetype, systemScores, currentScoreArguments]
+      properties:
+        archetype:
+          type: object
+          required: [id, evidence]
+          properties:
+            id: { type: string }
+            evidence:
+              type: array
+              items: { type: string }
+        systemScores:
+          type: array
+          items:
+            type: object
+            required: [id, currentScore, targetScore, reasoning]
+            properties:
+              id: { type: string }
+              currentScore: { type: number }
+              targetScore: { type: number }
+              reasoning: { type: string }
+        currentScoreArguments:
+          type: array
+          items:
+            type: object
+            required: [id, score, evidence, matchedCriterion, whyNotHigher, kind]
+            properties:
+              id: { type: string }
+              score: { type: number }
+              evidence:
+                type: array
+                items: { type: string }
+              matchedCriterion: { type: ["string", "null"] }
+              whyNotHigher: { type: ["string", "null"] }
+              kind: { type: string, enum: [soft, hard] }
+        modelTransitionNote: { type: ["string", "null"] }
+
+    AnalysisResult:
+      type: object
+      required: [id, analysisRunId, diagnosticId, schemaVersion, resultHash, result, assembledAt]
+      properties:
+        id: { type: string }
+        analysisRunId: { type: string }
+        diagnosticId: { type: string }
+        schemaVersion: { type: string }
+        resultHash: { type: string }
+        result:
+          type: object
+          additionalProperties: true
+        assembledAt: { type: string, format: date-time }
+
+    ManagerPlanTask:
+      type: object
+      required: [id, source, task, doneWhen]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [canonical, manager] }
+        task: { type: string }
+        doneWhen: { type: string }
+
+    ManagerPlanCard:
+      type: object
+      required: [elementId, tasks]
+      properties:
+        elementId: { type: string }
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagerPlanTask"
+
+    ManagerPlanVersion:
+      type: ["object", "null"]
+      required: [version, cards, sourceResultHash, revision, updatedAt]
+      properties:
+        version: { type: string }
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagerPlanCard"
+        sourceResultHash: { type: string }
+        revision: { type: number }
+        updatedAt: { type: string, format: date-time }
+
+    ManagerPlanSnapshot:
+      type: object
+      required: [managerPlan, canonicalCards, sourceResultHash]
+      properties:
+        managerPlan:
+          $ref: "#/components/schemas/ManagerPlanVersion"
+        canonicalCards:
+          description: The canonical checklist baseline derived from the current analysis result, used to seed the working copy before any manager edits are saved.
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagerPlanCard"
+        sourceResultHash: { type: string }
+
+    ManagerPlanVersionInput:
+      type: object
+      required: [sourceResultHash, content]
+      properties:
+        sourceResultHash: { type: string }
+        content:
+          description: A ManagerPlanContent document ({ version, cards }); validated server-side against the current analysis result.
+          additionalProperties: true
+
+    DrawGiftInput:
+      type: object
+      required: [tariff]
+      properties:
+        tariff: { type: string, enum: [self, support] }
+
+    AnalysisGift:
+      type: object
+      required: [tariff, prizeCode, prizeName, selectedAt]
+      properties:
+        tariff: { type: string, enum: [self, support] }
+        prizeCode: { type: string }
+        prizeName: { type: string }
+        selectedAt: { type: string, format: date-time }
+
+    AnalysisGiftDraw:
+      type: object
+      required: [gift, idempotentReplay]
+      properties:
+        gift:
+          $ref: "#/components/schemas/AnalysisGift"
+        idempotentReplay: { type: boolean }
+
+    AnalysisGiftStatus:
+      type: object
+      required: [gifts]
+      properties:
+        gifts:
+          description: One entry per tariff already drawn ("self" and/or "support")
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisGift"

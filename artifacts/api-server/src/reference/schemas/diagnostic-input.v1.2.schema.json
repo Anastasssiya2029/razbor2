@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "diagnostic-input.v1.2.schema.json",
+  "title": "DiagnosticInputV1_2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "identity",
+    "current",
+    "target",
+    "project",
+    "experience"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.2" },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expertName", "niche"],
+      "properties": {
+        "expertName": { "type": ["string", "null"] },
+        "niche": { "type": ["string", "null"] }
+      }
+    },
+    "current": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monthlyRevenueRub",
+        "monthlyRevenueContext",
+        "payingClientsCount",
+        "clientsCountPeriod",
+        "weeklyHours",
+        "products",
+        "bestSeller",
+        "freeProducts"
+      ],
+      "properties": {
+        "monthlyRevenueRub": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Average monthly project revenue over the last 6 months."
+        },
+        "monthlyRevenueContext": { "type": ["string", "null"] },
+        "payingClientsCount": { "type": ["number", "null"], "minimum": 0 },
+        "clientsCountPeriod": {
+          "type": ["string", "null"],
+          "enum": ["month", "launch", null]
+        },
+        "weeklyHours": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 168,
+          "description": "Current total weekly owner involvement across client work, content, sales, team and operations. Used for capacity/owner-dependency analysis; not an automatic score modifier."
+        },
+        "products": { "type": ["string", "null"] },
+        "bestSeller": { "type": ["string", "null"] },
+        "freeProducts": { "type": ["string", "null"] }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monthlyRevenueRub",
+        "businessModel",
+        "deadlineMonths",
+        "delegation",
+        "desiredSystemWeeklyHours"
+      ],
+      "properties": {
+        "monthlyRevenueRub": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Manager-agreed stable monthly revenue required for the client's desired net earnings. AI does not convert profit to revenue."
+        },
+        "businessModel": { "type": ["string", "null"] },
+        "deadlineMonths": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 120
+        },
+        "delegation": {
+          "type": ["string", "null"],
+          "description": "What the client wants to keep personally and what to transfer to people/AI. Primary input for desired owner role and Founder–Model Fit."
+        },
+        "desiredSystemWeeklyHours": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 168,
+          "description": "Conditional. Desired weekly workload after the system is built, only when time freedom/reduced owner involvement is explicitly part of the goal. Otherwise null."
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clients",
+        "result",
+        "sources",
+        "clientPath",
+        "sales",
+        "socialAssets",
+        "team",
+        "uniqueness"
+      ],
+      "properties": {
+        "clients": { "type": ["string", "null"] },
+        "result": { "type": ["string", "null"] },
+        "sources": { "type": ["string", "null"] },
+        "clientPath": { "type": ["string", "null"] },
+        "sales": { "type": ["string", "null"] },
+        "socialAssets": { "type": ["string", "null"] },
+        "team": { "type": ["string", "null"] },
+        "uniqueness": { "type": ["string", "null"] }
+      }
+    },
+    "experience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["struggles", "bestPeriod", "failures"],
+      "properties": {
+        "struggles": {
+          "type": ["string", "null"],
+          "description": "Client-perceived gap from current state to goal: what is not working, why the client thinks growth is blocked, how long it repeats, and what they believe may help. Treat as hypothesis/self-report, not diagnosis."
+        },
+        "bestPeriod": {
+          "type": ["string", "null"],
+          "description": "Best historical period: actual result/metrics, what worked differently, and which mechanism may be repeatable. Historical evidence unless current operation is confirmed."
+        },
+        "failures": {
+          "type": ["string", "null"],
+          "description": "History of attempted growth solutions: what was tried, actual result, where the break occurred, client explanation, investments if relevant, and what they do not want to repeat. Used as historical evidence, repeated-break pattern, solution history and report context."
+        }
+      }
+    }
+  }
+}

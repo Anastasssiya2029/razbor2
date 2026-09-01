@@ -1,0 +1,636 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "p04-report-writer.output.v1.3.schema.json",
+  "title": "P04ReportWriterOutputV1_3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "promptVersion",
+    "schemaVersion",
+    "analysisStatus",
+    "opening",
+    "currentConfiguration",
+    "targetConfiguration",
+    "archetype",
+    "growthPoint",
+    "whyNotNow",
+    "routeCards",
+    "businessValidation",
+    "moneyNow",
+    "finalFocus",
+    "sanityChecks"
+  ],
+  "properties": {
+    "promptVersion": {
+      "const": "P-04.v1.3"
+    },
+    "schemaVersion": {
+      "const": "1.3"
+    },
+    "analysisStatus": {
+      "enum": [
+        "ok",
+        "low_confidence",
+        "blocked_by_inconsistency"
+      ]
+    },
+    "opening": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "headline",
+        "summary",
+        "source_refs"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 1600
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "currentConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "strengths",
+        "fragilities",
+        "source_refs"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 1800
+        },
+        "strengths": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "fragilities": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "targetConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "key_shifts",
+        "source_refs"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 1600
+        },
+        "key_shifts": {
+          "type": "array",
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "element_id",
+              "from_score",
+              "to_score",
+              "shift",
+              "source_refs"
+            ],
+            "properties": {
+              "element_id": {
+                "$ref": "#/$defs/elementId"
+              },
+              "from_score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "to_score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "shift": {
+                "type": "string",
+                "minLength": 20,
+                "maxLength": 800
+              },
+              "source_refs": {
+                "$ref": "#/$defs/sourceRefs"
+              }
+            }
+          }
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "archetype": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "archetype_name",
+        "summary",
+        "source_refs"
+      ],
+      "properties": {
+        "archetype_name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 1200
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "growthPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "priority_element",
+        "build_elements",
+        "title",
+        "coach_explanation",
+        "what_it_unlocks",
+        "source_refs"
+      ],
+      "properties": {
+        "priority_element": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/elementId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "build_elements": {
+          "type": "array",
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/elementId"
+          }
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "coach_explanation": {
+          "type": "string",
+          "minLength": 50,
+          "maxLength": 1800
+        },
+        "what_it_unlocks": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "whyNotNow": {
+      "type": "array",
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "element_id",
+          "status",
+          "text",
+          "return_trigger",
+          "source_refs"
+        ],
+        "properties": {
+          "element_id": {
+            "$ref": "#/$defs/elementId"
+          },
+          "status": {
+            "enum": [
+              "maintain",
+              "later"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 900
+          },
+          "return_trigger": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 700
+          },
+          "source_refs": {
+            "$ref": "#/$defs/sourceRefs"
+          }
+        }
+      }
+    },
+    "routeCards": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "card_id",
+          "order",
+          "element_id",
+          "role",
+          "from_score",
+          "to_score",
+          "task_ids",
+          "card_title",
+          "why_now",
+          "what_changes_in_business",
+          "connection_to_next_stage",
+          "source_refs",
+          "client_presentation"
+        ],
+        "properties": {
+          "card_id": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "element_id": {
+            "$ref": "#/$defs/elementId"
+          },
+          "role": {
+            "enum": [
+              "priority",
+              "build"
+            ]
+          },
+          "from_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "to_score": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "task_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "card_title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 160
+          },
+          "why_now": {
+            "type": "string",
+            "minLength": 30,
+            "maxLength": 1200
+          },
+          "what_changes_in_business": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 900
+          },
+          "connection_to_next_stage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 900
+          },
+          "source_refs": {
+            "$ref": "#/$defs/sourceRefs"
+          },
+          "client_presentation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "items"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 7,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "task_id",
+                    "state",
+                    "client_task",
+                    "client_done_when",
+                    "source_refs"
+                  ],
+                  "properties": {
+                    "task_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "state": {
+                      "enum": [
+                        "missing",
+                        "partial",
+                        "undocumented",
+                        "unmeasured",
+                        "unstable"
+                      ]
+                    },
+                    "client_task": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 500
+                    },
+                    "client_done_when": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 500
+                    },
+                    "source_refs": {
+                      "$ref": "#/$defs/sourceRefs"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "businessValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint_after_order",
+        "metric_name",
+        "baseline_value",
+        "target_value",
+        "unit",
+        "target_rule",
+        "formula",
+        "timeframe_days",
+        "if_signal_absent",
+        "explanation",
+        "source_refs"
+      ],
+      "properties": {
+        "checkpoint_after_order": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "metric_name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "baseline_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "target_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "target_rule": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "formula": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 700
+        },
+        "timeframe_days": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 90
+        },
+        "if_signal_absent": {
+          "type": "string",
+          "maxLength": 700
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 30,
+          "maxLength": 1000
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "moneyNow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "scenario_id",
+        "headline",
+        "narrative",
+        "locked_teaser",
+        "source_refs"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "no_eligible_scenario",
+            "blocked_insufficient_evidence",
+            "blocked_inconsistency"
+          ]
+        },
+        "scenario_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^MN(0[1-9]|1[0-6])$"
+        },
+        "headline": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 180
+        },
+        "narrative": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1200
+        },
+        "locked_teaser": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 400
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "finalFocus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "headline",
+        "text",
+        "first_task_id",
+        "first_action",
+        "wait_for_signal",
+        "source_refs"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "text": {
+          "type": "string",
+          "minLength": 30,
+          "maxLength": 1000
+        },
+        "first_task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "first_action": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 1200
+        },
+        "wait_for_signal": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 900
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "sanityChecks": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "source_refs"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "warning",
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 900
+          },
+          "source_refs": {
+            "$ref": "#/$defs/sourceRefs"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "elementId": {
+      "enum": [
+        "authenticity",
+        "audience",
+        "product_method",
+        "sales_technology",
+        "funnel",
+        "blog",
+        "team"
+      ]
+    },
+    "sourceRefs": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+P01_AI_MODEL = "openai/gpt-5.6-luna-pro"
+P01_AI_PROVIDER = "openrouter"
+P01_STRUCTURED_OUTPUT = "true"
+P02_AI_MODEL = "openai/gpt-5.6-luna-pro"
+P02_AI_PROVIDER = "openrouter"
+P02_STRUCTURED_OUTPUT = "true"
+P03_AI_MODEL = "openai/gpt-5.6-luna-pro"
+P03_AI_PROVIDER = "openrouter"
+P03_STRUCTURED_OUTPUT = "true"
+P04_AI_MODEL = "openai/gpt-5.6-luna-pro"
+P04_AI_PROVIDER = "openrouter"
+P04_STRUCTURED_OUTPUT = "true"

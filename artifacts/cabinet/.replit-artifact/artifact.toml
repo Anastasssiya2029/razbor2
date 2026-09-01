@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Кабинет менеджера"
+description = "Кабинет менеджера для проведения живой бизнес-диагностики клиентов: анкета, запуск пайплайна анализа, просмотр результатов (7К-конфигурация, стратегия, план задач, Money Now, отчёт), личный список диагностик и админ-панель команды."
+version = "1.0.0"
+id = "artifacts/cabinet"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24221
+
+[services.development]
+run = "pnpm --filter @workspace/cabinet run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cabinet", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/cabinet/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24221"
+BASE_PATH = "/"
